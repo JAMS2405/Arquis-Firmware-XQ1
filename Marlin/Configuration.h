@@ -3218,6 +3218,11 @@
 // Touch Screen Settings
 //
 #define TOUCH_SCREEN
+
+// Arquis: intercambia los 2 bytes de cada pixel antes de enviarlo a la pantalla.
+// Necesario con el .bin compilado por Claude (colores salian invertidos: fondo verde, logo azul/verde al reves).
+// Si compilas tu mismo con PlatformIO oficial y los colores se ven mal, comenta esta linea.
+#define ARQUIS_TFT_BYTE_SWAP
 #if ENABLED(TOUCH_SCREEN)
   #define BUTTON_DELAY_EDIT      50 // (ms) Button repeat delay for edit screens
   #define BUTTON_DELAY_MENU     250 // (ms) Button repeat delay for menus

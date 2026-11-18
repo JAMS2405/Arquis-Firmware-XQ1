@@ -68,16 +68,26 @@ public:
   static void WriteData(uint16_t Data) { Transmit(Data); }
   static void WriteReg(uint16_t Reg) { WRITE(TFT_A0_PIN, LOW); Transmit(Reg); WRITE(TFT_A0_PIN, HIGH); }
 
-  static void WriteSequence_DMA(uint16_t *Data, uint16_t Count) { TransmitDMA(DMA_MINC_ENABLE, Data, Count); }
-  static void WriteMultiple_DMA(uint16_t Color, uint16_t Count) { static uint16_t Data; Data = Color; TransmitDMA(DMA_MINC_DISABLE, &Data, Count); }
+  // Arquis: intercambio de bytes de cada pixel RGB565 (ver ARQUIS_TFT_BYTE_SWAP en Configuration.h)
+  #if ENABLED(ARQUIS_TFT_BYTE_SWAP)
+    static void arqSwap(uint16_t *d, uint32_t n) { while (n--) { *d = __builtin_bswap16(*d); d++; } }
+    static uint16_t arqSwap(uint16_t c) { return __builtin_bswap16(c); }
+  #else
+    static void arqSwap(uint16_t *, uint32_t) {}
+    static uint16_t arqSwap(uint16_t c) { return c; }
+  #endif
+
+  static void WriteSequence_DMA(uint16_t *Data, uint16_t Count) { arqSwap(Data, Count); TransmitDMA(DMA_MINC_ENABLE, Data, Count); }
+  static void WriteMultiple_DMA(uint16_t Color, uint16_t Count) { static uint16_t Data; Data = arqSwap(Color); TransmitDMA(DMA_MINC_DISABLE, &Data, Count); }
 
   #if ENABLED(USE_SPI_DMA_TC)
-    static void WriteSequenceIT(uint16_t *Data, uint16_t Count) { TransmitDMA_IT(DMA_MINC_ENABLE, Data, Count); }
+    static void WriteSequenceIT(uint16_t *Data, uint16_t Count) { arqSwap(Data, Count); TransmitDMA_IT(DMA_MINC_ENABLE, Data, Count); }
     inline static void DMA_IRQHandler() { HAL_DMA_IRQHandler(&TFT_SPI::DMAtx); }
   #endif
 
-  static void WriteSequence(uint16_t *Data, uint16_t Count) { Transmit(DMA_MINC_ENABLE, Data, Count); }
+  static void WriteSequence(uint16_t *Data, uint16_t Count) { arqSwap(Data, Count); Transmit(DMA_MINC_ENABLE, Data, Count); }
   static void WriteMultiple(uint16_t Color, uint32_t Count) {
+    Color = arqSwap(Color);
     while (Count > 0) {
       Transmit(DMA_MINC_DISABLE, &Color, Count > DMA_MAX_WORDS ? DMA_MAX_WORDS : Count);
       Count = Count > DMA_MAX_WORDS ? Count - DMA_MAX_WORDS : 0;

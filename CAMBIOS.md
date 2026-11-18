@@ -68,3 +68,8 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - Pasos/mm por defecto: X160 Y160 Z791.74 E748.72 (tomados de la pantalla de la impresora en funcionamiento).
 - Corriente TMC2209: X/Y/Z 650 mA, E0 700 mA.
 - Motivo: al cambiar de versión de Marlin la EEPROM se descarta y carga estos valores por defecto.
+
+## v4: correccion de color + resto de iconos
+- **Colores invertidos en pantalla** (fotos del usuario: fondo verde oliva, logo azul/verde al reves). Causa: el orden de los 2 bytes de cada pixel llegaba invertido al panel con el .bin compilado aqui. Correccion en un solo punto (`tft_spi.h`, opcion `ARQUIS_TFT_BYTE_SWAP` en Configuration.h) que cubre LVGL, logo, miniatura y colores del firmware. Si compilas tu con PlatformIO oficial y los colores salen mal, comenta esa linea.
+- **109 iconos nuevos** (`herramientas/iconos_extra.py`): mas/menos, dentro/fuera, extrusor 1/2, ventilador 0/50/100 %, velocidades, pasos de movimiento/temperatura/porcentaje, flechas X/Y/Z, origen X/Y/Z/todos, apagar, archivos/SD/USB, nivelacion 1-5, idiomas, pausa/parar/reanudar, atras/paginas y los 10 iconos pequenos de estado.
+- Sin rediseñar (no los usa casi nadie): interruptores enable/disable, marcos blank, back70x40, arrow, X_mode.
