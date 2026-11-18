@@ -115,3 +115,8 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - `draw_dialog.cpp`: los diálogos de Marlin/MKS (Memoria, pausa/M600, reanudar tras un corte, errores) se dibujan con la pantalla de mensaje ARQUIS (`arq_msg_build`); la lógica y los manejadores son los originales. Quedan con el aspecto original los diálogos con temperatura en vivo/barra de progreso.
 - `draw_filament_change.cpp`: pantalla de entrada ARQUIS (temperatura + Cargar/Descargar); lógica original.
 - Tabla de traducción ampliada a 134 textos. Documento: `docs/arquis/ARQUIS_UI_etapa_5.md`. Estado: simulador y firmas OK; compilación completa y pantalla real pendientes de validar.
+
+## v14 — Compilación con la Etapa 5B (PC del usuario)
+- `pio run` (espacio de trabajo en `C:\pio_arquis`): SUCCESS. RAM 61,2 % (80 160 B), Flash 91,9 % (436 588 de 475 136 B, quedan 38 548 B). Respecto a la compilación anterior (5A): +7 644 B de flash, +532 B de RAM.
+- Error corregido en esta compilación: `NOZZLE_PROBE_OFFSET_UI` solo existe en el enum de MKS con `HAS_BED_PROBE`.
+- Pendiente: probar 5B en la impresora; recuperar flash en la Etapa 6 (el margen ya es de ~38 KB).
