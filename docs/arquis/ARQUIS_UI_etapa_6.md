@@ -8,7 +8,8 @@ Estado: **iniciada**. Esta etapa mide primero y toca después: ninguna optimizac
 | v10 (Etapas 1–2) | 403 152 B (84,8 %) | 71 984 B | 77 996 B (59,5 %) |
 | 5A | 428 944 B (90,3 %) | 46 192 B | 79 628 B (60,8 %) |
 | 5B-1/2 | 436 588 B (91,9 %) | 38 548 B | 80 160 B (61,2 %) |
-| 5B-3 | 435 956 B (91,8 %) | **39 180 B** | 80 472 B (61,4 %) |
+| 5B-3 | 435 956 B (91,8 %) | 39 180 B | 80 472 B (61,4 %) |
+| **6 (solo español e inglés + Reposo)** | **406 276 B (85,5 %)** | **68 860 B** | 80 708 B (61,6 %) |
 (Límite de Flash 475 136 B: la placa reserva 48 KB para el cargador.) La RAM no preocupa (61 %); el heap de LVGL (16 KB) tiene margen: peor caso medido ≥ 9,4 KB libres.
 
 **Coste del código ARQUIS** (compilado aquí con GCC para Cortex-M4, `-Os`, **cota superior** sin eliminar lo que nadie referencia):
@@ -31,7 +32,7 @@ Seis recursos no los referencia nada (`arq_icon_check/folder/stop/warn`, `arq_lo
 | 5 | Funciones de dibujo de texto repetidas (`draw_text_fit`, `draw_text_cx`…): solo hay 3 copias pequeñas | < 1 KB | **Descartado**: el beneficio no compensa el riesgo de tocar vistas ya probadas |
 | 6 | Compilar con LTO (`-flto`) en un entorno de prueba aparte | típico 3–8 % (≈ 13–35 KB) | Experimento opcional: mide y decide; no se activa por defecto |
 | 7 | Recortar `text16` a los glifos del español | ≈ 3,5 KB | No recomendado (nombres de archivo con otros acentos dejarían de verse) |
-Con 1 + 5 el margen pasaría de **39 KB a ≈ 70 KB** (≈ 85 % de uso).
+**Medido tras aplicar el punto 1:** la Flash bajó **29 680 B** (435 956 → 406 276 B), justo lo estimado; el margen pasó de 39 KB a **≈ 69 KB (85,5 % de uso)**. La RAM subió 236 B (nuevo estado y textos).
 
 ## 3. Decisiones de producto (tomadas por ti)
 | Tema | Decisión | Estado |

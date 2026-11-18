@@ -136,3 +136,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - Nuevo estado "Reposo" (sin tarjeta SD y todo apagado; punto gris): `arq_with_standby()`; "Lista" = con tarjeta. 52 pruebas de lógica.
 - Descartados por decisión del usuario: apagado automático/remoto y perilla en listas y teclados nuevos.
 - Documento: `docs/arquis/ARQUIS_UI_etapa_6.md`. Estado: simulador y firmas OK; compilación completa pendiente.
+
+## v18 — Compilación de la Etapa 6 (PC del usuario)
+- `pio run`: SUCCESS (incluye las pantallas de Wi-Fi de 5B-4). **Flash 85,5 % (406 276 B, quedan 68 860 B)**; antes 91,8 % (435 956 B): **−29 680 B** al dejar solo español e inglés. RAM 61,6 % (80 708 B).
+- `auditar_flash.py` debe apuntar a `Robin_nano_v3.elf` (el script de compilación renombra el `.elf`).
