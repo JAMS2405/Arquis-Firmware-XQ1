@@ -63,3 +63,8 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - `bmp_logo.bin`: tu logo (A azul/verde con circuitos) sobre fondo navy, 480x320.
 - 21 iconos `bmp_*.bin` (117x140) redibujados en estilo línea: trazo azul #25ABE2, acentos verdes #4CB050, nodos de circuito. Fuentes SVG en `herramientas/iconos_svg`, generador `herramientas/iconos_a_bin.py`.
 - Solo cambian archivos de la SD (`assets`); el firmware compilado no cambia.
+
+## Valores calibrados de la impresora (v3)
+- Pasos/mm por defecto: X160 Y160 Z791.74 E748.72 (tomados de la pantalla de la impresora en funcionamiento).
+- Corriente TMC2209: X/Y/Z 650 mA, E0 700 mA.
+- Motivo: al cambiar de versión de Marlin la EEPROM se descarta y carga estos valores por defecto.

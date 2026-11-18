@@ -1196,7 +1196,7 @@
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K...]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 160, 160, 800, 770 }
+#define DEFAULT_AXIS_STEPS_PER_UNIT   { 160, 160, 791.74, 748.72 }  // Arquis: calibrado en la impresora real
 
 /**
  * Default Max Feed Rate (linear=mm/s, rotational=°/s)
