@@ -494,4 +494,93 @@ void arq_level_clear() {
   l_scr = nullptr;
 }
 
+// ==== MAS (draw_more.cpp) ========================================================================================================
+// G-code + los accesos personalizados de la configuracion (MAIN_MENU_ITEM_n_GCODE; solo si estan definidos). Mismas acciones que la original.
+static Grid grid_more;
+enum { MR_GCODE, MR_C1, MR_C2, MR_C3, MR_C4, MR_C5, MR_C6 };
+
+static void more_cb(lv_obj_t *obj, lv_event_t event) {
+  if (event != LV_EVENT_RELEASED) return;
+  if (obj->mks_obj_id == ARQ_XID_BACK) { arq_more_clear(); lv_draw_tool(); return; }
+  switch (grid_more.action(obj)) {
+    case MR_GCODE: arq_more_clear(); lv_draw_gcode(true); break;
+    #if HAS_USER_ITEM(1)
+      case MR_C1: queue.inject(F(MAIN_MENU_ITEM_1_GCODE)); break;
+    #endif
+    #if HAS_USER_ITEM(2)
+      case MR_C2: queue.inject(F(MAIN_MENU_ITEM_2_GCODE)); break;
+    #endif
+    #if HAS_USER_ITEM(3)
+      case MR_C3: queue.inject(F(MAIN_MENU_ITEM_3_GCODE)); break;
+    #endif
+    #if HAS_USER_ITEM(4)
+      case MR_C4: queue.inject(F(MAIN_MENU_ITEM_4_GCODE)); break;
+    #endif
+    #if HAS_USER_ITEM(5)
+      case MR_C5: queue.inject(F(MAIN_MENU_ITEM_5_GCODE)); break;
+    #endif
+    #if HAS_USER_ITEM(6)
+      case MR_C6: queue.inject(F(MAIN_MENU_ITEM_6_GCODE)); break;
+    #endif
+    default: break;
+  }
+}
+
+void arq_more_draw() {
+  grid_more.begin();
+  grid_more.add(MR_GCODE, &arq_icon_tools, "G-code");
+  #if HAS_USER_ITEM(1)
+    grid_more.add(MR_C1, &arq_icon_gear, more_menu.custom1);
+  #endif
+  #if HAS_USER_ITEM(2)
+    grid_more.add(MR_C2, &arq_icon_gear, more_menu.custom2);
+  #endif
+  #if HAS_USER_ITEM(3)
+    grid_more.add(MR_C3, &arq_icon_gear, more_menu.custom3);
+  #endif
+  #if HAS_USER_ITEM(4)
+    grid_more.add(MR_C4, &arq_icon_gear, more_menu.custom4);
+  #endif
+  #if HAS_USER_ITEM(5)
+    grid_more.add(MR_C5, &arq_icon_gear, more_menu.custom5);
+  #endif
+  #if HAS_USER_ITEM(6)
+    grid_more.add(MR_C6, &arq_icon_gear, more_menu.custom6);
+  #endif
+  grid_more.show(MORE_UI, "M\xC3\xA1s", more_cb);
+}
+void arq_more_clear() { grid_more.clear(); }
+
+// ==== IDIOMA (draw_language.cpp) =================================================================================================
+// Mismas acciones que la original: guarda el idioma en la flash SPI y recarga las tablas de textos de MKS. La interfaz ARQUIS esta en espanol.
+static Grid grid_lang;
+static const uint8_t lang_code[7] = { LANG_SIMPLE_CHINESE, LANG_COMPLEX_CHINESE, LANG_ENGLISH, LANG_RUSSIAN, LANG_SPANISH, LANG_FRENCH, LANG_ITALY };
+
+static void lang_mark() {
+  for (uint8_t i = 0; i < 7; ++i) {
+    const bool on = (gCfgItems.language == lang_code[i]);
+    arq_opts_set(i, on ? "Activo" : nullptr, on ? ARQ_BTN_SUCCESS : ARQ_BTN_SECONDARY);
+  }
+}
+
+static void lang_cb(lv_obj_t *obj, lv_event_t event) {
+  if (event != LV_EVENT_RELEASED) return;
+  if (obj->mks_obj_id == ARQ_XID_BACK) { arq_language_clear(); lv_draw_set(); return; }
+  const int i = grid_lang.action(obj);
+  if (i < 0 || i > 6) return;
+  gCfgItems.language = lang_code[i];
+  update_spi_flash();
+  disp_language_init();
+  lang_mark();
+}
+
+void arq_language_draw() {
+  grid_lang.begin();
+  static const char *const names[7] = { "Chino simplif.", "Chino tradic.", "Ingl\xC3\xA9s", "Ruso", "Espa\xC3\xB1ol", "Franc\xC3\xA9s", "Italiano" };
+  for (uint8_t i = 0; i < 7; ++i) grid_lang.add(i, &arq_icon_gear, names[i]);
+  grid_lang.show(LANGUAGE_UI, "Idioma", lang_cb);
+  lang_mark();
+}
+void arq_language_clear() { grid_lang.clear(); }
+
 #endif // HAS_TFT_LVGL_UI && ARQUIS_UI

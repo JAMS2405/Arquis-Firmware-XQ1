@@ -44,4 +44,4 @@ bool arq_numpad_value_ok(const char *s);                  // el texto del teclad
 
 // Dialogos de MKS (draw_dialog.cpp): el codigo original decide el tipo, los textos y los manejadores; esto solo cambia el aspecto.
 // label/btnOk/btnCancel son los objetos originales (se leen sus textos y se eliminan). Cualquiera puede ser nullptr.
-void arq_dialog_restyle(lv_obj_t *scr, lv_obj_t *label, lv_obj_t *btnOk, lv_obj_t *btnCancel, lv_event_cb_t ok_cb, lv_event_cb_t cancel_cb, bool danger);
+void arq_dialog_restyle(lv_obj_t *scr, lv_obj_t *label, lv_obj_t *btnOk, lv_obj_t *btnCancel, lv_event_cb_t ok_cb, lv_event_cb_t cancel_cb, bool danger, bool compact = false);

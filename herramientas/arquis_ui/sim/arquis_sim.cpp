@@ -254,6 +254,8 @@ static void pl_screen(int which, const char *shot) {
 }
 static void msg_screen(const char *title, const char *msg, const char *ok, const char *cancel, bool danger, const char *shot) { lv_obj_t *s = new_screen(); arq_msg_build(s, ccb, title, msg, ok, cancel, danger); if (shot) dump(shot); }
 static void filchg_screen(int cur, int tgt, bool multi, const char *shot) { lv_obj_t *s = new_screen(); arq_filchg_build(s, ccb, multi); arq_filchg_update(cur, tgt, 0, multi); if (shot) dump(shot); }
+static char gc_buf[200];
+static void gcode_screen(const char *res, const char *shot) { lv_obj_t *s = new_screen(); strncpy(gc_buf, res, sizeof(gc_buf) - 1); arq_gcode_build(s, ccb, gc_buf); if (shot) dump(shot); }
 static void numpad_screen(const char *title, const char *val, bool ok, const char *shot) { lv_obj_t *s = new_screen(); arq_numpad_build(s, ccb, title); arq_numpad_set(val, ok); if (shot) dump(shot); }
 static int dlg_ok = 0, dlg_cancel = 0;
 static void dlg_cb(lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; if (o->mks_obj_id == 901) ++dlg_ok; else ++dlg_cancel; arq_dialog_close(); }
@@ -699,6 +701,18 @@ static void tests() {
         c_count = 0; tap(360, 260); CHECK(c_count == 1 && c_last == ARQ_FCID_UNLOAD, "cambio de filamento: Descargar -> id %d", c_last);
         c_count = 0; tap(420, 22); CHECK(c_count == 1 && c_last == ARQ_FCID_EXT, "cambio de filamento: selector de extrusor -> id %d", c_last);
         c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_FCID_BACK, "cambio de filamento: Volver -> id %d", c_last); }
+      // consola de G-code y dialogo compacto (carga/descarga de filamento)
+      { new_screen(); run(); const uint32_t b1 = used(); gcode_screen("ok\nX:10.00 Y:20.00 Z:0.20 E:0.00 Count X:1600 Y:3200 Z:160", nullptr); const uint32_t u = used() - b1; printf("[mem] consola G-code: %u B\n", (unsigned)u);
+        CHECK(u < 3000, "consola de G-code: %u B de heap (< 3000 B)", (unsigned)u);
+        for (int i = 0; i < 300; ++i) gcode_screen(i & 1 ? "ok" : "", nullptr);
+        new_screen(); run(); const uint32_t u3 = used(); for (int i = 0; i < 300; ++i) gcode_screen(i & 1 ? "ok" : "", nullptr);
+        new_screen(); run(); CHECK(used() <= u3, "consola de G-code: 600 ciclos sin fugas (%u B -> %u B)", (unsigned)u3, (unsigned)used());
+        gcode_screen("", nullptr); run();
+        c_count = 0; tap(240, 80); CHECK(c_count == 1 && c_last == ARQ_GC_WRITE, "consola de G-code: Escribir -> id %d", c_last);
+        c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_GC_BACK, "consola de G-code: Volver -> id %d", c_last);
+        c_count = 0; tap(240, 250); CHECK(c_count == 0, "consola de G-code: el resultado no es pulsable");
+        new_screen(); arq_msg_build(lv_scr_act(), ccb, "Aviso", "Calentando la boquilla.\nEspera...", nullptr, "Cancelar", false, true); run();
+        c_count = 0; tap(240, 285); CHECK(c_count == 1 && c_last == ARQ_MSG_CANCEL, "dialogo compacto: Cancelar abajo -> id %d", c_last); }
       new_screen(); run(); }
 
 
@@ -775,6 +789,15 @@ int main(int argc, char **argv) {
     msg_screen("Aviso", "Carga completada.\nPulsa Aceptar para volver.", "Aceptar", nullptr, false, "st5b_9_dialogo_aviso");
     msg_screen("Aviso", "Pulsa el bot\xC3\xB3n para calentar la boquilla", nullptr, nullptr, false, "st5b_10_dialogo_espera");
     filchg_screen(187, 210, false, "st5b_11_filamento");
+    gcode_screen("ok\nX:10.00 Y:20.00 Z:0.20 E:0.00\nCount X:1600 Y:3200 Z:160", "st5b_12_gcode");
+    { lv_obj_t *sc = new_screen(); arq_msg_build(sc, ccb, "Aviso", "Calentando la boquilla.\nEspera...", nullptr, "Cancelar", false, true);
+      lv_obj_t *l = lv_label_create(sc, nullptr); lv_label_set_text(l, "Extrusion1: 187 / 210"); lv_obj_set_style(l, (lv_style_t *)arq_style_text(ARQ_TEXT_ACCENT)); lv_obj_align(l, nullptr, LV_ALIGN_CENTER, 0, -50);
+      lv_obj_t *bar = lv_bar_create(sc, nullptr); lv_obj_set_pos(bar, 40, 122); lv_obj_set_size(bar, 400, 25); lv_bar_set_style(bar, LV_BAR_STYLE_BG, (lv_style_t *)arq_style_bar_bg()); lv_bar_set_style(bar, LV_BAR_STYLE_INDIC, (lv_style_t *)arq_style_bar_indic()); lv_bar_set_value(bar, 40, LV_ANIM_OFF);
+      dump("st5b_13_dialogo_progreso"); }
+    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[1] = { { &arq_icon_tools, "G-code", nullptr, 1 } }; arq_opts_build(sc, ccb, "M\xC3\xA1s", it, 1); dump("st5b_14_mas"); }
+    { lv_obj_t *sc = new_screen(); const char *nm[7] = { "Chino simplif.", "Chino tradic.", "Ingl\xC3\xA9s", "Ruso", "Espa\xC3\xB1ol", "Franc\xC3\xA9s", "Italiano" }; arq_opt_item_t it[7];
+      for (int i = 0; i < 7; ++i) it[i] = { &arq_icon_gear, nm[i], nullptr, 1 };
+      arq_opts_build(sc, ccb, "Idioma", it, 7); arq_opts_set(4, "Activo", ARQ_BTN_SUCCESS); dump("st5b_15_idioma"); }
 
   }
   tests();

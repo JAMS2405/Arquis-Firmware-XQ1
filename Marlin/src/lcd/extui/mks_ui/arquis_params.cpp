@@ -237,7 +237,7 @@ static const char * btn_text(lv_obj_t *btn) {
   return l ? lv_label_get_text(l) : nullptr;
 }
 
-void arq_dialog_restyle(lv_obj_t *scr, lv_obj_t *label, lv_obj_t *btnOk, lv_obj_t *btnCancel, lv_event_cb_t ok_cb, lv_event_cb_t cancel_cb, bool danger) {
+void arq_dialog_restyle(lv_obj_t *scr, lv_obj_t *label, lv_obj_t *btnOk, lv_obj_t *btnCancel, lv_event_cb_t ok_cb, lv_event_cb_t cancel_cb, bool danger, bool compact) {
   char msg[200] = "", ok[24] = "", cancel[24] = "";
   const char *t;
   if (label && (t = lv_label_get_text(label))) strncpy(msg, arq_es(t), sizeof(msg) - 1);
@@ -248,7 +248,7 @@ void arq_dialog_restyle(lv_obj_t *scr, lv_obj_t *label, lv_obj_t *btnOk, lv_obj_
   if (btnOk)     lv_obj_del(btnOk);
   if (btnCancel) lv_obj_del(btnCancel);
   d_ok = ok_cb; d_cancel = cancel_cb;
-  arq_msg_build(scr, dlg_event, (two || danger) ? "Confirmar" : "Aviso", msg, btnOk ? ok : nullptr, btnCancel ? cancel : nullptr, danger);
+  arq_msg_build(scr, dlg_event, (two || danger) ? "Confirmar" : "Aviso", msg, btnOk ? ok : nullptr, btnCancel ? cancel : nullptr, danger, compact);
 }
 
 bool arq_numpad_value_ok(const char *s) {

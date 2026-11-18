@@ -29,6 +29,10 @@
 
 #include "../../../inc/MarlinConfig.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_params_view.h"
+#endif
+
 extern lv_group_t *g;
 static lv_obj_t *scr, *outL, *outV = 0;
 static int currentWritePos = 0;

@@ -364,6 +364,7 @@ void arq_numpad_set(const char *text, bool can_ok) {
 #define BH  56
 
 static char msg_txt[200], ok_txt[24], cancel_txt[24];
+static bool msg_compact;
 
 static bool msg_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t mode) {
   if (mode == LV_DESIGN_COVER_CHK) return false;
@@ -377,13 +378,15 @@ static bool msg_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t m
   lv_point_t sz;
   lv_txt_get_size(&sz, msg_txt, st->text.font, st->text.letter_space, st->text.line_space, w, LV_TXT_FLAG_NONE);
   const lv_coord_t y = (a.y1 + a.y2) / 2 - sz.y / 2;
-  lv_area_t ta = { (lv_coord_t)(a.x1 + PADX), y < a.y1 + 8 ? (lv_coord_t)(a.y1 + 8) : y, (lv_coord_t)(a.x2 - PADX), (lv_coord_t)(a.y2 - 8) };
+  const lv_coord_t pv = msg_compact ? 4 : 8;                 // margen vertical (en el compacto el texto de 2 lineas casi llena el panel)
+  lv_area_t ta = { (lv_coord_t)(a.x1 + PADX), y < a.y1 + pv ? (lv_coord_t)(a.y1 + pv) : y, (lv_coord_t)(a.x2 - PADX), (lv_coord_t)(a.y2 - pv) };
   lv_draw_label(&ta, &clip, st, LV_OPA_COVER, msg_txt, LV_TXT_FLAG_CENTER, nullptr, nullptr, nullptr, LV_BIDI_DIR_LTR);
   return true;
 }
 
-void arq_msg_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const char *msg, const char *ok_text, const char *cancel_text, bool danger) {
+void arq_msg_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const char *msg, const char *ok_text, const char *cancel_text, bool danger, bool compact) {
   arq_theme_init();
+  msg_compact = compact;
   arq_screen_apply(scr);
   arq_header_t h;
   arq_header_create(&h, scr, title ? title : "", false, nullptr, 0);
@@ -392,20 +395,21 @@ void arq_msg_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const cha
   strncpy(cancel_txt, cancel_text ? cancel_text : "", sizeof(cancel_txt) - 1); cancel_txt[sizeof(cancel_txt) - 1] = '\0';
   lv_obj_t *m = lv_obj_create(scr, nullptr);
   if (m) {
-    lv_obj_set_pos(m, MX, MY);
-    lv_obj_set_size(m, MW, MH);
+    lv_obj_set_pos(m, MX, compact ? ARQ_HEADER_H + 4 : MY);
+    lv_obj_set_size(m, MW, compact ? 48 : MH);
     lv_obj_set_design_cb(m, msg_design);
     lv_obj_set_click(m, false);
   }
   const bool has_ok = ok_text && ok_text[0], has_cancel = cancel_text && cancel_text[0];
+  const lv_coord_t by = compact ? (ARQ_H - ARQ_MARGIN - BH) : BY;
   if (has_ok && has_cancel) {
     const lv_coord_t bw = (MW - ARQ_GAP * 2) / 2;
-    arq_button_create(scr, MX, BY, bw, BH, nullptr, cancel_txt, ARQ_BTN_SECONDARY, cb, ARQ_MSG_CANCEL);
-    arq_button_create(scr, MX + bw + ARQ_GAP * 2, BY, MW - bw - ARQ_GAP * 2, BH, nullptr, ok_txt, danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY, cb, ARQ_MSG_OK);
+    arq_button_create(scr, MX, by, bw, BH, nullptr, cancel_txt, ARQ_BTN_SECONDARY, cb, ARQ_MSG_CANCEL);
+    arq_button_create(scr, MX + bw + ARQ_GAP * 2, by, MW - bw - ARQ_GAP * 2, BH, nullptr, ok_txt, danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY, cb, ARQ_MSG_OK);
   }
   else if (has_ok || has_cancel) {
     const lv_coord_t bw = 240;
-    arq_button_create(scr, (ARQ_W - bw) / 2, BY, bw, BH, nullptr, has_ok ? ok_txt : cancel_txt, ARQ_BTN_PRIMARY, cb, has_ok ? ARQ_MSG_OK : ARQ_MSG_CANCEL);
+    arq_button_create(scr, (ARQ_W - bw) / 2, by, bw, BH, nullptr, has_ok ? ok_txt : cancel_txt, has_ok ? (danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY) : ARQ_BTN_SECONDARY, cb, has_ok ? ARQ_MSG_OK : ARQ_MSG_CANCEL);
   }
 }
 
@@ -440,5 +444,40 @@ void arq_filchg_update(int16_t cur, int16_t target, uint8_t extruder, bool multi
     fc_ext_txt[8] = (char)('1' + (extruder < 8 ? extruder : 0)); fc_ext_txt[9] = '\0';       // "Extrusor N"
     arq_card_set_title(fc_ext, fc_ext_txt, ARQ_TEXT_BODY);
     arq_card_refresh(fc_ext);
+  }
+}
+
+// ---- Consola de G-code -----------------------------------------------------------------------------------------------
+static const char *gc_result;
+
+static bool gc_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t mode) {
+  if (mode == LV_DESIGN_COVER_CHK) return false;
+  if (mode != LV_DESIGN_DRAW_MAIN) return true;
+  lv_area_t a, clip;
+  lv_obj_get_coords(o, &a);
+  if (!lv_area_intersect(&clip, mask_in, &a)) return true;
+  lv_draw_rect(&a, &clip, arq_style_panel(), LV_OPA_COVER);
+  const lv_style_t *mu = arq_style_text(ARQ_TEXT_MUTED), *bd = arq_style_text(ARQ_TEXT_BODY);
+  draw_fit(&clip, a.x1 + PADX, a.y1 + 8, 200, "Resultado", mu);
+  const bool has = gc_result && gc_result[0];
+  const lv_area_t ta = { (lv_coord_t)(a.x1 + PADX), (lv_coord_t)(a.y1 + 8 + text_h(mu) + 6), (lv_coord_t)(a.x2 - PADX), (lv_coord_t)(a.y2 - 6) };
+  lv_draw_label(&ta, &clip, has ? bd : mu, LV_OPA_COVER, has ? gc_result : "Sin resultado todav\xC3\xAD" "a", LV_TXT_FLAG_NONE, nullptr, nullptr, nullptr, LV_BIDI_DIR_LTR);
+  return true;
+}
+
+void arq_gcode_build(lv_obj_t *scr, lv_event_cb_t cb, const char *result) {
+  arq_theme_init();
+  arq_screen_apply(scr);
+  gc_result = result;
+  arq_header_t h;
+  arq_header_create(&h, scr, "G-code", false, cb, ARQ_GC_BACK);
+  arq_button_create(scr, ARQ_MARGIN, ARQ_HEADER_H + 10, ARQ_W - 2 * ARQ_MARGIN, 52, nullptr, "Escribir un comando G-code", ARQ_BTN_PRIMARY, cb, ARQ_GC_WRITE);
+  lv_obj_t *r = lv_obj_create(scr, nullptr);
+  if (r) {
+    const lv_coord_t y = ARQ_HEADER_H + 10 + 52 + ARQ_GAP;
+    lv_obj_set_pos(r, ARQ_MARGIN, y);
+    lv_obj_set_size(r, ARQ_W - 2 * ARQ_MARGIN, ARQ_H - ARQ_MARGIN - y);
+    lv_obj_set_design_cb(r, gc_design);
+    lv_obj_set_click(r, false);
   }
 }

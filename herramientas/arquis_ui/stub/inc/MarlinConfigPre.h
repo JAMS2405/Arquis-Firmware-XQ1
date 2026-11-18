@@ -20,6 +20,7 @@
 #define EXTRUDER_AUTO_FAN_SPEED 255
 #define PIN_EXISTS(P) (defined(P##_PIN) && P##_PIN >= 0)
 #define MACHINE_NAME "Arquis XQ1"
+#define HAS_USER_ITEM(...) 0   // CUSTOM_MENU_MAIN desactivado en esta configuracion
 #define COUNT(a) (sizeof(a)/sizeof(*(a)))
 #define ZERO(a) memset((void*)a, 0, sizeof(a))
 #define TERN(O,A,B) B      // MULTI_VOLUME no esta activo en esta configuracion

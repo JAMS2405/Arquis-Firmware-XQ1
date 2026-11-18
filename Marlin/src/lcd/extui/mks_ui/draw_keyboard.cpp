@@ -30,6 +30,10 @@
 #include "../../../inc/MarlinConfig.h"
 #include "../../../gcode/queue.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_theme.h"
+#endif
+
 extern lv_group_t *g;
 static lv_obj_t *scr;
 
@@ -220,16 +224,35 @@ void lv_draw_keyboard() {
   static lv_style_t rel_style, pr_style;
 
   lv_style_copy(&rel_style, &lv_style_btn_rel);
-  rel_style.body.radius       = 0;
-  rel_style.body.border.width = 1;
-  rel_style.body.main_color   = lv_color_make(0xA9, 0x62, 0x1D);
-  rel_style.body.grad_color   = lv_color_make(0xA7, 0x59, 0x0E);
+  #if ENABLED(ARQUIS_UI)       // Arquis: teclas con la paleta ARQUIS (los simbolos usan la fuente original, que los incluye)
+    arq_theme_init();
+    rel_style.body.radius       = 6;
+    rel_style.body.border.width = 1;
+    rel_style.body.border.color = ARQ_COL_LINE;
+    rel_style.body.main_color   = ARQ_COL_PANEL;
+    rel_style.body.grad_color   = ARQ_COL_PANEL;
+    rel_style.text.color        = ARQ_COL_TEXT;
+  #else
+    rel_style.body.radius       = 0;
+    rel_style.body.border.width = 1;
+    rel_style.body.main_color   = lv_color_make(0xA9, 0x62, 0x1D);
+    rel_style.body.grad_color   = lv_color_make(0xA7, 0x59, 0x0E);
+  #endif
 
   lv_style_copy(&pr_style, &lv_style_btn_pr);
-  pr_style.body.radius       = 0;
-  pr_style.body.border.width = 1;
-  pr_style.body.main_color   = lv_color_make(0x72, 0x42, 0x15);
-  pr_style.body.grad_color   = lv_color_make(0x6A, 0x3A, 0x0C);
+  #if ENABLED(ARQUIS_UI)
+    pr_style.body.radius       = 6;
+    pr_style.body.border.width = 1;
+    pr_style.body.border.color = ARQ_COL_BLUE;
+    pr_style.body.main_color   = ARQ_COL_PANEL_HI;
+    pr_style.body.grad_color   = ARQ_COL_PANEL_HI;
+    pr_style.text.color        = ARQ_COL_TEXT;
+  #else
+    pr_style.body.radius       = 0;
+    pr_style.body.border.width = 1;
+    pr_style.body.main_color   = lv_color_make(0x72, 0x42, 0x15);
+    pr_style.body.grad_color   = lv_color_make(0x6A, 0x3A, 0x0C);
+  #endif
 
   // Create a keyboard and apply the styles
   lv_obj_t *kb = lv_kb_create(scr, nullptr);
@@ -246,6 +269,17 @@ void lv_draw_keyboard() {
   // Create a text area. The keyboard will write here
   lv_obj_t *ta = lv_ta_create(scr, nullptr);
   lv_obj_align(ta, nullptr, LV_ALIGN_IN_TOP_MID, 0, 10);
+  #if ENABLED(ARQUIS_UI)       // campo de texto oscuro con borde azul (campo activo)
+    static lv_style_t ta_style;
+    lv_style_copy(&ta_style, lv_ta_get_style(ta, LV_TA_STYLE_BG));
+    ta_style.body.radius       = 6;
+    ta_style.body.border.width = 1;
+    ta_style.body.border.color = ARQ_COL_BLUE;
+    ta_style.body.main_color   = ARQ_COL_PANEL;
+    ta_style.body.grad_color   = ARQ_COL_PANEL;
+    ta_style.text.color        = ARQ_COL_TEXT;
+    lv_ta_set_style(ta, LV_TA_STYLE_BG, &ta_style);
+  #endif
   switch (keyboard_value) {
     case autoLevelGcodeCommand:
       get_gcode_command(AUTO_LEVELING_COMMAND_ADDR, (uint8_t *)public_buf_m);

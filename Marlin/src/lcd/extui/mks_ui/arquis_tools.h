@@ -35,3 +35,5 @@ void arq_about_draw();    void arq_about_clear();
 void arq_baby_draw();     void arq_baby_clear();    void arq_baby_refresh();
 void arq_speed_draw();    void arq_speed_clear();
 void arq_level_draw();    void arq_level_clear();
+void arq_more_draw();     void arq_more_clear();
+void arq_language_draw(); void arq_language_clear();

@@ -120,3 +120,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - `pio run` (espacio de trabajo en `C:\pio_arquis`): SUCCESS. RAM 61,2 % (80 160 B), Flash 91,9 % (436 588 de 475 136 B, quedan 38 548 B). Respecto a la compilación anterior (5A): +7 644 B de flash, +532 B de RAM.
 - Error corregido en esta compilación: `NOZZLE_PROBE_OFFSET_UI` solo existe en el enum de MKS con `HAS_BED_PROBE`.
 - Pendiente: probar 5B en la impresora; recuperar flash en la Etapa 6 (el margen ya es de ~38 KB).
+
+## v15 — Etapa 5B-3: Más, G-code, Idioma, teclado, diálogos de progreso
+- Rejilla ARQUIS para Más e Idioma (`arquis_tools.cpp`), consola de G-code, colores ARQUIS en el teclado de texto, diálogos de carga/descarga de filamento con el estilo ARQUIS (conservan sus objetos originales) y "IMPRESORA DETENIDA / Reinicia la impresora" en español.
+- Sin cambios: calibración táctil, asistente de offset Z, Wi-Fi. Estado: simulador y firmas OK; compilación completa y pantalla real pendientes de validar.

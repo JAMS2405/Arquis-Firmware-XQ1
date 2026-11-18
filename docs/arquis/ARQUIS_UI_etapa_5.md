@@ -31,7 +31,7 @@ La comprobación con cabeceras de Marlin detectó que mi variable `settings` cho
 Comprobado: dibujo y toques en el simulador con LVGL real; memoria y fugas; firmas de las llamadas de Marlin contra cabeceras de prueba (`check_marlin_api.sh`, 13 archivos).
 **NO comprobado:** compilación completa de Marlin; pantalla real; los finales de carrera y sensores del diagnóstico con tu placa; los pasos de babystep con tu sonda (`probe.offset.z` solo se muestra si hay sonda); el ancho de los textos en la pantalla física.
 
-## 5. Etapa 5, parte B (en curso)
+## 5. Etapa 5, parte B
 **Probado en tu impresora (parte A):** todo funcionó correctamente. Primera compilación completa con la parte A: Flash 90,3 % (428 944 de 475 136 B; quedan unos 46 KB), RAM 60,8 %. Para compilar en tu PC hubo que mover el espacio de trabajo de PlatformIO a `C:` (la unidad `F:` dejaba las librerías incompletas): `$env:PLATFORMIO_WORKSPACE_DIR = "C:\pio_arquis"`.
 
 ### 5B-1. Parámetros de máquina y teclado numérico (hecho, sin probar en la impresora)
@@ -51,8 +51,16 @@ Comprobado: dibujo y toques en el simulador con LVGL real; memoria y fugas; firm
 - **Flash estimada:** los archivos nuevos de 5B suman unos 9 KB (vista 4,1 KB + tabla de textos y pegamento 4,7 KB); el teclado original queda excluido, así que el aumento real es algo menor. Se confirma con `auditar_flash.py`.
 - **Limitación conocida:** las perillas (encoder) no operan los diálogos nuevos ni las listas (los botones sí, en Cambio de filamento).
 
-### Pendiente
-**Idioma**, **Más** (G-code personalizado) y teclado de texto, calibración táctil, el asistente de offset Z, los diálogos con barra de progreso, y Wi-Fi (no activo en tu firmware).
+### 5B-3. Más, G-code, Idioma, teclado de texto, diálogos de progreso y aviso de error (hecho, sin probar en la impresora)
+- **Más** (`draw_more.cpp`): rejilla ARQUIS con **G-code** y, si tu configuración los define (`CUSTOM_MENU_MAIN`; hoy no), los accesos personalizados con la misma acción original (`queue.inject`).
+- **G-code** (`draw_gcode.cpp`): botón *Escribir un comando G-code* (abre el teclado de siempre) y panel de resultado. Mismo manejador e ids que el original; el resultado se lee de `public_buf` al dibujar (igual que antes: se ve al volver de enviar el comando).
+- **Idioma** (`draw_language.cpp`): lista con los 7 idiomas, el activo marcado en verde. Hace lo mismo que la original (guarda en la flash SPI con `update_spi_flash()` y recarga las tablas con `disp_language_init()`). La interfaz ARQUIS está en español: este ajuste solo cambia los textos de las pantallas de MKS que aún no tienen traducción propia (y esos tienen tabla ES). Chino y ruso no se verán con la tipografía ARQUIS. Solo aparece en Ajustes si tu configuración lo habilita.
+- **Teclado de texto** (`draw_keyboard.cpp`): misma lógica (es el teclado de LVGL); solo cambian los colores (teclas gris azulado con borde azul al pulsar, campo de texto oscuro). Se conservan los símbolos (borrar, flechas, aceptar) porque la tipografía ARQUIS no los tiene.
+- **Diálogos con barra de progreso** (calentando para cargar/descargar y cargando/descargando filamento): se conservan sus objetos (`tempText1` y `filament_bar`, que actualiza `filament_dialog_handle`) y solo se les cambia el estilo; el mensaje queda arriba en un panel compacto y el botón *Cancelar* abajo (neutro: cancelar no es la acción principal). El texto "Extrusion1: 187 / 210" lo compone el código original y sigue en inglés.
+- **Aviso de error "PRINTER HALTED"** (`draw_error_message.cpp`): se dibuja directamente en el TFT sin LVGL (a propósito: debe funcionar aunque falle la interfaz). Solo se traducen sus dos líneas, "IMPRESORA DETENIDA / Reinicia la impresora", sin acentos porque esa fuente no los tiene. El mensaje de error de Marlin que aparece encima sigue en inglés.
+- **No se tocan:** la calibración táctil (dibuja las cruces directamente en el TFT y es un ajuste de hardware) y el asistente de offset Z (solo existe con sonda; tu configuración usa `PROBE_MANUALLY`). Tampoco las pantallas de Wi-Fi.
+
+**La Etapa 5 queda cerrada** salvo lo anterior y las limitaciones ya indicadas: las listas, los teclados y los diálogos nuevos no responden a la perilla (los botones de cabecera sí), y las pantallas con texto de tablas de MKS dependen de mi tabla de traducción (134 textos).
 
 ## 6. Prueba segura
 1. Dashboard → Herram.: comprueba cada acceso y que **Atrás** vuelve al Dashboard.

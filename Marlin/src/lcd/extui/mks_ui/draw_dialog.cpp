@@ -58,6 +58,7 @@
 #if ENABLED(ARQUIS_UI)
   #include "arquis_files.h"
   #include "arquis_params.h"
+  #include "arquis_params_view.h"
 #endif
 
 extern lv_group_t *g;
@@ -474,11 +475,17 @@ void lv_draw_dialog(uint8_t type) {
   #endif
   #if ENABLED(ARQUIS_UI)
     // Arquis: la logica de arriba (tipo de dialogo, textos, botones y manejadores) es la original; aqui solo cambia el aspecto.
-    // Los dialogos con temperatura en vivo o barra de progreso (carga/descarga de filamento) siguen con sus objetos originales.
-    if (!DIALOG_IS(TYPE_FILAMENT_LOAD_HEAT, TYPE_FILAMENT_UNLOAD_HEAT, TYPE_FILAMENT_LOADING, TYPE_FILAMENT_UNLOADING)) {
-      arq_dialog_restyle(scr, labelDialog, btnOk, btnCancel, btn_ok_event_cb, btn_cancel_event_cb, DIALOG_IS(TYPE_STOP, REVERT_EEPROM_TIPS));
-      return;
+    // Los dialogos con temperatura en vivo o barra de progreso (carga/descarga de filamento) conservan sus objetos originales
+    // (tempText1 y filament_bar, que actualiza filament_dialog_handle): solo se les cambia el estilo y se deja libre el centro.
+    const bool progress = DIALOG_IS(TYPE_FILAMENT_LOAD_HEAT, TYPE_FILAMENT_UNLOAD_HEAT, TYPE_FILAMENT_LOADING, TYPE_FILAMENT_UNLOADING);
+    arq_dialog_restyle(scr, labelDialog, btnOk, btnCancel, btn_ok_event_cb, btn_cancel_event_cb, DIALOG_IS(TYPE_STOP, REVERT_EEPROM_TIPS), progress);
+    if (DIALOG_IS(TYPE_FILAMENT_LOAD_HEAT, TYPE_FILAMENT_UNLOAD_HEAT) && tempText1)
+      lv_obj_set_style(tempText1, (lv_style_t *)arq_style_text(ARQ_TEXT_ACCENT));
+    if (DIALOG_IS(TYPE_FILAMENT_LOADING, TYPE_FILAMENT_UNLOADING) && filament_bar) {
+      lv_bar_set_style(filament_bar, LV_BAR_STYLE_BG, (lv_style_t *)arq_style_bar_bg());
+      lv_bar_set_style(filament_bar, LV_BAR_STYLE_INDIC, (lv_style_t *)arq_style_bar_indic());
     }
+    return;
   #endif
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) {
