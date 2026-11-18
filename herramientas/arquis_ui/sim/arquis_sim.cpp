@@ -11,6 +11,7 @@
 #include "arquis_ctrl_view.h"
 #include "arquis_files_view.h"
 #include "arquis_tools_view.h"
+#include "arquis_params_view.h"
 
 extern "C" {   // ganchos que el firmware real define en draw_print_file.cpp (miniatura de G-code) y la libreria: no se usan aqui
   uint32_t lv_open_gcode_file(char *) { return 0; }
@@ -230,6 +231,28 @@ static void iconos(const char *shot) {
 }
 
 // ---- Dialogo -----------------------------------------------------------------------------------------------------------------
+
+// ---- Etapa 5B: lista de parametros y teclado numerico -----------------------------------------------------------------------------
+static arq_pl_row_t plrow(const char *name, uint8_t kind, const char *v1, const char *v2, int id1, int id2, bool on = false) {
+  arq_pl_row_t r; memset(&r, 0, sizeof(r)); r.name = name; r.kind = kind; r.id1 = (int16_t)id1; r.id2 = (int16_t)id2; r.on = on;
+  if (v1) strncpy(r.v1, v1, sizeof(r.v1) - 1);
+  if (v2) strncpy(r.v2, v2, sizeof(r.v2) - 1);
+  return r; }
+static void pl_screen(int which, const char *shot) {
+  lv_obj_t *s = new_screen();
+  arq_pl_begin(s, which == 3 ? "Modo silencioso (StealthChop)" : which == 2 ? "Posiciones de nivelaci\xC3\xB3n" : which == 1 ? "Aceleraci\xC3\xB3n" : "Par\xC3\xA1metros de m\xC3\xA1quina");
+  arq_pl_back(s, ccb, 1);
+  if (which == 0) { arq_pl_row(s, 0, nullptr, nullptr); }
+  const arq_pl_row_t nav[4] = { plrow("Configuraci\xC3\xB3n de la m\xC3\xA1quina", ARQ_PL_NAV, 0, 0, 2, -1), plrow("Motores", ARQ_PL_NAV, 0, 0, 3, -1), plrow("Nivelaci\xC3\xB3n", ARQ_PL_NAV, 0, 0, 4, -1), plrow("Ajustes avanzados", ARQ_PL_NAV, 0, 0, 5, -1) };
+  const arq_pl_row_t acc[4] = { plrow("Aceleraci\xC3\xB3n de impresi\xC3\xB3n", ARQ_PL_EDIT1, "500.0", 0, 2, -1), plrow("Aceleraci\xC3\xB3n de retracci\xC3\xB3n", ARQ_PL_EDIT1, "1000.0", 0, 3, -1), plrow("Aceleraci\xC3\xB3n de desplazamiento", ARQ_PL_EDIT1, "1500.0", 0, 4, -1), plrow("Aceleraci\xC3\xB3n m\xC3\xA1xima del eje X", ARQ_PL_EDIT1, "3000", 0, 5, -1) };
+  const arq_pl_row_t pos[4] = { plrow("Punto 1 (X, Y)", ARQ_PL_EDIT2, "30", "30", 2, 3), plrow("Punto 2 (X, Y)", ARQ_PL_EDIT2, "190", "30", 4, 5), plrow("Punto 3 (X, Y)", ARQ_PL_EDIT2, "190", "190", 6, 7), plrow("Posici\xC3\xB3n X de pausa (mm, -1 = ninguna)", ARQ_PL_EDIT2, "-1", "-1", 8, 9) };
+  const arq_pl_row_t tmc[4] = { plrow("Eje X", ARQ_PL_ONOFF, 0, 0, 2, -1, true), plrow("Eje Y", ARQ_PL_ONOFF, 0, 0, 3, -1, false), plrow("Eje Z", ARQ_PL_ONOFF, 0, 0, 4, -1, true), plrow("Extrusor 0", ARQ_PL_ONOFF, 0, 0, 5, -1, false) };
+  const arq_pl_row_t *src = which == 3 ? tmc : which == 2 ? pos : which == 1 ? acc : nav;
+  for (int i = 0; i < 4; ++i) arq_pl_row(s, i, &src[i], ccb);
+  if (which == 1 || which == 3) arq_pl_page(s, "Siguiente", ccb, 9);
+  if (shot) dump(shot);
+}
+static void numpad_screen(const char *title, const char *val, bool ok, const char *shot) { lv_obj_t *s = new_screen(); arq_numpad_build(s, ccb, title); arq_numpad_set(val, ok); if (shot) dump(shot); }
 static int dlg_ok = 0, dlg_cancel = 0;
 static void dlg_cb(lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; if (o->mks_obj_id == 901) ++dlg_ok; else ++dlg_cancel; arq_dialog_close(); }
 
@@ -613,6 +636,46 @@ static void tests() {
       new_screen(); run(); }
   }
 
+    // 13) Etapa 5B: lista de parametros y teclado numerico -------------------------------------------------------------------
+    { static lv_point_t pt; static bool down = false;
+      static lv_indev_drv_t idrv; lv_indev_drv_init(&idrv); idrv.type = LV_INDEV_TYPE_POINTER;
+      idrv.read_cb = [](lv_indev_drv_t *, lv_indev_data_t *d) -> bool { d->point = pt; d->state = down ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL; return false; };
+      lv_indev_drv_register(&idrv);
+      auto tap = [&](int x, int y) { pt.x = x; pt.y = y; down = true; run(6); down = false; run(6); };
+      new_screen(); run(); const uint32_t b = used();
+      struct S { const char *name; int w; } sc5[] = { { "Parametros (navegacion)", 0 }, { "Parametros (edicion)", 1 }, { "Parametros (2 valores)", 2 }, { "Parametros (interruptores)", 3 } };
+      for (auto &c : sc5) { new_screen(); const uint32_t b1 = used(); pl_screen(c.w, nullptr); const uint32_t u = used() - b1; printf("[mem] %s: %u B\n", c.name, (unsigned)u); CHECK(u < 3200, "%s: %u B de heap (< 3200 B)", c.name, (unsigned)u); }
+      { new_screen(); const uint32_t b1 = used(); numpad_screen("Aceleraci\xC3\xB3n de impresi\xC3\xB3n", "500", true, nullptr); const uint32_t u = used() - b1; printf("[mem] teclado: %u B\n", (unsigned)u); CHECK(u < 4000, "teclado numerico: %u B de heap (< 4000 B)", (unsigned)u); }
+      for (int i = 0; i < 150; ++i) { for (auto &c : sc5) pl_screen(c.w, nullptr); numpad_screen("Valor", "12.5", i & 1, nullptr); }
+      new_screen(); run(); const uint32_t u1 = used();
+      for (int i = 0; i < 150; ++i) { for (auto &c : sc5) pl_screen(c.w, nullptr); numpad_screen("Valor", "12.5", i & 1, nullptr); }
+      new_screen(); run(); const uint32_t u2 = used();
+      CHECK(u2 <= u1 && u1 <= b + 16, "Etapa 5B: 750 + 750 pantallas: sin fugas (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b);
+      // toques sobre la lista: cada fila / caja devuelve el id que espera el manejador original
+      pl_screen(1, nullptr); run();
+      for (int i = 0; i < 4; ++i) { c_count = 0; tap(200, 52 + i * 62 + 27); CHECK(c_count == 1 && c_last == 2 + i, "lista de edicion: tocar la fila %d -> id %d (recibido %d)", i + 1, 2 + i, c_last); }
+      c_count = 0; tap(200, 52 + 58); CHECK(c_count == 0, "lista: el hueco entre filas no pulsa nada");
+      c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == 1, "lista: Atras");
+      c_count = 0; tap(420, 22); CHECK(c_count == 1 && c_last == 9, "lista: boton de pagina");
+      pl_screen(2, nullptr); run();
+      c_count = 0; tap(440, 52 + 27); CHECK(c_count == 1 && c_last == 2, "2 valores: caja derecha -> id1");
+      c_count = 0; tap(330, 52 + 27); CHECK(c_count == 1 && c_last == 3, "2 valores: caja izquierda -> id2");
+      c_count = 0; tap(80, 52 + 27); CHECK(c_count == 0, "2 valores: el nombre no es pulsable");
+      pl_screen(3, nullptr); run();
+      c_count = 0; tap(200, 52 + 27); CHECK(c_count == 1 && c_last == 2, "interruptor: tocar la fila -> id");
+      arq_pl_set_on(false); arq_pl_set_on(true);
+      CHECK(arq_pl_last_name() && strcmp(arq_pl_last_name(), "Eje X") == 0, "lista: recuerda el nombre de la fila pulsada para el titulo del teclado");
+      // teclado: cada tecla devuelve su id; Aceptar deshabilitado no responde
+      numpad_screen("Valor", "10", true, nullptr); run();
+      const int kx[4] = { 10 + 54, 10 + 54 + 117, 10 + 54 + 234, 10 + 54 + 351 }; const int ky[4] = { 106 + 22, 106 + 22 + 51, 106 + 22 + 102, 106 + 22 + 153 };
+      const int want[4][4] = { { ARQ_NK_1, 2, 3, ARQ_NK_BKSP }, { 4, 5, 6, ARQ_NK_CLEAR }, { 7, 8, 9, ARQ_NK_CANCEL }, { ARQ_NK_MINUS, ARQ_NK_0, ARQ_NK_POINT, ARQ_NK_OK } };
+      int okk = 0; for (int r = 0; r < 4; ++r) for (int c = 0; c < 4; ++c) { c_count = 0; tap(kx[c], ky[r]); if (c_count == 1 && c_last == want[r][c]) ++okk; }
+      CHECK(okk == 16, "teclado: las 16 teclas devuelven su id (%d de 16)", okk);
+      c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_NK_BACK, "teclado: flecha Atras");
+      numpad_screen("Valor", "-", false, nullptr); run(); c_count = 0; tap(kx[3], ky[3]); CHECK(c_count == 0, "teclado: Aceptar no responde con un valor no valido");
+      c_count = 0; tap(kx[0], ky[0]); CHECK(c_count == 1 && c_last == ARQ_NK_1, "teclado: los digitos siguen respondiendo");
+      new_screen(); run(); }
+
   printf("[test] %s\n", fails ? "HAY FALLOS" : "TODAS LAS PRUEBAS DEL SIMULADOR PASARON");
 }
 
@@ -679,6 +742,8 @@ int main(int argc, char **argv) {
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[6] = { { &arq_icon_home, "Home todo", nullptr, 1 }, { &arq_icon_right, "Home X", nullptr, 1 }, { &arq_icon_up, "Home Y", nullptr, 1 }, { &arq_icon_down, "Home Z", nullptr, 1 }, { &arq_icon_power, "Motores off", nullptr, 1 }, { &arq_icon_power, "Motores XY", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Home", it, 6); dump("st5_7_home"); }
     speed_screen(100, 85, 0, 5, "st5_1_velocidad"); level_screen("st5_2_nivelar"); info_screen("st5_3_sistema"); baby_screen(-1250, 0, "st5_4_babystep");
+    pl_screen(0, "st5b_1_parametros"); pl_screen(1, "st5b_2_aceleracion"); pl_screen(2, "st5b_3_dos_valores"); pl_screen(3, "st5b_4_interruptores");
+    numpad_screen("Aceleraci\xC3\xB3n de impresi\xC3\xB3n", "500.0", true, "st5b_5_teclado"); numpad_screen("Posici\xC3\xB3n X", "-", false, "st5b_6_teclado_invalido");
 
   }
   tests();

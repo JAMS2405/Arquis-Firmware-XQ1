@@ -31,8 +31,20 @@ La comprobación con cabeceras de Marlin detectó que mi variable `settings` cho
 Comprobado: dibujo y toques en el simulador con LVGL real; memoria y fugas; firmas de las llamadas de Marlin contra cabeceras de prueba (`check_marlin_api.sh`, 13 archivos).
 **NO comprobado:** compilación completa de Marlin; pantalla real; los finales de carrera y sensores del diagnóstico con tu placa; los pasos de babystep con tu sonda (`probe.offset.z` solo se muestra si hay sonda); el ancho de los textos en la pantalla física.
 
-## 5. Pendiente de la Etapa 5 (parte B)
-Siguen con el aspecto MKS: **Cambio de filamento**, **Parámetros de máquina** (pasos, aceleración, jerk, velocidades, TMC, sensibilidad de home…), **Memoria (EEPROM)**, **Idioma**, **Más** (G-code personalizado), teclado y teclado numérico, calibración táctil, Wi-Fi (no activo en tu firmware), y los diálogos de pausa/error de Marlin.
+## 5. Etapa 5, parte B (en curso)
+**Probado en tu impresora (parte A):** todo funcionó correctamente. Primera compilación completa con la parte A: Flash 90,3 % (428 944 de 475 136 B; quedan unos 46 KB), RAM 60,8 %. Para compilar en tu PC hubo que mover el espacio de trabajo de PlatformIO a `C:` (la unidad `F:` dejaba las librerías incompletas): `$env:PLATFORMIO_WORKSPACE_DIR = "C:\pio_arquis"`.
+
+### 5B-1. Parámetros de máquina y teclado numérico (hecho, sin probar en la impresora)
+- **Qué cambia:** las ~15 pantallas de *Ajustes → Parámetros* (Configuración de la máquina, Motores, Pasos por mm, Aceleración, Jerk, Velocidades máximas, Corriente TMC, Modo silencioso, Sensibilidad de home, Ajustes avanzados, Nivelación, Posiciones de nivelación, Offset boquilla-sonda, Filamento, Perilla, Posición de pausa y **Memoria/EEPROM**) usan una lista ARQUIS de un solo objeto: **1,1–1,5 KB de heap** por pantalla (las originales usaban unos 7 KB).
+- **Cómo:** no se reescribió la lógica de ninguna pantalla. Se redibujan los ayudantes originales (`lv_screen_create`, `lv_big_button_create`, `lv_screen_menu_item*`) cuando la pantalla es de parámetros; cada pantalla conserva sus manejadores, ids y llamadas a Marlin. Con `ARQUIS_UI` desactivado compila el código original.
+- **Español:** MKS no trae este menú en español (solo inglés, chino y ruso). Hay una tabla de 92 textos (`arquis_params.cpp`, ~3 KB de flash) que traduce cada texto por el campo de la tabla de idioma al que pertenece. Si cambias el idioma a otro (p. ej. chino) el texto se muestra sin traducir y la tipografía ARQUIS no tiene esos caracteres.
+- **Teclado numérico nuevo:** visor grande con el nombre del parámetro, teclas 1-9, 0, `.`, `-`, ← (borrar un dígito), **Borrar**, **Cancelar** (el original no tenía: solo podías salir confirmando) y **Aceptar**, que se deshabilita si el valor no es un número válido (p. ej. solo "-" o "."). La lógica de lectura/escritura (`disp_key_value`, `set_value_confirm`, `M500`) es la original.
+- **Corrección de un fallo del original:** el teclado permitía escribir 11 caracteres en un buffer de 11 bytes sin dejar el `\0` final; ahora el máximo es 10.
+- **Limitación conocida:** la lista y las teclas no responden a la perilla (como el explorador de archivos); Volver y Siguiente/Anterior sí.
+- **Diálogos de confirmación de la Memoria** (Guardar / Restaurar valores de fábrica) siguen con el aspecto MKS hasta 5B-2.
+
+### Pendiente (5B-2 y siguientes)
+**Cambio de filamento**, **Idioma**, **Más** (G-code personalizado) y teclado de texto, diálogos de pausa/error de Marlin (y los de Memoria), calibración táctil. Wi-Fi no está activo en tu firmware.
 
 ## 6. Prueba segura
 1. Dashboard → Herram.: comprueba cada acceso y que **Atrás** vuelve al Dashboard.

@@ -87,6 +87,7 @@ lv_obj_t * arq_progress_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_
 // Cabecera de pantalla: barra con titulo (y logo) y, opcionalmente, boton Atras (1 o 2 objetos)
 typedef struct { lv_obj_t *bar, *back; } arq_header_t;
 void arq_header_create(arq_header_t *hd, lv_obj_t *parent, const char *static_title, bool logo, lv_event_cb_t back_cb, uint16_t back_id);
+void arq_header_add_back(arq_header_t *hd, lv_obj_t *parent, lv_event_cb_t back_cb, uint16_t back_id);   // anade Atras a una cabecera creada sin el (pantallas que lo conocen despues)
 
 // Tarjeta de temperatura (hotend / cama): 1 objeto --------------------------------------------------------
 typedef struct { lv_obj_t *card; int16_t cur, tgt; uint8_t state; char vbuf[10], tbuf[10]; } arq_temp_tile_t;

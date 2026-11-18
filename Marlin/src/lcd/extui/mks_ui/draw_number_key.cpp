@@ -27,6 +27,11 @@
 #include "draw_ui.h"
 #include <lv_conf.h>
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_params.h"
+  #include "arquis_params_view.h"
+#endif
+
 #include "../../../gcode/gcode.h"
 #include "../../../gcode/queue.h"
 #include "../../../module/planner.h"
@@ -47,8 +52,10 @@
 
 extern lv_group_t *g;
 static lv_obj_t *scr;
-static lv_obj_t *buttonValue = nullptr;
-static lv_obj_t *labelValue  = nullptr;
+#if DISABLED(ARQUIS_UI)
+  static lv_obj_t *buttonValue = nullptr;
+  static lv_obj_t *labelValue  = nullptr;
+#endif
 
 static char key_value[11] = { 0 };
 static uint8_t cnt = 0;
@@ -65,6 +72,16 @@ enum {
   ID_NUM_POINT,
   ID_NUM_NEGATIVE
 };
+
+// Muestra el valor tecleado: con ARQUIS_UI en el visor del teclado (y habilita "Aceptar" solo si es un numero valido)
+static void show_value() {
+  #if ENABLED(ARQUIS_UI)
+    arq_numpad_set(key_value, arq_numpad_value_ok(key_value));
+  #else
+    lv_label_set_text(labelValue, key_value);
+    lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+  #endif
+}
 
 static void disp_key_value() {
   char *temp;
@@ -281,8 +298,7 @@ static void disp_key_value() {
   cnt  = strlen(key_value);
   temp = strchr(key_value, '.');
   point_flag = !temp;
-  lv_label_set_text(labelValue, key_value);
-  lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+  show_value();
 
 }
 
@@ -405,10 +421,9 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   switch (obj->mks_obj_id) {
     case ID_NUM_KEY1 ... ID_NUM_KEY0:
-      if (cnt <= 10) {
+      if (cnt < 10) {      // (original: cnt <= 10, que escribia el ultimo byte de key_value[11] sin dejar el '\0' final)
         key_value[cnt] = (obj->mks_obj_id == ID_NUM_KEY0) ? (char)'0' : char('1' + obj->mks_obj_id - ID_NUM_KEY1);
-        lv_label_set_text(labelValue, key_value);
-        lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+        show_value();
         cnt++;
       }
       break;
@@ -416,41 +431,53 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       if (cnt > 0) cnt--;
       if (key_value[cnt] == (char)'.') point_flag = true;
       key_value[cnt] = (char)'\0';
-      lv_label_set_text(labelValue, key_value);
-      lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+      show_value();
       break;
     case ID_NUM_RESET:
       ZERO(key_value);
       cnt = 0;
       key_value[cnt] = (char)'0';
       point_flag = true;
-      lv_label_set_text(labelValue, key_value);
-      lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+      show_value();
       break;
     case ID_NUM_POINT:
       if (cnt != 0 && point_flag) {
         point_flag = false;
         key_value[cnt] = (char)'.';
-        lv_label_set_text(labelValue, key_value);
-        lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+        show_value();
         cnt++;
       }
       break;
     case ID_NUM_NEGATIVE:
       if (cnt == 0) {
         key_value[cnt] = (char)'-';
-        lv_label_set_text(labelValue, key_value);
-        lv_obj_align(labelValue, buttonValue, LV_ALIGN_CENTER, 0, 0);
+        show_value();
         cnt++;
       }
       break;
     case ID_NUM_CONFIRM:
       last_disp_state = NUMBER_KEY_UI;
-      if (strlen(key_value) != 0) set_value_confirm();
+      if (strlen(key_value) != 0 TERN_(ARQUIS_UI, && arq_numpad_value_ok(key_value))) set_value_confirm();
       goto_previous_ui();
       break;
+    #if ENABLED(ARQUIS_UI)
+      case ARQ_NK_CANCEL: case ARQ_NK_BACK:     // salir sin cambiar nada (el teclado original no tenia Cancelar)
+        last_disp_state = NUMBER_KEY_UI;
+        goto_previous_ui();
+        break;
+    #endif
   }
 }
+
+#if ENABLED(ARQUIS_UI)
+
+void lv_draw_number_key() {
+  scr = lv_screen_create(NUMBER_KEY_UI, "");
+  arq_numpad_build(scr, event_handler, arq_pl_last_name());     // titulo: nombre del parametro que se esta editando
+  disp_key_value();
+}
+
+#else   // ---- teclado original de MKS ----
 
 void lv_draw_number_key() {
   scr = lv_screen_create(NUMBER_KEY_UI, "");
@@ -522,6 +549,8 @@ void lv_draw_number_key() {
 
   disp_key_value();
 }
+
+#endif // ARQUIS_UI
 
 void lv_clear_number_key() {
   #if HAS_ROTARY_ENCODER

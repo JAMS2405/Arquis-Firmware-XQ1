@@ -43,6 +43,9 @@
 #if ENABLED(ARQUIS_UI)
   #include "arquis_print.h"
   #include "arquis_files.h"
+  #include "arquis_params.h"
+  #include "arquis_params_view.h"
+  static bool arq_pscr;   // la pantalla actual es una de parametros: sus filas y botones se dibujan con la lista ARQUIS
 #endif
 
 #if ENABLED(POWER_LOSS_RECOVERY)
@@ -1173,6 +1176,15 @@ lv_obj_t* lv_screen_create(DISP_STATE newScreenType, const char *title) {
   }
   disp_state = newScreenType;
 
+  #if ENABLED(ARQUIS_UI)
+    arq_pscr = arq_params_state(newScreenType);
+    if (arq_pscr) {     // pantallas de parametros: cabecera ARQUIS (el resto de la logica de la pantalla no cambia)
+      arq_params_begin(scr, newScreenType, title);
+      lv_refr_now(lv_refr_get_disp_refreshing());
+      return scr;
+    }
+  #endif
+
   // title
   lv_obj_t *titleLabel = nullptr;
   if (!title)
@@ -1296,6 +1308,9 @@ lv_obj_t* lv_imgbtn_create(lv_obj_t *par, const char *img, lv_coord_t x, lv_coor
 }
 
 lv_obj_t* lv_big_button_create(lv_obj_t *par, const char *img, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, bool centerLabel) {
+  #if ENABLED(ARQUIS_UI)
+    if (arq_pscr && arq_params_button(par, text, cb, id)) return par;
+  #endif
   lv_obj_t *btn = lv_imgbtn_create(par, img, cb, id);
   lv_obj_set_pos(btn, x, y);
   lv_obj_t *label = lv_label_create_empty(btn);
@@ -1312,6 +1327,9 @@ lv_obj_t* lv_big_button_create(lv_obj_t *par, const char *img, const char *text,
 }
 
 lv_obj_t* lv_screen_menu_item(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, bool drawArrow) {
+  #if ENABLED(ARQUIS_UI)
+    if (arq_pscr) { arq_params_row(par, text, y, cb, id, ARQ_PL_NAV, nullptr, nullptr, -1, false); return par; }
+  #endif
   lv_obj_t *btn = lv_btn_create(par, nullptr);   /*Add a button the current screen*/
   lv_obj_set_pos(btn, x, y);                         /*Set its position*/
   lv_obj_set_size(btn, PARA_UI_SIZE_X, PARA_UI_SIZE_Y);                       /*Set its size*/
@@ -1335,6 +1353,9 @@ lv_obj_t* lv_screen_menu_item(lv_obj_t *par, const char *text, lv_coord_t x, lv_
 }
 
 lv_obj_t* lv_screen_menu_item_1_edit(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, const char *editValue) {
+  #if ENABLED(ARQUIS_UI)
+    if (arq_pscr) { arq_params_row(par, text, y, cb, id, ARQ_PL_EDIT1, editValue, nullptr, -1, false); return par; }
+  #endif
   lv_obj_t *btn = lv_screen_menu_item(par, text, x, y, cb, -1, index, false);
   lv_obj_t *btnValue = lv_btn_create(par, PARA_UI_VALUE_POS_X, y + PARA_UI_VALUE_V, PARA_UI_VALUE_BTN_X_SIZE, PARA_UI_VALUE_BTN_Y_SIZE, cb, id);
   lv_obj_t *labelValue = lv_label_create_empty(btnValue);
@@ -1344,6 +1365,9 @@ lv_obj_t* lv_screen_menu_item_1_edit(lv_obj_t *par, const char *text, lv_coord_t
 }
 
 lv_obj_t* lv_screen_menu_item_2_edit(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, const char *editValue, const int idEdit2, const char *editValue2) {
+  #if ENABLED(ARQUIS_UI)
+    if (arq_pscr) { arq_params_row(par, text, y, cb, id, ARQ_PL_EDIT2, editValue, editValue2, idEdit2, false); return par; }
+  #endif
   lv_obj_t *btn = lv_screen_menu_item(par, text, x, y, cb, -1, index, false);
 
   lv_obj_t *btnValue = lv_btn_create(par, PARA_UI_VALUE_POS_X_2, y + PARA_UI_VALUE_V_2, PARA_UI_VALUE_BTN_X_SIZE, PARA_UI_VALUE_BTN_Y_SIZE, cb, idEdit2);
@@ -1360,6 +1384,9 @@ lv_obj_t* lv_screen_menu_item_2_edit(lv_obj_t *par, const char *text, lv_coord_t
 }
 
 lv_obj_t* lv_screen_menu_item_onoff(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, const bool curValue) {
+  #if ENABLED(ARQUIS_UI)
+    if (arq_pscr) { arq_params_row(par, text, y, cb, id, ARQ_PL_ONOFF, nullptr, nullptr, -1, curValue); return par; }
+  #endif
   lv_screen_menu_item(par, text, x, y, cb, -1, index, false);
   lv_obj_t *btnValue = lv_imgbtn_create(par, curValue ? "F:/bmp_enable.bin" : "F:/bmp_disable.bin", PARA_UI_STATE_POS_X, y + PARA_UI_STATE_V, cb, id);
   lv_obj_t *labelValue = lv_label_create_empty(btnValue);
@@ -1369,6 +1396,9 @@ lv_obj_t* lv_screen_menu_item_onoff(lv_obj_t *par, const char *text, lv_coord_t 
 }
 
 void lv_screen_menu_item_onoff_update(lv_obj_t *btn, const bool curValue) {
+  #if ENABLED(ARQUIS_UI)
+    if (arq_pscr) { arq_params_onoff_update(curValue); return; }
+  #endif
   lv_imgbtn_set_src_both(btn, curValue ? "F:/bmp_enable.bin" : "F:/bmp_disable.bin");
   lv_label_set_text((lv_obj_t*)btn->child_ll.head, curValue ? machine_menu.enable : machine_menu.disable);
 }

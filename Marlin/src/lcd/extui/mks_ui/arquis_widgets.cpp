@@ -425,6 +425,15 @@ void arq_header_create(arq_header_t *hd, lv_obj_t *parent, const char *static_ti
   else if (logo) arq_card_set_logo(hd->bar, true);
 }
 
+void arq_header_add_back(arq_header_t *hd, lv_obj_t *parent, lv_event_cb_t back_cb, uint16_t back_id) {
+  if (!hd || !hd->bar || hd->back || !back_cb) return;
+  arq_card_set_icon(hd->bar, &arq_icon_back, ARQ_TINT_TEXT);          // reserva el espacio de la flecha (la dibuja el boton)
+  arq_card_set_logo(hd->bar, false);
+  hd->back = arq_card_create(parent, 0, 0, ARQ_HEADER_H + 8, ARQ_HEADER_H, ARQ_LAYOUT_BUTTON, ARQ_BTN_GHOST, back_cb, back_id);
+  arq_card_set_icon(hd->back, &arq_icon_back, ARQ_TINT_TEXT);
+  arq_card_refresh(hd->bar);
+}
+
 // ---- Tarjeta de temperatura ---------------------------------------------------------------------------------
 void arq_temp_tile_create(arq_temp_tile_t *t, lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
                           const lv_img_dsc_t *icon, const char *static_name, lv_event_cb_t cb, uint16_t id) {
