@@ -40,6 +40,9 @@ LV_FONT_DECLARE(arq_font_num36)    // Inter Display SemiBold 36, solo cifras y s
 }
 #endif
 
+// Version de ARQUIS UI (se muestra en Ajustes > Sistema y se usa para nombrar el paquete de entrega)
+#define ARQUIS_UI_VERSION "1.0.0"
+
 // ---- Paleta ARQUIS --------------------------------------------------------------------------
 #define ARQ_COL_BG        LV_COLOR_MAKE(0x15, 0x1D, 0x26)  // Grafito: fondo de pantalla
 #define ARQ_COL_PANEL     LV_COLOR_MAKE(0x22, 0x2D, 0x38)  // Paneles y tarjetas

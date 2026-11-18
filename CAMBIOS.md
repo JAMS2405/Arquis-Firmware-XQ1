@@ -145,3 +145,9 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - Auditoría real: ARQUIS UI = 45 107 B (11 % de la Flash); margen 68 336 B (14,4 %). LVGL 68 KB, HAL/USB 36 KB, G-code 20 KB, planificador 20 KB, Wi-Fi 10 KB, idiomas 5 KB.
 - Robustez en el simulador: 213 comprobaciones sin fallos; peor caso (pantalla + diálogo + perilla) con ≥ 9,2 KB de heap libres.
 - LTO descartado (riesgo para las rutinas de movimiento sin beneficio necesario).
+
+## v20 — Etapa 7: entrega ARQUIS UI 1.0.0
+- Versión de la interfaz (`ARQUIS_UI_VERSION` "1.0.0" en `arquis_theme.h`), visible en Ajustes > Sistema como "Interfaz ARQUIS 1.0.0".
+- Nuevo `herramientas/arquis_ui/empaquetar_entrega.py`: arma `Arquis-XQ1_UI_v1.0.0` (firmware, `assets`, `LEEME.txt`, `SHA256SUMS.txt`) y el `.zip`; comprueba tamaño del `.bin`, logo, fuente y recursos que pide `pic_manager.cpp`.
+- Documentación de entrega: `docs/arquis/ENTREGA_v1.0.0.md` (notas de versión, evidencia de lo no modificado, limitaciones), `GUIA_INSTALACION.md`, `GUIA_USUARIO.md`, `LISTA_VERIFICACION.md`; README actualizado.
+- Evidencia: fuera de la carpeta de la interfaz, el único archivo de Marlin modificado respecto a `main` es `Configuration.h` (`ARQUIS_UI` activado, `ARQUIS_TFT_BYTE_SWAP` desactivado).

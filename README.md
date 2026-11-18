@@ -2,13 +2,22 @@
 
 Firmware de la impresora 3D **Arquis XQ1** (Arquis Soluciones Tecnologicas). Basado en Marlin 2.1.2.10 para MKS Robin Nano V3.1 con pantalla MKS TS35 (LVGL tactil).
 
-- Cambios y pasos para compilar/flashear: [`CAMBIOS.md`](CAMBIOS.md)
-- Capturas de las pantallas (maqueta): [`docs/arquis/`](docs/arquis/todas_las_pantallas.png)
-- Carpeta `assets` para la SD: [`sd_assets/`](sd_assets/) (tema Arquis + logo de arranque)
-- Herramientas (logo y tema): [`herramientas/`](herramientas/)
-- Ver exactamente lo que cambia Arquis respecto a Marlin: `git diff <commit-base> HEAD`
+**ARQUIS UI 1.0.0**: interfaz táctil propia (Dashboard, impresión, control, ajustes) que sustituye el aspecto de Makerbase **sin quitar ninguna función de Marlin**.
 
-> Estado: **compila** (Flash 80 %, RAM 57 %) y pasa las pruebas de logica en PC (`herramientas/pruebas/run_tests.sh`). Pendiente: probar en la impresora.
+| Quiero… | Documento |
+|---|---|
+| Ver qué incluye, las cifras y las limitaciones | [`docs/arquis/ENTREGA_v1.0.0.md`](docs/arquis/ENTREGA_v1.0.0.md) |
+| Compilar, empaquetar e instalar en la impresora | [`docs/arquis/GUIA_INSTALACION.md`](docs/arquis/GUIA_INSTALACION.md) |
+| Usar la pantalla (con capturas) | [`docs/arquis/GUIA_USUARIO.md`](docs/arquis/GUIA_USUARIO.md) |
+| Probar una instalación nueva | [`docs/arquis/LISTA_VERIFICACION.md`](docs/arquis/LISTA_VERIFICACION.md) |
+| Historial de cambios por etapa | [`CAMBIOS.md`](CAMBIOS.md) y `docs/arquis/ARQUIS_UI_etapa_*.md` |
+
+- Carpeta `assets` para la SD: [`sd_assets/`](sd_assets/) (iconos, fuente y logo de arranque de ARQUIS). **Usa esta, no la que descarga PlatformIO.**
+- Paquete de entrega (firmware + assets + instrucciones + sumas de verificación): `python herramientas/arquis_ui/empaquetar_entrega.py RUTA/Robin_nano_v3.bin`
+- Simulador y pruebas de la interfaz: [`herramientas/arquis_ui/sim/`](herramientas/arquis_ui/sim/)
+- Ver exactamente lo que cambia Arquis respecto a Marlin: `git diff origin/main...HEAD` (fuera de la carpeta de la interfaz solo cambia `Marlin/Configuration.h`).
+
+> Estado (v1.0.0): **compila** (Flash ≈ 85,5 %, RAM ≈ 61,6 %), simulador con 213 comprobaciones sin fallos, y **probada en la impresora** etapa a etapa. Pendiente conocido: la cama marca ≈ 45 °C al encender con todo apagado (verificar el termistor; ver las notas de la versión).
 
 ---
 

@@ -259,6 +259,7 @@ static void about_fill() {
   l.title = "Sistema";
   add_l("M\xC3\xA1quina", MACHINE_NAME);
   add_l("Firmware", "Marlin " SHORT_BUILD_VERSION);
+  add_l("Interfaz", "ARQUIS " ARQUIS_UI_VERSION);
   add_l("Placa", BOARD_INFO_NAME);
   add_l("Compilaci\xC3\xB3n", STRING_DISTRIBUTION_DATE);
   fmt_hm(a_up, sizeof(a_up), millis() / 1000UL);
