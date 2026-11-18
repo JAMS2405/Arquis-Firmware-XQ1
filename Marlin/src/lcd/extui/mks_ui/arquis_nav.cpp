@@ -25,11 +25,19 @@
 #if HAS_TFT_LVGL_UI && ENABLED(ARQUIS_UI)
 
 #include "arquis_nav.h"
+#include "arquis_data.h"
 #include "draw_ui.h"
 
 extern bool flash_preview_begin, default_preview_flg;
 
 void arq_nav_go(arq_dest_t dest) {
+  // SEGURIDAD (defensa en profundidad, independiente de la pantalla que llame):
+  //  - lv_draw_print_file() ejecuta card.mount(), que cierra y reinicia la SD: NUNCA durante una impresion.
+  //  - Mover, Herramientas y Ajustes (que incluye apagar motores) no se abren con un trabajo activo.
+  if (arq_data_job_active()) {
+    if (dest == ARQ_GO_PRINT_FILES) dest = ARQ_GO_PRINTING;
+    else if (dest == ARQ_GO_MOVE || dest == ARQ_GO_TOOLS || dest == ARQ_GO_SETTINGS) return;
+  }
   switch (dest) {
     case ARQ_GO_PRINT_FILES: TERN(MULTI_VOLUME, lv_draw_media_select(), lv_draw_print_file()); break;
     case ARQ_GO_PRINTING:    // igual que draw_return_ui() para PRINTING_UI

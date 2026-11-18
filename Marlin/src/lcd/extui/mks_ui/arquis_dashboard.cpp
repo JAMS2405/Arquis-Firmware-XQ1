@@ -27,6 +27,7 @@
 #include "arquis_dashboard.h"
 #include "arquis_dashboard_view.h"
 #include "arquis_nav.h"
+#include "arquis_widgets.h"
 #include "draw_ui.h"
 
 extern lv_group_t *g;
@@ -37,6 +38,8 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   const uint16_t id = obj->mks_obj_id;
   const bool job = arq_data_job_active();            // contextual: se lee de Marlin en el momento del toque
+  // Con trabajo activo estos destinos estan bloqueados (aunque la tarjeta se haya dibujado antes de que empezara la impresion)
+  if (job && (id == ARQ_ID_MOVE || id == ARQ_ID_TOOLS || id == ARQ_ID_SETTINGS)) return;
   arq_dashboard_clear();
   switch (id) {
     case ARQ_ID_PRINT:    arq_nav_go(job ? ARQ_GO_PRINTING : ARQ_GO_PRINT_FILES); break;
@@ -75,6 +78,7 @@ void arq_dashboard_clear() {
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif
+  arq_dialog_close();                                // un dialogo en la capa superior sobreviviria al cambio de pantalla
   arq_dash_forget();
   if (scr) { lv_obj_del(scr); scr = nullptr; }
 }

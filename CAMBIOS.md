@@ -85,3 +85,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v7: ARQUIS UI etapa 1 (cierre) + etapa 2 (Dashboard funcional)
 - Nuevo Dashboard (`ARQUIS_UI` en Configuration.h) que sustituye la pantalla principal; la original sigue disponible comentando esa línea. Informe completo, medidas y limitaciones: `docs/arquis/ARQUIS_UI_etapas_1_2.md`.
 - Nuevo `sd_assets/bmp_logo.bin` (splash con el logo oficial). Para verlo: carpeta `assets` en la SD + arranque (recarga la flash de la placa).
+
+## v8: auditoría previa a la Etapa 3
+- Correcciones de seguridad: "Mover" y "Ajustes" deshabilitados con impresión activa; `arq_nav_go()` nunca abre el explorador (card.mount) con un trabajo activo; foco de perilla y grupos corregidos; diálogos cerrados al salir; fuente `num20` eliminada. Informe: `docs/arquis/AUDITORIA_pre_etapa3.md`.
+- Nuevo: `herramientas/arquis_ui/auditar_flash.py` (mide Flash/RAM y reparto por módulo tras `pio run`).

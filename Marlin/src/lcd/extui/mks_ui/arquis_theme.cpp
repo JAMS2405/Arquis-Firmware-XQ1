@@ -124,7 +124,6 @@ void arq_theme_init() {
   text_style(st_text[ARQ_TEXT_NUM_L],    ARQ_COL_TEXT,  &arq_font_num36);
   text_style(st_text[ARQ_TEXT_NUM_L_OK], ARQ_COL_GREEN, &arq_font_num36);
   text_style(st_text[ARQ_TEXT_NUM_L_WARN], ARQ_COL_WARN, &arq_font_num36);
-  text_style(st_text[ARQ_TEXT_NUM_M],    ARQ_COL_MUTED, &arq_font_num20);
 
   for (uint8_t i = 0; i < ARQ_TINT_COUNT; ++i) {
     lv_style_copy(&st_icon[i], &lv_style_plain);

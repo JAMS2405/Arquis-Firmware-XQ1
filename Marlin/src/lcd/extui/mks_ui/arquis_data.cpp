@@ -34,6 +34,14 @@
 
 #include <string.h>
 
+// Marlin solo define estas histeresis si el sensor existe; valor por defecto de Marlin si no.
+#ifndef TEMP_HYSTERESIS
+  #define TEMP_HYSTERESIS 3
+#endif
+#ifndef TEMP_BED_HYSTERESIS
+  #define TEMP_BED_HYSTERESIS 3
+#endif
+
 bool arq_data_job_active() { return printingIsActive() || printingIsPaused(); }
 
 void arq_data_read(arq_snapshot_t *s) {

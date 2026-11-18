@@ -36,7 +36,6 @@ extern "C" {
 #endif
 LV_FONT_DECLARE(arq_font_text16)   // Inter Medium 16, Latin-1 (espanol)
 LV_FONT_DECLARE(arq_font_num36)    // Inter Display SemiBold 36, solo cifras y simbolos de medida
-LV_FONT_DECLARE(arq_font_num20)    // idem, 20 px
 #ifdef __cplusplus
 }
 #endif
@@ -68,7 +67,7 @@ LV_FONT_DECLARE(arq_font_num20)    // idem, 20 px
 typedef enum { ARQ_TINT_ACCENT, ARQ_TINT_TEXT, ARQ_TINT_MUTED, ARQ_TINT_DARK, ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_DANGER, ARQ_TINT_COUNT,
                ARQ_TINT_AUTO = ARQ_TINT_COUNT } arq_tint_t;   // AUTO: el icono toma el color del texto del boton
 typedef enum { ARQ_TEXT_BODY, ARQ_TEXT_MUTED, ARQ_TEXT_ACCENT, ARQ_TEXT_OK, ARQ_TEXT_WARN, ARQ_TEXT_DARK,
-               ARQ_TEXT_NUM_L, ARQ_TEXT_NUM_L_OK, ARQ_TEXT_NUM_L_WARN, ARQ_TEXT_NUM_M, ARQ_TEXT_COUNT } arq_text_t;
+               ARQ_TEXT_NUM_L, ARQ_TEXT_NUM_L_OK, ARQ_TEXT_NUM_L_WARN, ARQ_TEXT_COUNT } arq_text_t;
 typedef enum { ARQ_BTN_PRIMARY, ARQ_BTN_SECONDARY, ARQ_BTN_SUCCESS, ARQ_BTN_DANGER, ARQ_BTN_GHOST, ARQ_BTN_COUNT } arq_btn_kind_t;
 
 // Estados visuales de un icono (misma geometria, distinto color): reglas de color ARQUIS

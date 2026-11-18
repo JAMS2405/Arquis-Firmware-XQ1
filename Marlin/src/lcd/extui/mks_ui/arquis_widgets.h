@@ -50,6 +50,7 @@ typedef enum {
   ARQ_LAYOUT_DIALOG    // cuadro de dialogo: titulo y mensaje con ajuste de linea
 } arq_layout_t;
 
+// Todas las funciones aceptan nullptr (si el heap de LVGL se agota, arq_card_create devuelve nullptr y nada falla).
 lv_obj_t * arq_card_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
                            arq_layout_t layout, arq_btn_kind_t kind, lv_event_cb_t cb, uint16_t id);
 void arq_card_set_icon(lv_obj_t *c, const lv_img_dsc_t *icon, arq_tint_t tint);
@@ -61,6 +62,7 @@ void arq_card_set_dot(lv_obj_t *c, arq_tint_t tint);          // ARQ_TINT_AUTO o
 void arq_card_set_percent(lv_obj_t *c, uint8_t percent);      // barra / tarjeta de impresion
 void arq_card_set_bar_tint(lv_obj_t *c, arq_tint_t tint);     // color de relleno de la barra (ARQ_TINT_AUTO = azul del tema)
 void arq_card_set_logo(lv_obj_t *c, bool show);               // solo cabecera: muestra la marca ARQUIS
+void arq_card_set_disabled(lv_obj_t *c, bool disabled);       // deshabilitado: aspecto gris y no recibe toques ni foco
 void arq_card_refresh(lv_obj_t *c);                           // redibuja (si el contenido de un buffer cambio)
 
 void       arq_screen_apply(lv_obj_t *scr);                   // fondo de pantalla ARQUIS

@@ -207,9 +207,14 @@ static void tests() {
     for (auto &c : t) { ev_count = 0; ev_last = -1; tap(c.x, c.y); CHECK(ev_count == 1 && ev_last == c.id, "toque en %s -> id %d", c.n, ev_last); }
     s = make(ARQ_PS_PRINTING); arq_dash_update(&s); run();
     ev_count = 0; ev_last = -1; tap(95, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_PRINT, "con impresion activa, la tarjeta de impresion envia ARQ_ID_PRINT (la pantalla decide: supervision)");
-    ev_count = 0; ev_last = -1; tap(239, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_MOVE, "con impresion activa, 'Mover' sigue disponible en su nuevo sitio (id %d)", ev_last);
-    ev_count = 0; ev_last = -1; tap(427, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_SETTINGS, "con impresion activa, 'Ajustes' sigue disponible (id %d)", ev_last);
-    ev_count = 0; ev_last = -1; tap(333, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_TEMP, "con impresion activa, 'Temp.' sigue disponible (id %d)", ev_last); }
+    ev_count = 0; ev_last = -1; tap(239, 250); CHECK(ev_count == 0, "SEGURIDAD: con impresion activa 'Mover' esta bloqueado (no recibe toques)");
+    ev_count = 0; ev_last = -1; tap(427, 250); CHECK(ev_count == 0, "SEGURIDAD: con impresion activa 'Ajustes' esta bloqueado (no recibe toques)");
+    ev_count = 0; ev_last = -1; tap(333, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_TEMP, "con impresion activa, 'Temp.' sigue disponible (id %d)", ev_last);
+    ev_count = 0; ev_last = -1; tap(250, 200); CHECK(ev_count == 0 || ev_last != ARQ_ID_TOOLS, "con impresion activa no existe el acceso 'Herram.'");
+    dump("dash_5b_imprimiendo_bloqueos");
+    // al terminar la impresion vuelven a estar disponibles
+    s = make(ARQ_PS_IDLE); arq_dash_update(&s); run();
+    ev_count = 0; ev_last = -1; tap(145, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_MOVE, "al terminar, 'Mover' vuelve a estar disponible"); }
 
   // 6b) Perilla (encoder): las tarjetas se registran en el grupo, el foco avanza y se dibuja el anillo
   // Ciclo completo con perilla repetido: la primera vuelta puede reservar estructuras globales de LVGL (una sola vez); las siguientes no deben crecer
@@ -218,17 +223,38 @@ static void tests() {
   { arq_snapshot_t s = make(ARQ_PS_IDLE); dashboard(s, nullptr); run();
     lv_group_t *grp = lv_group_create(); arq_group_add_clickables(grp, lv_scr_act());
     CHECK(lv_group_get_focused(grp) != nullptr, "el grupo de la perilla recibe las tarjetas del Dashboard");
-    int n = 0; lv_obj_t *first = lv_group_get_focused(grp);
+    dump("dash_foco_inicial");
+    lv_obj_t *first = lv_group_get_focused(grp);
+    { lv_area_t ar; lv_obj_get_coords(first, &ar); const uint16_t px = fb[(ar.y1 + 60) * ARQ_W + ar.x1]; const bool blue = ((px >> 11) & 31) < 10 && (px & 31) > 20;
+      CHECK(!blue, "foco inicial NO se dibuja con uso tactil (sin mover la perilla)"); }
+    int n = 0;
     do { ++n; lv_group_focus_next(grp); } while (lv_group_get_focused(grp) != first && n < 20);
     CHECK(n == 8, "la perilla recorre las 8 tarjetas clicables (recorridas: %d)", n);
     lv_group_focus_next(grp); lv_group_focus_next(grp); lv_group_focus_next(grp); lv_group_focus_next(grp); lv_group_focus_next(grp);
     dump("dash_foco_perilla");
+    { lv_obj_t *f = lv_group_get_focused(grp); lv_area_t ar; lv_obj_get_coords(f, &ar); run(); const uint16_t px = fb[(ar.y1 + 40) * ARQ_W + ar.x1]; const bool blue = ((px >> 11) & 31) < 10 && (px & 31) > 20;
+      CHECK(blue, "tras mover la perilla el anillo de foco se dibuja"); }
+    // cambio de modo (reposo -> imprimiendo) con la perilla en uso: las tarjetas nuevas entran en el grupo
+    { arq_snapshot_t sj = make(ARQ_PS_PRINTING); arq_dash_update(&sj); run();
+      int m = 0; lv_obj_t *f0 = lv_group_get_focused(grp); do { ++m; lv_group_focus_next(grp); } while (lv_group_get_focused(grp) != f0 && m < 20);
+      CHECK(m == 5, "con impresion: la perilla recorre 5 tarjetas (hotend, cama, ventiladores, impresion, Temp.; Mover/Ajustes bloqueados). Recorridas: %d", m); }
     ev_count = 0; lv_event_send(lv_group_get_focused(grp), LV_EVENT_RELEASED, nullptr);
     CHECK(ev_count == 1, "pulsar la perilla sobre la tarjeta con foco dispara su accion");
     new_screen(); run(); lv_group_del(grp);
     for (int i = 0; i < 100; ++i) { arq_snapshot_t s1 = make(ARQ_PS_IDLE); dashboard(s1, nullptr); lv_group_t *g1 = lv_group_create(); arq_group_add_clickables(g1, lv_scr_act()); lv_group_focus_next(g1); run(2); new_screen(); lv_group_del(g1); }
     new_screen(); run();
     CHECK(used() == ref, "sin fugas tras 100 ciclos con perilla: heap %u B (antes %u B)", (unsigned)used(), (unsigned)ref); }
+
+  // 6c) Margen de heap en el peor caso: LVGL 6.1 NO tolera quedarse sin memoria (falla dentro de lv_obj_create/lv_obj_del),
+  //     asi que la defensa es un margen amplio. Peor caso: Dashboard con impresion + dialogo abierto + perilla.
+  { new_screen(); run();
+    arq_snapshot_t s = make(ARQ_PS_PRINTING); dashboard(s, nullptr);
+    lv_group_t *gg = lv_group_create(); arq_group_add_clickables(gg, lv_scr_act());
+    arq_dialog_open("Cancelar impresion", "Se detendra la impresion en curso.", "Cancelar", "Seguir", true, dlg_cb, 901, 902); run();
+    lv_mem_monitor_t m; lv_mem_monitor(&m);
+    printf("[mem] peor caso (Dashboard+dialogo+perilla): usado %u B, libre %u B, mayor bloque libre %u B de %u B\n", (unsigned)(m.total_size - m.free_size), (unsigned)m.free_size, (unsigned)m.free_biggest_size, (unsigned)m.total_size);
+    CHECK(m.free_size >= 8192, "margen de heap en el peor caso: %u B libres (>= 8192 B, la mitad del heap)", (unsigned)m.free_size);
+    arq_dialog_close(); new_screen(); run(); lv_group_del(gg); }
 
   // 7) Actualizar con el mismo snapshot no redibuja
   { arq_snapshot_t s = make(ARQ_PS_HEATING); dashboard(s, nullptr); run(); lv_disp_t *d = lv_disp_get_default();

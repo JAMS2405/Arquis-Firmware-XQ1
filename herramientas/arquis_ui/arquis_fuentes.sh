@@ -15,4 +15,3 @@ gen() { n=$1; f=$2; s=$3; shift 3
 gen arq_font_text16 Inter-Medium            16 -r 0x20-0x7E,0xA0-0xFF
 # Cifras grandes (temperaturas, porcentaje, tiempos)
 gen arq_font_num36  InterDisplay-SemiBold   36 --symbols "0123456789.-+/:%°C "
-gen arq_font_num20  InterDisplay-SemiBold   20 --symbols "0123456789.-+/:%°C "

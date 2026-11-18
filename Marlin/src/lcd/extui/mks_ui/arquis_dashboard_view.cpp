@@ -58,7 +58,9 @@ static void build_row2(bool job) {
                                        { &arq_icon_temp, "Temp.", ARQ_ID_TEMP }, { &arq_icon_tools, "Herram.", ARQ_ID_TOOLS },
                                        { &arq_icon_gear, "Ajustes", ARQ_ID_SETTINGS } };
   // Con trabajo activo: tarjeta de impresion (acceso a la supervision) + Mover, Temp. y Ajustes.
-  // Herramientas (precalentar, nivelar, cambiar filamento...) se oculta mientras se imprime.
+  //  - Herramientas (precalentar, nivelar, cambiar filamento...) se oculta mientras se imprime.
+  //  - SEGURIDAD: Mover y Ajustes quedan DESHABILITADOS (grises, sin toque): mover ejes en plena impresion o apagar motores
+  //    (M84, en Ajustes) puede arruinar la pieza. Temp. se mantiene (la interfaz original tambien permite cambiar temperaturas).
   static const Item job_items[3] = { { &arq_icon_move, "Mover", ARQ_ID_MOVE }, { &arq_icon_temp, "Temp.", ARQ_ID_TEMP }, { &arq_icon_gear, "Ajustes", ARQ_ID_SETTINGS } };
 
   if (!job) {
@@ -72,10 +74,20 @@ static void build_row2(bool job) {
     arq_card_set_value(print_card, pct_txt, ARQ_TEXT_NUM_L);
     arq_card_set_value2(print_card, times_txt);
     const lv_coord_t x0 = ARQ_MARGIN + PRINT_W + ARQ_GAP, w = (ARQ_W - ARQ_MARGIN - x0 - 2 * ARQ_GAP) / 3;
-    for (uint8_t i = 0; i < 3; ++i)
-      nav[i] = arq_nav_tile_create(scr, x0 + i * (w + ARQ_GAP), Y2, w, H2, job_items[i].icon, ARQ_TINT_ACCENT, job_items[i].text, ARQ_BTN_SECONDARY, user_cb, job_items[i].id);
+    for (uint8_t i = 0; i < 3; ++i) {
+      const bool locked = job_items[i].id != ARQ_ID_TEMP;
+      nav[i] = arq_nav_tile_create(scr, x0 + i * (w + ARQ_GAP), Y2, w, H2, job_items[i].icon, ARQ_TINT_ACCENT, job_items[i].text, ARQ_BTN_SECONDARY, locked ? nullptr : user_cb, job_items[i].id);
+      if (locked) arq_card_set_disabled(nav[i], true);
+    }
   }
   shown_job = job;
+  // Si la perilla esta en uso, las tarjetas nuevas deben entrar en su grupo (las anteriores se quitaron al borrarse)
+  lv_obj_t *anchor = hot.card ? hot.card : chip;
+  lv_group_t *grp = anchor ? (lv_group_t *)lv_obj_get_group(anchor) : nullptr;
+  if (grp) {
+    for (uint8_t i = 0; i < 5; ++i) if (nav[i] && lv_obj_get_click(nav[i])) lv_group_add_obj(grp, nav[i]);
+    if (print_card) lv_group_add_obj(grp, print_card);
+  }
 }
 
 void arq_dash_build(lv_obj_t *scr, lv_event_cb_t cb, const char *static_title, const arq_snapshot_t *first) {
