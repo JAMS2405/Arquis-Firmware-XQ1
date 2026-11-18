@@ -57,6 +57,7 @@
 
 #if ENABLED(ARQUIS_UI)
   #include "arquis_files.h"
+  #include "arquis_params.h"
 #endif
 
 extern lv_group_t *g;
@@ -469,6 +470,14 @@ void lv_draw_dialog(uint8_t type) {
     else if (DIALOG_IS(TYPE_UNBIND)) {
       lv_label_set_text(labelDialog, common_menu.unbind_printer_tips);
       lv_obj_align(labelDialog, nullptr, LV_ALIGN_CENTER, 0, -70);
+    }
+  #endif
+  #if ENABLED(ARQUIS_UI)
+    // Arquis: la logica de arriba (tipo de dialogo, textos, botones y manejadores) es la original; aqui solo cambia el aspecto.
+    // Los dialogos con temperatura en vivo o barra de progreso (carga/descarga de filamento) siguen con sus objetos originales.
+    if (!DIALOG_IS(TYPE_FILAMENT_LOAD_HEAT, TYPE_FILAMENT_UNLOAD_HEAT, TYPE_FILAMENT_LOADING, TYPE_FILAMENT_UNLOADING)) {
+      arq_dialog_restyle(scr, labelDialog, btnOk, btnCancel, btn_ok_event_cb, btn_cancel_event_cb, DIALOG_IS(TYPE_STOP, REVERT_EEPROM_TIPS));
+      return;
     }
   #endif
   #if HAS_ROTARY_ENCODER

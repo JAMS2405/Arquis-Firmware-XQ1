@@ -41,10 +41,18 @@ Comprobado: dibujo y toques en el simulador con LVGL real; memoria y fugas; firm
 - **Teclado numérico nuevo:** visor grande con el nombre del parámetro, teclas 1-9, 0, `.`, `-`, ← (borrar un dígito), **Borrar**, **Cancelar** (el original no tenía: solo podías salir confirmando) y **Aceptar**, que se deshabilita si el valor no es un número válido (p. ej. solo "-" o "."). La lógica de lectura/escritura (`disp_key_value`, `set_value_confirm`, `M500`) es la original.
 - **Corrección de un fallo del original:** el teclado permitía escribir 11 caracteres en un buffer de 11 bytes sin dejar el `\0` final; ahora el máximo es 10.
 - **Limitación conocida:** la lista y las teclas no responden a la perilla (como el explorador de archivos); Volver y Siguiente/Anterior sí.
-- **Diálogos de confirmación de la Memoria** (Guardar / Restaurar valores de fábrica) siguen con el aspecto MKS hasta 5B-2.
 
-### Pendiente (5B-2 y siguientes)
-**Cambio de filamento**, **Idioma**, **Más** (G-code personalizado) y teclado de texto, diálogos de pausa/error de Marlin (y los de Memoria), calibración táctil. Wi-Fi no está activo en tu firmware.
+### 5B-2. Diálogos de Marlin/MKS y Cambio de filamento (hecho, sin probar en la impresora)
+- **Diálogos** (`draw_dialog.cpp`): el código original sigue decidiendo el tipo de diálogo, los textos, los botones y los manejadores; al final se leen esos textos y botones y se vuelven a dibujar como pantalla ARQUIS (título *Confirmar* o *Aviso*, mensaje centrado, Cancelar a la izquierda y Aceptar a la derecha). Cubre: Guardar / Leer / Restaurar valores de fábrica de la Memoria, mensajes de pausa y cambio de filamento (M600: estacionar, esperar, insertar, cargar, purgar, reanudar, "¿Purgar más o continuar?"), "calentamiento completo", "carga/descarga completada", reanudar desde el punto de corte (corte de luz), errores de archivo/comunicación y Wi-Fi. **1,5 KB de heap.**
+- **Rojo = peligro:** *Detener impresión* y *Restaurar valores de fábrica* llevan el botón Aceptar en rojo.
+- **Los diálogos con temperatura en vivo o barra de progreso** (calentando para cargar/descargar y cargando/descargando filamento) **siguen con el aspecto original**: sus objetos los actualiza otro código cada segundo y no quise arriesgar un cierre inesperado. Es lo siguiente a rediseñar.
+- **Textos en español:** 42 mensajes de diálogo más en la tabla de traducción (ahora 134 textos).
+- **Cambio de filamento** (`draw_filament_change.cpp`): pantalla de entrada con la temperatura del hotend y dos botones grandes **Cargar / Descargar** (el selector de extrusor solo aparece con varios extrusores). Los ids, el manejador y toda la lógica (calentar a la temperatura de filamento, avisos, M600) son los originales. **2 KB de heap.**
+- **Flash estimada:** los archivos nuevos de 5B suman unos 9 KB (vista 4,1 KB + tabla de textos y pegamento 4,7 KB); el teclado original queda excluido, así que el aumento real es algo menor. Se confirma con `auditar_flash.py`.
+- **Limitación conocida:** las perillas (encoder) no operan los diálogos nuevos ni las listas (los botones sí, en Cambio de filamento).
+
+### Pendiente
+**Idioma**, **Más** (G-code personalizado) y teclado de texto, calibración táctil, el asistente de offset Z, los diálogos con barra de progreso, y Wi-Fi (no activo en tu firmware).
 
 ## 6. Prueba segura
 1. Dashboard → Herram.: comprueba cada acceso y que **Atrás** vuelve al Dashboard.

@@ -62,3 +62,15 @@ void arq_numpad_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title);
 void arq_numpad_set(const char *text, bool can_ok);        // valor mostrado y si "Aceptar" esta habilitado
 void arq_numpad_forget();
 int  arq_numpad_pick(lv_obj_t *o, const lv_point_t *p);    // tecla bajo el punto; -1 = ninguna
+
+// ---- Pantalla de mensaje / confirmacion (sustituye la pantalla de dialogo de MKS) ------------------------------------
+// 0, 1 o 2 botones. ok_text / cancel_text == nullptr -> ese boton no se crea. Los textos se copian (buffers fijos). 3-5 objetos.
+enum { ARQ_MSG_OK = 1, ARQ_MSG_CANCEL };
+void arq_msg_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const char *msg, const char *ok_text, const char *cancel_text, bool danger);
+
+// ---- Cambio de filamento (pantalla de entrada: temperatura + Cargar / Descargar) -----------------------------------------
+// Los ids coinciden con los del manejador original (draw_filament_change.cpp): 1 = cargar, 2 = descargar, 3 = extrusor, 4 = volver.
+enum { ARQ_FCID_LOAD = 1, ARQ_FCID_UNLOAD, ARQ_FCID_EXT, ARQ_FCID_BACK };
+void arq_filchg_build(lv_obj_t *scr, lv_event_cb_t cb, bool multi_extruder);                 // 4-5 objetos
+void arq_filchg_update(int16_t cur, int16_t target, uint8_t extruder, bool multi_extruder);  // solo redibuja si cambia algo
+void arq_filchg_forget();

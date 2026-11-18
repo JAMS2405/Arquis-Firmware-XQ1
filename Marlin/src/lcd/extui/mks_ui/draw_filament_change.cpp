@@ -33,11 +33,17 @@
 #include "../../../module/planner.h"
 #include "../../../inc/MarlinConfig.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_params_view.h"
+#endif
+
 extern lv_group_t *g;
 static lv_obj_t *scr;
-static lv_obj_t *buttonType;
-static lv_obj_t *labelType;
-static lv_obj_t *tempText1;
+#if DISABLED(ARQUIS_UI)
+  static lv_obj_t *buttonType;
+  static lv_obj_t *labelType;
+  static lv_obj_t *tempText1;
+#endif
 
 enum {
   ID_FILAMNT_IN = 1,
@@ -106,6 +112,28 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
   }
 }
 
+#if ENABLED(ARQUIS_UI)
+
+// Arquis: pantalla de entrada con el aspecto ARQUIS. Los manejadores, ids (1 = cargar, 2 = descargar, 3 = extrusor, 4 = volver) y la
+// maquina de estados de carga/descarga (draw_dialog.cpp) son los originales.
+void lv_draw_filament_change() {
+  scr = lv_screen_create(FILAMENTCHANGE_UI, "");
+  arq_filchg_build(scr, event_handler, ENABLED(HAS_MULTI_EXTRUDER));
+  #if HAS_ROTARY_ENCODER
+    if (gCfgItems.encoder_enable) arq_group_add_clickables(g, scr);
+  #endif
+  disp_filament_type();
+  disp_filament_temp();
+}
+
+void disp_filament_type() { disp_filament_temp(); }
+
+void disp_filament_temp() {
+  arq_filchg_update(thermalManager.wholeDegHotend(uiCfg.extruderIndex), thermalManager.degTargetHotend(uiCfg.extruderIndex), uiCfg.extruderIndex, ENABLED(HAS_MULTI_EXTRUDER));
+}
+
+#else   // ---- pantalla original de MKS ----
+
 void lv_draw_filament_change() {
   scr = lv_screen_create(FILAMENTCHANGE_UI);
   // Create an Image button
@@ -162,7 +190,12 @@ void disp_filament_temp() {
   lv_obj_align(tempText1, nullptr, LV_ALIGN_CENTER, 0, -50);
 }
 
+#endif // ARQUIS_UI
+
 void lv_clear_filament_change() {
+  #if ENABLED(ARQUIS_UI)
+    arq_filchg_forget();
+  #endif
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif

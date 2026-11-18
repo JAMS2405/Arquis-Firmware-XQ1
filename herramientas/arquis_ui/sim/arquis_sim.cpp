@@ -252,6 +252,8 @@ static void pl_screen(int which, const char *shot) {
   if (which == 1 || which == 3) arq_pl_page(s, "Siguiente", ccb, 9);
   if (shot) dump(shot);
 }
+static void msg_screen(const char *title, const char *msg, const char *ok, const char *cancel, bool danger, const char *shot) { lv_obj_t *s = new_screen(); arq_msg_build(s, ccb, title, msg, ok, cancel, danger); if (shot) dump(shot); }
+static void filchg_screen(int cur, int tgt, bool multi, const char *shot) { lv_obj_t *s = new_screen(); arq_filchg_build(s, ccb, multi); arq_filchg_update(cur, tgt, 0, multi); if (shot) dump(shot); }
 static void numpad_screen(const char *title, const char *val, bool ok, const char *shot) { lv_obj_t *s = new_screen(); arq_numpad_build(s, ccb, title); arq_numpad_set(val, ok); if (shot) dump(shot); }
 static int dlg_ok = 0, dlg_cancel = 0;
 static void dlg_cb(lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; if (o->mks_obj_id == 901) ++dlg_ok; else ++dlg_cancel; arq_dialog_close(); }
@@ -674,7 +676,31 @@ static void tests() {
       c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_NK_BACK, "teclado: flecha Atras");
       numpad_screen("Valor", "-", false, nullptr); run(); c_count = 0; tap(kx[3], ky[3]); CHECK(c_count == 0, "teclado: Aceptar no responde con un valor no valido");
       c_count = 0; tap(kx[0], ky[0]); CHECK(c_count == 1 && c_last == ARQ_NK_1, "teclado: los digitos siguen respondiendo");
+      new_screen(); run();
+      // pantalla de mensaje / confirmacion (dialogos de MKS)
+      { new_screen(); run(); const uint32_t b1 = used(); msg_screen("Confirmar", "\xC2\xBFRestaurar los valores de f\xC3\xA1" "brica?", "Aceptar", "Cancelar", true, nullptr); const uint32_t u = used() - b1;
+        printf("[mem] dialogo: %u B\n", (unsigned)u); CHECK(u < 2500, "dialogo de mensaje: %u B de heap (< 2500 B)", (unsigned)u);
+        for (int i = 0; i < 300; ++i) { msg_screen("Aviso", "Espera: cargando el filamento", i & 1 ? "Aceptar" : nullptr, i & 2 ? "Cancelar" : nullptr, i & 4, nullptr); }
+        new_screen(); run(); const uint32_t u3 = used(); for (int i = 0; i < 300; ++i) { msg_screen("Aviso", "Espera: cargando el filamento", i & 1 ? "Aceptar" : nullptr, i & 2 ? "Cancelar" : nullptr, i & 4, nullptr); }
+        new_screen(); run(); CHECK(used() <= u3, "dialogos: 600 ciclos sin fugas (%u B -> %u B)", (unsigned)u3, (unsigned)used());
+        msg_screen("Confirmar", "\xC2\xBFGuardar los ajustes en la memoria?", "Aceptar", "Cancelar", false, nullptr); run();
+        c_count = 0; tap(110, 260); CHECK(c_count == 1 && c_last == ARQ_MSG_CANCEL, "dialogo: Cancelar (izquierda) -> id %d", c_last);
+        c_count = 0; tap(370, 260); CHECK(c_count == 1 && c_last == ARQ_MSG_OK, "dialogo: Aceptar (derecha) -> id %d", c_last);
+        msg_screen("Aviso", "Carga completada.", "Aceptar", nullptr, false, nullptr); run(); c_count = 0; tap(240, 260); CHECK(c_count == 1 && c_last == ARQ_MSG_OK, "dialogo informativo: un boton central");
+        msg_screen("Aviso", "Espera: cargando el filamento", nullptr, nullptr, false, nullptr); run(); c_count = 0; tap(240, 260); CHECK(c_count == 0, "dialogo sin botones: nada que pulsar"); }
+      // cambio de filamento: ids iguales a los del manejador original (1 cargar, 2 descargar, 3 extrusor, 4 volver)
+      { new_screen(); run(); const uint32_t b1 = used(); filchg_screen(187, 210, false, nullptr); const uint32_t u = used() - b1; printf("[mem] cambio de filamento: %u B\n", (unsigned)u);
+        CHECK(u < 3500, "cambio de filamento: %u B de heap (< 3500 B)", (unsigned)u);
+        for (int i = 0; i < 300; ++i) { filchg_screen(100 + i % 120, i & 1 ? 210 : 0, i & 2, nullptr); arq_filchg_update(30 + i % 200, 210, i & 1, i & 2); }
+        new_screen(); run(); const uint32_t u3 = used(); for (int i = 0; i < 300; ++i) filchg_screen(100 + i % 120, 210, i & 2, nullptr);
+        new_screen(); run(); CHECK(used() <= u3, "cambio de filamento: 600 ciclos sin fugas (%u B -> %u B)", (unsigned)u3, (unsigned)used());
+        filchg_screen(187, 210, true, nullptr); run();
+        c_count = 0; tap(120, 260); CHECK(c_count == 1 && c_last == ARQ_FCID_LOAD, "cambio de filamento: Cargar -> id %d", c_last);
+        c_count = 0; tap(360, 260); CHECK(c_count == 1 && c_last == ARQ_FCID_UNLOAD, "cambio de filamento: Descargar -> id %d", c_last);
+        c_count = 0; tap(420, 22); CHECK(c_count == 1 && c_last == ARQ_FCID_EXT, "cambio de filamento: selector de extrusor -> id %d", c_last);
+        c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_FCID_BACK, "cambio de filamento: Volver -> id %d", c_last); }
       new_screen(); run(); }
+
 
   printf("[test] %s\n", fails ? "HAY FALLOS" : "TODAS LAS PRUEBAS DEL SIMULADOR PASARON");
 }
@@ -744,6 +770,11 @@ int main(int argc, char **argv) {
     speed_screen(100, 85, 0, 5, "st5_1_velocidad"); level_screen("st5_2_nivelar"); info_screen("st5_3_sistema"); baby_screen(-1250, 0, "st5_4_babystep");
     pl_screen(0, "st5b_1_parametros"); pl_screen(1, "st5b_2_aceleracion"); pl_screen(2, "st5b_3_dos_valores"); pl_screen(3, "st5b_4_interruptores");
     numpad_screen("Aceleraci\xC3\xB3n de impresi\xC3\xB3n", "500.0", true, "st5b_5_teclado"); numpad_screen("Posici\xC3\xB3n X", "-", false, "st5b_6_teclado_invalido");
+    msg_screen("Confirmar", "\xC2\xBFGuardar los ajustes en la memoria?", "Aceptar", "Cancelar", false, "st5b_7_dialogo_confirmar");
+    msg_screen("Confirmar", "\xC2\xBFRestaurar los valores de f\xC3\xA1" "brica?", "Aceptar", "Cancelar", true, "st5b_8_dialogo_peligro");
+    msg_screen("Aviso", "Carga completada.\nPulsa Aceptar para volver.", "Aceptar", nullptr, false, "st5b_9_dialogo_aviso");
+    msg_screen("Aviso", "Pulsa el bot\xC3\xB3n para calentar la boquilla", nullptr, nullptr, false, "st5b_10_dialogo_espera");
+    filchg_screen(187, 210, false, "st5b_11_filamento");
 
   }
   tests();

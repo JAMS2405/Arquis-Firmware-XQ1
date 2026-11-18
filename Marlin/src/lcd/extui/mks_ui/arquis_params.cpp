@@ -127,11 +127,54 @@ static const es_item_t es_table[] = {
   { &machine_menu.Z_StepMode, "StealthChop eje Z" },
   { &machine_menu.Z_Steps, "Pasos/mm eje Z" },
   { &machine_menu.Z2_Sensitivity, "Sensibilidad eje Z2" },
+  { &print_file_dialog_menu.confirm, "Aceptar" },
+  { &print_file_dialog_menu.cancel, "Cancelar" },
+  { &print_file_dialog_menu.print_file, "\xC2\xBFImprimir este modelo?" },
+  { &print_file_dialog_menu.cancel_print, "\xC2\xBF" "Detener la impresi\xC3\xB3n?" },
+  { &print_file_dialog_menu.retry, "Reintentar" },
+  { &print_file_dialog_menu.stop, "Detener" },
+  { &print_file_dialog_menu.no_file_print_tips, "Error: no hay archivo. Rev\xC3\xADsalo e int\xC3\xA9ntalo de nuevo." },
+  { &print_file_dialog_menu.print_from_breakpoint, "\xC2\xBFReanudar la impresi\xC3\xB3n desde el punto de corte?" },
+  { &print_file_dialog_menu.close_machine_error, "Error de comunicaci\xC3\xB3n.\nComprueba que la velocidad (baudios) de la pantalla coincida con la de la placa." },
+  { &print_file_dialog_menu.filament_no_press, "El interruptor de detecci\xC3\xB3n de filamento no est\xC3\xA1 pulsado" },
+  { &print_file_dialog_menu.print_finish, "\xC2\xA1Impresi\xC3\xB3n terminada!" },
+  { &print_file_dialog_menu.print_time, "Tiempo de impresi\xC3\xB3n: " },
+  { &print_file_dialog_menu.reprint, "Imprimir de nuevo" },
+  { &print_file_dialog_menu.wifi_enable_tips, "Configurando el m\xC3\xB3" "dulo Wi-Fi.\nEspera un momento..." },
+  { &pause_msg_menu.pausing, "Estacionando el cabezal..." },
+  { &pause_msg_menu.changing, "Espera: va a empezar el cambio de filamento" },
+  { &pause_msg_menu.unload, "Espera: descargando el filamento" },
+  { &pause_msg_menu.waiting, "Pulsa el bot\xC3\xB3n para reanudar la impresi\xC3\xB3n" },
+  { &pause_msg_menu.insert, "Inserta el filamento y pulsa el bot\xC3\xB3n para continuar" },
+  { &pause_msg_menu.load, "Espera: cargando el filamento" },
+  { &pause_msg_menu.purge, "Espera: purgando el filamento" },
+  { &pause_msg_menu.resume, "Espera: se reanuda la impresi\xC3\xB3n..." },
+  { &pause_msg_menu.heat, "Pulsa el bot\xC3\xB3n para calentar la boquilla" },
+  { &pause_msg_menu.heating, "Calentando la boquilla. Espera..." },
+  { &pause_msg_menu.option, "\xC2\xBFPurgar m\xC3\xA1s o continuar la impresi\xC3\xB3n?" },
+  { &pause_msg_menu.purgeMore, "Purgar" },
+  { &pause_msg_menu.continuePrint, "Continuar" },
+  { &eeprom_menu.storeTips, "\xC2\xBFGuardar los ajustes en la memoria?" },
+  { &eeprom_menu.readTips, "\xC2\xBFLeer los ajustes de la memoria?" },
+  { &eeprom_menu.revertTips, "\xC2\xBFRestaurar los valores de f\xC3\xA1" "brica?" },
+  { &filament_menu.filament_dialog_load_heat, "Calentando la boquilla.\nEspera..." },
+  { &filament_menu.filament_dialog_unload_heat, "Calentando la boquilla.\nEspera..." },
+  { &filament_menu.filament_dialog_load_heat_confirm, "Calentamiento completo.\nIntroduce el filamento en el extrusor y pulsa Aceptar para empezar a cargar." },
+  { &filament_menu.filament_dialog_unload_heat_confirm, "Calentamiento completo.\nPulsa Aceptar para empezar a descargar." },
+  { &filament_menu.filament_dialog_loading, "Cargando el filamento. Espera..." },
+  { &filament_menu.filament_dialog_unloading, "Descargando el filamento. Espera..." },
+  { &filament_menu.filament_dialog_load_completed, "Carga completada.\nPulsa Aceptar para volver." },
+  { &filament_menu.filament_dialog_unload_completed, "Descarga completada.\nPulsa Aceptar para volver." },
+  { &machine_menu.wifiConfigTips, "\xC2\xBF" "Configurar el Wi-Fi?" },
+  { &common_menu.dialog_confirm_title, "Confirmar" },
+  { &common_menu.close_machine_tips, "Apagando la m\xC3\xA1quina..." },
+  { &common_menu.unbind_printer_tips, "\xC2\xBF" "Desvincular la impresora?" },
 };
 
 const char * arq_es(const char *t) {
   if (!t) return t;
-  for (uint8_t i = 0; i < COUNT(es_table); ++i) if (*es_table[i].field == t) return es_table[i].es;
+  for (uint8_t i = 0; i < COUNT(es_table); ++i) if (*es_table[i].field == t) return es_table[i].es;          // por puntero (rapido)
+  for (uint8_t i = 0; i < COUNT(es_table); ++i) if (*es_table[i].field && strcmp(*es_table[i].field, t) == 0) return es_table[i].es;   // por contenido (texto copiado por LVGL)
   return t;
 }
 
@@ -175,6 +218,35 @@ void arq_params_row(lv_obj_t *par, const char *text, lv_coord_t y, lv_event_cb_t
 }
 
 void arq_params_onoff_update(bool on) { arq_pl_set_on(on); }
+
+// ---- Dialogos ----------------------------------------------------------------------------------------------------
+static lv_event_cb_t d_ok, d_cancel;
+
+static void dlg_event(lv_obj_t *o, lv_event_t ev) {
+  if (ev != LV_EVENT_RELEASED) return;
+  if (o->mks_obj_id == ARQ_MSG_OK) { if (d_ok) d_ok(o, ev); }
+  else if (d_cancel) d_cancel(o, ev);                       // el manejador original libera la pantalla: no se usa 'o' despues
+}
+
+static const char * btn_text(lv_obj_t *btn) {
+  if (!btn) return nullptr;
+  lv_obj_t *l = lv_obj_get_child(btn, nullptr);
+  return l ? lv_label_get_text(l) : nullptr;
+}
+
+void arq_dialog_restyle(lv_obj_t *scr, lv_obj_t *label, lv_obj_t *btnOk, lv_obj_t *btnCancel, lv_event_cb_t ok_cb, lv_event_cb_t cancel_cb, bool danger) {
+  char msg[200] = "", ok[24] = "", cancel[24] = "";
+  const char *t;
+  if (label && (t = lv_label_get_text(label))) strncpy(msg, arq_es(t), sizeof(msg) - 1);
+  if ((t = btn_text(btnOk)))     strncpy(ok, arq_es(t), sizeof(ok) - 1);
+  if ((t = btn_text(btnCancel))) strncpy(cancel, arq_es(t), sizeof(cancel) - 1);
+  const bool two = btnOk && btnCancel;
+  if (label)     lv_obj_del(label);                          // objetos originales (estilo MKS)
+  if (btnOk)     lv_obj_del(btnOk);
+  if (btnCancel) lv_obj_del(btnCancel);
+  d_ok = ok_cb; d_cancel = cancel_cb;
+  arq_msg_build(scr, dlg_event, (two || danger) ? "Confirmar" : "Aviso", msg, btnOk ? ok : nullptr, btnCancel ? cancel : nullptr, danger);
+}
 
 bool arq_numpad_value_ok(const char *s) {
   if (!s) return false;

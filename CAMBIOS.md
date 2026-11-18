@@ -110,3 +110,8 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - Primera compilación completa con las Etapas 3, 4 y 5A (PC del usuario, espacio de trabajo en `C:\pio_arquis`): SUCCESS. RAM 60,8 % (79 628 B), Flash 90,3 % (428 944 de 475 136 B, quedan 46 192 B). Las pantallas de las Etapas 3, 4 y 5A funcionaron en la impresora.
 - Corregido: `arquis_files.cpp` usaba `sel_id` sin declararlo (el `draw_ui.h` real no lo declara; el de prueba sí). Buffers de tiempo de `arquis_tools.cpp` ampliados.
 - Etapa 5B-1: lista de parámetros ARQUIS para las ~15 pantallas de Ajustes → Parámetros y Memoria, teclado numérico con Cancelar y validación, tabla de traducción al español (`arquis_params.cpp`). Documento: `docs/arquis/ARQUIS_UI_etapa_5.md`. Estado: simulador y firmas OK; compilación completa y pantalla real pendientes de validar.
+
+## v13 — Etapa 5B-2: diálogos y Cambio de filamento
+- `draw_dialog.cpp`: los diálogos de Marlin/MKS (Memoria, pausa/M600, reanudar tras un corte, errores) se dibujan con la pantalla de mensaje ARQUIS (`arq_msg_build`); la lógica y los manejadores son los originales. Quedan con el aspecto original los diálogos con temperatura en vivo/barra de progreso.
+- `draw_filament_change.cpp`: pantalla de entrada ARQUIS (temperatura + Cargar/Descargar); lógica original.
+- Tabla de traducción ampliada a 134 textos. Documento: `docs/arquis/ARQUIS_UI_etapa_5.md`. Estado: simulador y firmas OK; compilación completa y pantalla real pendientes de validar.

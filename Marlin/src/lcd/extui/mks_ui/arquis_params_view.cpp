@@ -354,3 +354,91 @@ void arq_numpad_set(const char *text, bool can_ok) {
   if (o_disp) lv_obj_invalidate(o_disp);
   if (o_keys) lv_obj_invalidate(o_keys);
 }
+
+// ---- Pantalla de mensaje / confirmacion ----------------------------------------------------------------------------
+#define MX  20
+#define MY  (ARQ_HEADER_H + 12)
+#define MW  (ARQ_W - 2 * MX)
+#define MH  150
+#define BY  (MY + MH + 20)
+#define BH  56
+
+static char msg_txt[200], ok_txt[24], cancel_txt[24];
+
+static bool msg_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t mode) {
+  if (mode == LV_DESIGN_COVER_CHK) return false;
+  if (mode != LV_DESIGN_DRAW_MAIN) return true;
+  lv_area_t a, clip;
+  lv_obj_get_coords(o, &a);
+  if (!lv_area_intersect(&clip, mask_in, &a)) return true;
+  lv_draw_rect(&a, &clip, arq_style_panel(), LV_OPA_COVER);
+  const lv_style_t *st = arq_style_text(ARQ_TEXT_BODY);
+  const lv_coord_t w = (a.x2 - a.x1 + 1) - 2 * PADX;
+  lv_point_t sz;
+  lv_txt_get_size(&sz, msg_txt, st->text.font, st->text.letter_space, st->text.line_space, w, LV_TXT_FLAG_NONE);
+  const lv_coord_t y = (a.y1 + a.y2) / 2 - sz.y / 2;
+  lv_area_t ta = { (lv_coord_t)(a.x1 + PADX), y < a.y1 + 8 ? (lv_coord_t)(a.y1 + 8) : y, (lv_coord_t)(a.x2 - PADX), (lv_coord_t)(a.y2 - 8) };
+  lv_draw_label(&ta, &clip, st, LV_OPA_COVER, msg_txt, LV_TXT_FLAG_CENTER, nullptr, nullptr, nullptr, LV_BIDI_DIR_LTR);
+  return true;
+}
+
+void arq_msg_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const char *msg, const char *ok_text, const char *cancel_text, bool danger) {
+  arq_theme_init();
+  arq_screen_apply(scr);
+  arq_header_t h;
+  arq_header_create(&h, scr, title ? title : "", false, nullptr, 0);
+  strncpy(msg_txt, msg ? msg : "", sizeof(msg_txt) - 1);        msg_txt[sizeof(msg_txt) - 1] = '\0';
+  strncpy(ok_txt, ok_text ? ok_text : "", sizeof(ok_txt) - 1);  ok_txt[sizeof(ok_txt) - 1] = '\0';
+  strncpy(cancel_txt, cancel_text ? cancel_text : "", sizeof(cancel_txt) - 1); cancel_txt[sizeof(cancel_txt) - 1] = '\0';
+  lv_obj_t *m = lv_obj_create(scr, nullptr);
+  if (m) {
+    lv_obj_set_pos(m, MX, MY);
+    lv_obj_set_size(m, MW, MH);
+    lv_obj_set_design_cb(m, msg_design);
+    lv_obj_set_click(m, false);
+  }
+  const bool has_ok = ok_text && ok_text[0], has_cancel = cancel_text && cancel_text[0];
+  if (has_ok && has_cancel) {
+    const lv_coord_t bw = (MW - ARQ_GAP * 2) / 2;
+    arq_button_create(scr, MX, BY, bw, BH, nullptr, cancel_txt, ARQ_BTN_SECONDARY, cb, ARQ_MSG_CANCEL);
+    arq_button_create(scr, MX + bw + ARQ_GAP * 2, BY, MW - bw - ARQ_GAP * 2, BH, nullptr, ok_txt, danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY, cb, ARQ_MSG_OK);
+  }
+  else if (has_ok || has_cancel) {
+    const lv_coord_t bw = 240;
+    arq_button_create(scr, (ARQ_W - bw) / 2, BY, bw, BH, nullptr, has_ok ? ok_txt : cancel_txt, ARQ_BTN_PRIMARY, cb, has_ok ? ARQ_MSG_OK : ARQ_MSG_CANCEL);
+  }
+}
+
+// ---- Cambio de filamento -------------------------------------------------------------------------------------------
+static arq_header_t    fc_hd;
+static arq_temp_tile_t fc_tile;
+static lv_obj_t       *fc_ext;
+static char            fc_ext_txt[16];
+static uint8_t         fc_ext_idx = 255;
+
+void arq_filchg_forget() { fc_hd.bar = fc_hd.back = nullptr; fc_tile.card = nullptr; fc_ext = nullptr; fc_ext_idx = 255; }
+
+void arq_filchg_build(lv_obj_t *scr, lv_event_cb_t cb, bool multi) {
+  arq_theme_init();
+  arq_filchg_forget();
+  arq_screen_apply(scr);
+  arq_header_create(&fc_hd, scr, "Cambio de filamento", false, cb, ARQ_FCID_BACK);
+  arq_temp_tile_create(&fc_tile, scr, ARQ_MARGIN, ARQ_HEADER_H + 10, ARQ_W - 2 * ARQ_MARGIN, 124, &arq_icon_nozzle, "Hotend", nullptr, 0);
+  const lv_coord_t y = ARQ_HEADER_H + 10 + 124 + ARQ_GAP, h = ARQ_H - ARQ_MARGIN - y, w = (ARQ_W - 2 * ARQ_MARGIN - ARQ_GAP) / 2;
+  arq_nav_tile_create(scr, ARQ_MARGIN, y, w, h, &arq_icon_down, ARQ_TINT_ACCENT, "Cargar", ARQ_BTN_SECONDARY, cb, ARQ_FCID_LOAD);
+  arq_nav_tile_create(scr, ARQ_MARGIN + w + ARQ_GAP, y, ARQ_W - 2 * ARQ_MARGIN - w - ARQ_GAP, h, &arq_icon_up, ARQ_TINT_ACCENT, "Descargar", ARQ_BTN_SECONDARY, cb, ARQ_FCID_UNLOAD);
+  if (multi) {
+    strcpy(fc_ext_txt, "Extrusor 1");
+    fc_ext = arq_button_create(scr, ARQ_W - ARQ_MARGIN - 130, 4, 130, 36, nullptr, fc_ext_txt, ARQ_BTN_SECONDARY, cb, ARQ_FCID_EXT);
+  }
+}
+
+void arq_filchg_update(int16_t cur, int16_t target, uint8_t extruder, bool multi) {
+  if (fc_tile.card) arq_temp_tile_update(&fc_tile, cur, target, 3);
+  if (multi && fc_ext && fc_ext_idx != extruder) {
+    fc_ext_idx = extruder;
+    fc_ext_txt[8] = (char)('1' + (extruder < 8 ? extruder : 0)); fc_ext_txt[9] = '\0';       // "Extrusor N"
+    arq_card_set_title(fc_ext, fc_ext_txt, ARQ_TEXT_BODY);
+    arq_card_refresh(fc_ext);
+  }
+}
