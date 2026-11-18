@@ -130,3 +130,9 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - `arquis_controls.cpp`: el interruptor *Autoapagado* solo se muestra con `HAS_SUICIDE` (necesita `MKS_PWC`).
 - Compilación previa (5B-3, PC del usuario): RAM 61,4 % (80 472 B), Flash 91,8 % (435 956 B, quedan 39 180 B).
 - Documento de cierre y prueba segura: `docs/arquis/ARQUIS_UI_etapa_5.md`. Estado: simulador y firmas OK; compilación completa de 5B-4 y pantalla real pendientes de validar.
+
+## v17 — Etapa 6 (inicio): solo español e inglés, estado "Reposo"
+- `tft_multi_language.cpp`: con `ARQUIS_UI` solo se compilan inglés y español (ahorro esperado ≈ 30 KB de Flash, por confirmar con la compilación). Idioma por defecto: español. La pantalla Idioma ofrece *Español* e *Inglés*; `arq_es()` no traduce con idioma inglés.
+- Nuevo estado "Reposo" (sin tarjeta SD y todo apagado; punto gris): `arq_with_standby()`; "Lista" = con tarjeta. 52 pruebas de lógica.
+- Descartados por decisión del usuario: apagado automático/remoto y perilla en listas y teclados nuevos.
+- Documento: `docs/arquis/ARQUIS_UI_etapa_6.md`. Estado: simulador y firmas OK; compilación completa pendiente.

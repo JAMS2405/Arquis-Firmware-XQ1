@@ -63,6 +63,7 @@ media_select_menu_def        media_select_menu;
 
 machine_common_def machine_menu;
 void machine_setting_disp() {
+  #if DISABLED(ARQUIS_UI)   // ARQUIS UI: solo espanol e ingles (ahorra ~30 KB de Flash); sin ARQUIS_UI quedan todos los idiomas de MKS
   if (gCfgItems.language == LANG_SIMPLE_CHINESE) {
     MachinePara_menu.title              = MACHINE_PARA_TITLE_CN;
     MachinePara_menu.MachineSetting     = MACHINE_TYPE_CNOFIG_CN;
@@ -520,7 +521,9 @@ void machine_setting_disp() {
     machine_menu.EncoderConfTitle = ENCODER_CONF_TITLE_T_CN;
     machine_menu.EncoderConfText              = ENCODER_CONF_TEXT_T_CN;
   }
-  else {
+  else
+  #endif
+  {
     MachinePara_menu.title              = MACHINE_PARA_TITLE_EN;
     MachinePara_menu.MachineSetting     = MACHINE_TYPE_CNOFIG_EN;
     MachinePara_menu.MotorSetting       = MOTOR_CONFIG_EN;
@@ -859,6 +862,7 @@ void disp_language_init() {
   operation_menu.babystep = TEXT_BABY_STEP_EN;
 
   switch (gCfgItems.language) {
+#if DISABLED(ARQUIS_UI)
     case LANG_SIMPLE_CHINESE:
       common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_CN;
       common_menu.text_back             = BACK_TEXT_CN;
@@ -1102,10 +1106,12 @@ void disp_language_init() {
       eeprom_menu.readTips         = EEPROM_READ_TIPS_CN;
       eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_CN;
       break;
+#endif // ARQUIS_UI
 
       #if 1
         #if 1
 
+#if DISABLED(ARQUIS_UI)
           case LANG_COMPLEX_CHINESE:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_T_CN;
             common_menu.text_back             = BACK_TEXT_T_CN;
@@ -1346,6 +1352,7 @@ void disp_language_init() {
             eeprom_menu.readTips         = EEPROM_READ_TIPS_T_CN;
             eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_T_CN;
             break;
+#endif // ARQUIS_UI
           case LANG_ENGLISH:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_EN;
             common_menu.text_back             = BACK_TEXT_EN;
@@ -1581,6 +1588,7 @@ void disp_language_init() {
             eeprom_menu.readTips         = EEPROM_READ_TIPS_EN;
             eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_EN;
             break;
+#if DISABLED(ARQUIS_UI)
           case LANG_RUSSIAN:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_RU;
             common_menu.text_back             = BACK_TEXT_RU;
@@ -1906,6 +1914,7 @@ void disp_language_init() {
             eeprom_menu.readTips         = EEPROM_READ_TIPS_RU;
             eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_RU;
             break;
+#endif // ARQUIS_UI
           case LANG_SPANISH:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_SP;
             common_menu.text_back             = BACK_TEXT_SP;
@@ -2146,6 +2155,7 @@ void disp_language_init() {
 
         #endif // if 1
 
+#if DISABLED(ARQUIS_UI)
         case LANG_FRENCH:
           common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_FR;
           common_menu.text_back             = BACK_TEXT_FR;
@@ -2377,7 +2387,9 @@ void disp_language_init() {
           eeprom_menu.readTips         = EEPROM_READ_TIPS_FR;
           eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_FR;
           break;
+#endif // ARQUIS_UI
 
+#if DISABLED(ARQUIS_UI)
         case LANG_ITALY:
           common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_IT;
           common_menu.text_back             = BACK_TEXT_IT;
@@ -2610,6 +2622,7 @@ void disp_language_init() {
           eeprom_menu.readTips         = EEPROM_READ_TIPS_IT;
           eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_IT;
           break;
+#endif // ARQUIS_UI
 
       #endif // if 1
 

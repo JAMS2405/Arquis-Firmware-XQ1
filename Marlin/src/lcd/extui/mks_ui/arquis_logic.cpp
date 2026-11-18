@@ -49,6 +49,8 @@ arq_pstate_t arq_printer_state(bool stopped, bool paused, bool printing, uint8_t
   return ARQ_PS_IDLE;
 }
 
+arq_pstate_t arq_with_standby(arq_pstate_t s, bool card_ready) { return (s == ARQ_PS_IDLE && !card_ready) ? ARQ_PS_STANDBY : s; }
+
 uint32_t arq_remaining_s(uint32_t elapsed_s, uint8_t percent) {
   if (percent < ARQ_PROGRESS_MIN || percent >= 100 || elapsed_s < ARQ_ELAPSED_MIN) return 0;
   return (uint32_t)((uint64_t)elapsed_s * (100 - percent) / percent);

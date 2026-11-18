@@ -552,12 +552,13 @@ void arq_more_draw() {
 void arq_more_clear() { grid_more.clear(); }
 
 // ==== IDIOMA (draw_language.cpp) =================================================================================================
-// Mismas acciones que la original: guarda el idioma en la flash SPI y recarga las tablas de textos de MKS. La interfaz ARQUIS esta en espanol.
+// Mismas acciones que la original: guarda el idioma en la flash SPI y recarga las tablas de textos de MKS. ARQUIS UI conserva solo
+// espanol e ingles. Las pantallas ARQUIS estan en espanol; el idioma afecta a los textos de MKS (con ingles se muestran sin traducir).
 static Grid grid_lang;
-static const uint8_t lang_code[7] = { LANG_SIMPLE_CHINESE, LANG_COMPLEX_CHINESE, LANG_ENGLISH, LANG_RUSSIAN, LANG_SPANISH, LANG_FRENCH, LANG_ITALY };
+static const uint8_t lang_code[2] = { LANG_SPANISH, LANG_ENGLISH };
 
 static void lang_mark() {
-  for (uint8_t i = 0; i < 7; ++i) {
+  for (uint8_t i = 0; i < 2; ++i) {
     const bool on = (gCfgItems.language == lang_code[i]);
     arq_opts_set(i, on ? "Activo" : nullptr, on ? ARQ_BTN_SUCCESS : ARQ_BTN_SECONDARY);
   }
@@ -567,7 +568,7 @@ static void lang_cb(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   if (obj->mks_obj_id == ARQ_XID_BACK) { arq_language_clear(); lv_draw_set(); return; }
   const int i = grid_lang.action(obj);
-  if (i < 0 || i > 6) return;
+  if (i < 0 || i > 1) return;
   gCfgItems.language = lang_code[i];
   update_spi_flash();
   disp_language_init();
@@ -576,8 +577,8 @@ static void lang_cb(lv_obj_t *obj, lv_event_t event) {
 
 void arq_language_draw() {
   grid_lang.begin();
-  static const char *const names[7] = { "Chino simplif.", "Chino tradic.", "Ingl\xC3\xA9s", "Ruso", "Espa\xC3\xB1ol", "Franc\xC3\xA9s", "Italiano" };
-  for (uint8_t i = 0; i < 7; ++i) grid_lang.add(i, &arq_icon_gear, names[i]);
+  grid_lang.add(0, &arq_icon_gear, "Espa\xC3\xB1ol");
+  grid_lang.add(1, &arq_icon_gear, "Ingl\xC3\xA9s");
   grid_lang.show(LANGUAGE_UI, "Idioma", lang_cb);
   lang_mark();
 }

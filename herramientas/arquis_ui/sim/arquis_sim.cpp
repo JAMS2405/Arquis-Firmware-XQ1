@@ -78,7 +78,7 @@ static arq_snapshot_t make(arq_pstate_t st) {
   s.fan_n = 2; s.fan[0] = { ARQ_FAN_LAYER, 0, 0 }; s.fan[1] = { ARQ_FAN_AUX, 1, 0 };
   s.state = st;
   switch (st) {
-    case ARQ_PS_IDLE: break;
+    case ARQ_PS_IDLE: case ARQ_PS_STANDBY: break;
     case ARQ_PS_HEATING: s.hot.cur = 168; s.hot.tgt = 210; s.bed.cur = 60; s.bed.tgt = 60; s.fan[0].pct = 0; break;
     case ARQ_PS_AT_TEMP: s.hot.cur = 210; s.hot.tgt = 210; s.bed.cur = 60; s.bed.tgt = 60; break;
     case ARQ_PS_COOLING: s.hot.cur = 118; s.hot.tgt = 0; s.bed.cur = 41; s.bed.tgt = 0; s.fan[0].pct = 100; break;
@@ -758,6 +758,7 @@ int main(int argc, char **argv) {
 
   static const char *names[] = { "dash_1_lista", "dash_2_calentando", "dash_3_temp_alcanzada", "dash_4_enfriando", "dash_5_imprimiendo", "dash_6_pausada", "dash_7_error" };
   for (int st = 0; st < 7; ++st) { arq_snapshot_t s = make((arq_pstate_t)st); dashboard(s, names[st]); }
+  { arq_snapshot_t s = make(ARQ_PS_STANDBY); dashboard(s, "dash_8_reposo"); }
   components("componentes");
   iconos("iconos");
   { arq_snapshot_t s = make(ARQ_PS_PRINTING); dashboard(s, nullptr); arq_dialog_open("Cancelar impresion", "Se detendra la impresion en curso. Esta accion no se puede deshacer.", "Cancelar", "Seguir", true, dlg_cb, 901, 902); dump("dialogo_cancelar"); arq_dialog_close(); }

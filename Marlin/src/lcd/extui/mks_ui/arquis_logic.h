@@ -36,7 +36,7 @@
 
 typedef enum { ARQ_TEMP_OFF, ARQ_TEMP_HEATING, ARQ_TEMP_READY, ARQ_TEMP_COOLING } arq_temp_state_t;
 
-typedef enum { ARQ_PS_IDLE, ARQ_PS_HEATING, ARQ_PS_AT_TEMP, ARQ_PS_COOLING, ARQ_PS_PRINTING, ARQ_PS_PAUSED, ARQ_PS_ERROR } arq_pstate_t;
+typedef enum { ARQ_PS_IDLE, ARQ_PS_HEATING, ARQ_PS_AT_TEMP, ARQ_PS_COOLING, ARQ_PS_PRINTING, ARQ_PS_PAUSED, ARQ_PS_ERROR, ARQ_PS_STANDBY } arq_pstate_t;   // STANDBY = "Reposo" (sin tarjeta SD); se anade al final para no mover los indices
 
 // Estado de un calentador. tol = histeresis de Marlin (TEMP_HYSTERESIS / TEMP_BED_HYSTERESIS).
 arq_temp_state_t arq_temp_state(int16_t cur, int16_t target, int16_t tol);
@@ -44,6 +44,10 @@ arq_temp_state_t arq_temp_state(int16_t cur, int16_t target, int16_t tol);
 // Estado global de la impresora. Prioridad: error > pausada > imprimiendo > calentando > temperatura alcanzada > enfriando > lista.
 // n_heaters/cur/tgt/tol: calentadores presentes (hotend, cama...).
 arq_pstate_t arq_printer_state(bool stopped, bool paused, bool printing, uint8_t n_heaters, const int16_t *cur, const int16_t *tgt, const int16_t *tol);
+
+// "Reposo": la maquina esta apagada y en reposo (estado IDLE) pero SIN tarjeta SD montada. Con tarjeta es "Lista". Solo cambia IDLE:
+// calentando, imprimiendo, pausada, enfriando, error... se muestran igual con o sin tarjeta.
+arq_pstate_t arq_with_standby(arq_pstate_t s, bool card_ready);
 
 // Tiempo restante estimado con la MISMA formula de Marlin (_calculated_remaining_time): elapsed * (100 - p) / p.
 // Devuelve 0 (= desconocido) si el avance o el tiempo son insuficientes. Nunca inventa un valor.

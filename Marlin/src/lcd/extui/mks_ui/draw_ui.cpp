@@ -104,7 +104,9 @@ lv_point_t line_points[4][2] = {
 };
 void gCfgItems_init() {
   gCfgItems.multiple_language = MULTI_LANGUAGE_ENABLE;
-  #if 1 // LCD_LANGUAGE == en
+  #if ENABLED(ARQUIS_UI)    // Arquis: la interfaz esta en espanol (tablas de MKS: solo espanol e ingles; ver tft_multi_language.cpp)
+    gCfgItems.language = LANG_SPANISH;
+  #elif 1 // LCD_LANGUAGE == en
     gCfgItems.language = LANG_ENGLISH;
   #elif LCD_LANGUAGE == zh_CN
     gCfgItems.language = LANG_SIMPLE_CHINESE;

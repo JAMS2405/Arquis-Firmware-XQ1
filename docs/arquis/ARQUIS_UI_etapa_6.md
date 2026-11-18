@@ -33,20 +33,27 @@ Seis recursos no los referencia nada (`arq_icon_check/folder/stop/warn`, `arq_lo
 | 7 | Recortar `text16` a los glifos del español | ≈ 3,5 KB | No recomendado (nombres de archivo con otros acentos dejarían de verse) |
 Con 1 + 5 el margen pasaría de **39 KB a ≈ 70 KB** (≈ 85 % de uso).
 
-## 3. Decisiones de producto pendientes (tuyas)
-1. **Idiomas:** ¿dejo solo español e inglés (ahorra ≈ 30 KB)? La pantalla *Idioma* mostraría 2 opciones en lugar de 7. Es reversible con una línea.
-2. **Reposo / Lista:** hoy es un solo estado ("Lista"). Propuesta con dato real: *Reposo* = sin tarjeta SD montada; *Lista* = con tarjeta y todo apagado.
-3. **"Enfriando":** hoy aparece con un calentador apagado por encima de 50 °C. ¿Lo bajo a 40 °C (más cercano a "seguro de tocar")?
-4. **Apagado automático / remoto** (relé con MKS PWC, ESP32-S3 o OctoPrint): ver la conversación; depende de tu elección y del hardware.
-5. **Perilla:** dijiste que no te afecta. ¿La damos por descartada (las listas y teclados nuevos no la usan) para no gastar flash en ello?
+## 3. Decisiones de producto (tomadas por ti)
+| Tema | Decisión | Estado |
+|---|---|---|
+| Idiomas | Solo **español e inglés** | **Hecho** (ver §3.1) |
+| Reposo / Lista | **Aprobado:** *Reposo* = sin tarjeta SD montada y todo apagado; *Lista* = con tarjeta y todo apagado | **Hecho** (ver §3.2) |
+| Apagado automático / control remoto | **Descartado** (no se hará relé, ESP32-S3 ni OctoPrint) | Cerrado. El interruptor *Autoapagado* sigue oculto sin `MKS_PWC` |
+| Perilla en listas y teclados nuevos | **Descartada** por ahora | Cerrado |
+| Umbral de "Enfriando" (50 °C) | Sin respuesta | **Se mantiene en 50 °C** |
 
-## 4. Comprobaciones que necesitan tu impresora
-- **Cama marcando ≈ 45 ° estando apagada:** con la impresora fría y recién encendida, ¿qué marca el Dashboard? (si es la lectura real del termistor, es un tema de hardware/configuración, no de la interfaz; no se toca la configuración térmica).
-- Prueba segura de la Etapa 5 (5B-3: G-code, Idioma, diálogos de carga; 5B-4: Wi-Fi) — ver `ARQUIS_UI_etapa_5.md` §7.
+### 3.1 Idiomas
+- Con `ARQUIS_UI` activo se compilan solo `LANG_ENGLISH` y `LANG_SPANISH` (`tft_multi_language.cpp`: los bloques de chino simplificado y tradicional, ruso, francés e italiano quedan bajo `#if DISABLED(ARQUIS_UI)`; con `ARQUIS_UI` desactivado compila todo como antes). **Ahorro esperado ≈ 30 KB de Flash** (medido en la auditoría previa: 44,2 KB las tablas de 7 idiomas); la cifra real sale de tu compilación.
+- **Idioma por defecto: español** (antes el arranque forzaba inglés). La tabla de traducción propia (134 textos) sigue completando lo que MKS no trae en español.
+- **Pantalla Idioma:** ahora tiene 2 opciones, *Español* e *Inglés*. Las pantallas ARQUIS están escritas en español; el idioma afecta a los textos que vienen de las tablas de MKS (con *Inglés* se muestran sin traducir).
+
+### 3.2 Reposo y Lista
+- Nuevo estado `ARQ_PS_STANDBY` ("Reposo", punto gris) en `arquis_logic.cpp`: solo cambia el estado "todo apagado" y **sin** tarjeta SD (`!card.isMounted()`). Calentando, imprimiendo, pausada, enfriando y error se muestran igual con o sin tarjeta.
+- Pruebas: 52 de 52 de lógica (9 nuevas) y captura `dash_8_reposo_x2.png`.
 
 ## 5. Plan de trabajo (en este orden)
 1. **Medir** el reparto real de Flash con `auditar_flash.py` sobre tu ELF (pendiente: tu salida).
-2. Aplicar las decisiones 1–3 que apruebes (idiomas, Reposo/Lista, umbral) y los puntos 4–5 de la tabla; comprobar con el simulador, las firmas y tu compilación.
+2. ~~Aplicar las decisiones de idiomas y Reposo/Lista~~ (**hecho**, falta tu compilación para ver el ahorro real); evaluar los puntos 4–5 de la tabla de §2.
 3. Experimento LTO (opcional) en una copia del entorno; solo se adopta si compila, arranca y las pantallas se ven igual.
 4. Revisión de robustez: margen de heap y pruebas de estrés de todas las pantallas nuevas en el simulador (reabrir/cerrar cientos de veces) y repaso de los nombres estáticos frente a las cabeceras de Marlin.
 5. Informe final de Flash/RAM y cierre de la etapa; preparación del paquete de la Etapa 7 (entrega).

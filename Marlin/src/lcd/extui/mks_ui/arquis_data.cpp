@@ -109,7 +109,11 @@ void arq_data_read(arq_snapshot_t *s) {
   int16_t cur[2], tgt[2], tol[2]; uint8_t n = 0;
   if (s->hot.present) { cur[n] = s->hot.cur; tgt[n] = s->hot.tgt; tol[n] = s->hot.tol; ++n; }
   if (s->bed.present) { cur[n] = s->bed.cur; tgt[n] = s->bed.tgt; tol[n] = s->bed.tol; ++n; }
-  s->state = arq_printer_state(IsStopped() || marlin_state == MF_KILLED, paused, printing, n, cur, tgt, tol);
+  bool card_ready = true;      // sin soporte de tarjeta no hay estado "Reposo"
+  #if HAS_MEDIA
+    card_ready = card.isMounted();
+  #endif
+  s->state = arq_with_standby(arq_printer_state(IsStopped() || marlin_state == MF_KILLED, paused, printing, n, cur, tgt, tol), card_ready);
 }
 
 #endif // HAS_TFT_LVGL_UI && ARQUIS_UI

@@ -172,7 +172,7 @@ static const es_item_t es_table[] = {
 };
 
 const char * arq_es(const char *t) {
-  if (!t) return t;
+  if (!t || gCfgItems.language == LANG_ENGLISH) return t;   // con el idioma ingles se muestran los textos de MKS tal cual
   for (uint8_t i = 0; i < COUNT(es_table); ++i) if (*es_table[i].field == t) return es_table[i].es;          // por puntero (rapido)
   for (uint8_t i = 0; i < COUNT(es_table); ++i) if (*es_table[i].field && strcmp(*es_table[i].field, t) == 0) return es_table[i].es;   // por contenido (texto copiado por LVGL)
   return t;

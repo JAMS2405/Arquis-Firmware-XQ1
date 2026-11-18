@@ -43,9 +43,9 @@ static arq_snapshot_t prev;
 static char          pct_txt[6], times_txt[36];
 static char          file_txt[44];
 
-static const char *const state_text[] = { "Lista", "Calentando", "Temp. alcanzada", "Enfriando", "Imprimiendo", "Pausada", "Error" };
+static const char *const state_text[] = { "Lista", "Calentando", "Temp. alcanzada", "Enfriando", "Imprimiendo", "Pausada", "Error", "Reposo" };
 // Colores del punto: verde = correcto, ambar = calentando/pausa, azul = enfriando (proceso pasivo), rojo = error
-static const arq_tint_t state_tint[] = { ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_ACCENT, ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_DANGER };
+static const arq_tint_t state_tint[] = { ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_ACCENT, ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_DANGER, ARQ_TINT_MUTED };
 static const char *const aux_name[] = { "Aux", "Aux 1", "Aux 2", "Aux 3", "Aux 4" };
 
 static void build_row2(bool job) {

@@ -46,8 +46,8 @@ static arq_snapshot_t prev;
 static char           file_txt[44], pct_txt[6], l1_txt[24], l2_txt[24];
 static arq_list_row_t rows[ARQ_LIST_ROWS_MAX];
 
-static const char *const state_text[] = { "Lista", "Calentando", "Temp. alcanzada", "Enfriando", "Imprimiendo", "Pausada", "Error" };
-static const arq_tint_t state_tint[] = { ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_ACCENT, ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_DANGER };
+static const char *const state_text[] = { "Lista", "Calentando", "Temp. alcanzada", "Enfriando", "Imprimiendo", "Pausada", "Error", "Reposo" };
+static const arq_tint_t state_tint[] = { ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_ACCENT, ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_DANGER, ARQ_TINT_MUTED };
 static const arq_tint_t temp_dot[] = { ARQ_TINT_MUTED, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_ACCENT };   // apagado, calentando, objetivo, enfriando
 
 void arq_print_forget() { built = prev_valid = false; chip = home = job = list = b_pause = b_stop = b_obj = b_opt = nullptr; header.bar = header.back = nullptr; }

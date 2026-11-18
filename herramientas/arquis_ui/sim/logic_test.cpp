@@ -23,7 +23,12 @@ int main() {
   EXPECT(arq_temp_state(-5, 0, 3) == ARQ_TEMP_OFF, "lectura negativa no rompe");
 
   // Estados globales (los 7 pedidos)
-  EXPECT(st(false, false, false, 24, 0, 23, 0) == ARQ_PS_IDLE, "reposo/lista");
+  EXPECT(st(false, false, false, 24, 0, 23, 0) == ARQ_PS_IDLE, "lista (todo apagado)");
+  // Reposo = lo anterior pero sin tarjeta SD; solo afecta al estado IDLE
+  EXPECT(arq_with_standby(ARQ_PS_IDLE, true)  == ARQ_PS_IDLE,    "lista: con tarjeta y todo apagado");
+  EXPECT(arq_with_standby(ARQ_PS_IDLE, false) == ARQ_PS_STANDBY, "reposo: sin tarjeta y todo apagado");
+  { const arq_pstate_t o[] = { ARQ_PS_HEATING, ARQ_PS_AT_TEMP, ARQ_PS_COOLING, ARQ_PS_PRINTING, ARQ_PS_PAUSED, ARQ_PS_ERROR, ARQ_PS_STANDBY };
+    for (arq_pstate_t x : o) EXPECT(arq_with_standby(x, false) == x && arq_with_standby(x, true) == x, "reposo: no cambia el estado %d", (int)x); }
   EXPECT(st(false, false, false, 168, 210, 60, 60) == ARQ_PS_HEATING, "calentando (hotend)");
   EXPECT(st(false, false, false, 24, 0, 40, 60) == ARQ_PS_HEATING, "calentando (solo cama)");
   EXPECT(st(false, false, false, 210, 210, 60, 60) == ARQ_PS_AT_TEMP, "temperatura alcanzada");
