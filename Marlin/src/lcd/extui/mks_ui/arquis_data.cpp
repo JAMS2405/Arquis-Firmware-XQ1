@@ -82,7 +82,7 @@ void arq_data_read(arq_snapshot_t *s) {
     }
   #endif
   if (s->job) {
-    s->elapsed_s = print_job_timer.duration().value;
+    s->elapsed_s = print_job_timer.duration(); // segundos (Stopwatch::duration devuelve millis_t en s)
     if (s->sd_job) s->remaining_s = arq_remaining_s(s->elapsed_s, s->pct);
   }
 

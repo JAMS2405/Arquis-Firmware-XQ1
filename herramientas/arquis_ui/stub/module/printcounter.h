@@ -1,4 +1,4 @@
 #pragma once
-struct duration_t { uint32_t value; };
-class PrintJobTimer { public: static duration_t duration() { return { 0 }; } };
+// Stopwatch::duration() real: static millis_t duration() -> segundos
+class PrintJobTimer { public: static uint32_t duration() { return 0; } };
 extern PrintJobTimer print_job_timer;

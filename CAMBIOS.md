@@ -89,3 +89,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v8: auditoría previa a la Etapa 3
 - Correcciones de seguridad: "Mover" y "Ajustes" deshabilitados con impresión activa; `arq_nav_go()` nunca abre el explorador (card.mount) con un trabajo activo; foco de perilla y grupos corregidos; diálogos cerrados al salir; fuente `num20` eliminada. Informe: `docs/arquis/AUDITORIA_pre_etapa3.md`.
 - Nuevo: `herramientas/arquis_ui/auditar_flash.py` (mide Flash/RAM y reparto por módulo tras `pio run`).
+
+## v9 — Primera compilacion real (PC del usuario)
+- `arquis_data.cpp`: `print_job_timer.duration()` devuelve `millis_t` (segundos) en Marlin 2.1.2.10, no `duration_t`. Quitado `.value`.
+- Causa: mi cabecera stub `herramientas/arquis_ui/stub/module/printcounter.h` tenia la firma equivocada y la comprobacion previa dio un falso OK. Stub corregido.
