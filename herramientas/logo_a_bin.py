@@ -7,11 +7,12 @@ import sys
 from PIL import Image
 import numpy as np
 src = sys.argv[1] if len(sys.argv) > 1 else "logo_arquis.png"
-img = Image.open(src).convert("RGB")
+img = Image.open(src).convert("RGBA")
+bgc = Image.new("RGBA", img.size, (0x0B, 0x12, 0x20, 255)); bgc.alpha_composite(img); img = bgc.convert("RGB")
 # ajusta a 480x320 manteniendo proporcion, fondo negro
 W, H = 480, 320
-img.thumbnail((W, H), Image.LANCZOS)
-canvas = Image.new("RGB", (W, H), (0, 0, 0))
+img = img.resize((int(img.width * 300 / img.height), 300), Image.LANCZOS)
+canvas = Image.new("RGB", (W, H), (0x0B, 0x12, 0x20))
 canvas.paste(img, ((W - img.width) // 2, (H - img.height) // 2))
 a = np.asarray(canvas, dtype=np.uint16)
 v = ((a[..., 0] >> 3) << 11) | ((a[..., 1] >> 2) << 5) | (a[..., 2] >> 3)

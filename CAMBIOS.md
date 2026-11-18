@@ -58,3 +58,8 @@ Nota: Marlin renombro DEFAULT_Kp/Ki/Kd -> DEFAULT_KP/KI/KD (ya adaptado).
 
 ## NO probado (necesita la impresora)
 Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impresion real. Primera prueba sugerida: archivo corto con 2-3 objetos (M486) y la boquilla sin filamento / cama fria.
+
+## Iconos y logo propios (v2)
+- `bmp_logo.bin`: tu logo (A azul/verde con circuitos) sobre fondo navy, 480x320.
+- 21 iconos `bmp_*.bin` (117x140) redibujados en estilo línea: trazo azul #25ABE2, acentos verdes #4CB050, nodos de circuito. Fuentes SVG en `herramientas/iconos_svg`, generador `herramientas/iconos_a_bin.py`.
+- Solo cambian archivos de la SD (`assets`); el firmware compilado no cambia.
