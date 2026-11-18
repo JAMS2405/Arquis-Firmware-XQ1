@@ -486,8 +486,10 @@ void arq_options_draw() {
   add(ACT_TEMP, &arq_icon_temp, "Temperatura");
   add(ACT_FILAMENT, &arq_icon_filament, "Filamento");
   add(ACT_FAN, &arq_icon_fan, "Ventiladores");
-  o_power_idx = o_n;
-  add(ACT_POWEROFF, &arq_icon_power, "Autoapagado", power_sub(), gCfgItems.finish_power_off ? ARQ_BTN_SUCCESS : ARQ_BTN_SECONDARY);
+  #if HAS_SUICIDE     // sin control de alimentacion (pin SUICIDE) el autoapagado no hace nada al terminar: no se muestra un interruptor que no actua
+    o_power_idx = o_n;
+    add(ACT_POWEROFF, &arq_icon_power, "Autoapagado", power_sub(), gCfgItems.finish_power_off ? ARQ_BTN_SUCCESS : ARQ_BTN_SECONDARY);
+  #endif
   if (uiCfg.print_state != WORKING) {                      // como la original: mover y extruir solo sin una impresion en marcha
     add(ACT_EXTRUDE, &arq_icon_down, "Extruir");
     add(ACT_MOVE, &arq_icon_move, "Mover");
