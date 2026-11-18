@@ -63,3 +63,9 @@ Flash: las vistas nuevas miden unos 11 KB de código (Thumb, `-Os`) y los iconos
 - Las cuatro pantallas con paso/estado (Temperatura, Mover, Extrusión y Opciones) dependen de que `uiCfg.*` tenga los valores por defecto de Marlin (`stepHeat`, `move_dist`, `extruStep`…), que se inician en `draw_ui.cpp`.
 - La perilla (encoder) recorre los botones, pero en el explorador y en Cancelar objeto no recorre las filas/objetos (un solo objeto LVGL por lista).
 - Sin miniaturas en la lista de archivos (ver §2).
+
+## 7. Miniatura en "Imprimir archivo" (añadido tras la primera revisión)
+Al elegir un archivo se muestra su miniatura (200 × 200) a la izquierda, con el nombre y los botones Cancelar / Imprimir a la derecha. Si el archivo no trae miniatura se ve un recuadro "Sin miniatura".
+- Es **solo lectura**: usa el mismo formato (`;gimage:`, 200 filas de 809 bytes) y la misma lectura que `gcode_preview()` de la interfaz original, pero no escribe en la flash SPI, no abre el archivo de forma permanente (lo cierra tras cada fila) y no inicia nada. Al pulsar Imprimir la interfaz original vuelve a cargar la miniatura y arranca como siempre.
+- Se pinta fila a fila (2 por pasada de `GUI_RefreshPage`), directamente en la pantalla (como la miniatura de la supervisión); la zona está libre de objetos LVGL.
+- **No verificado en la pantalla real:** cuánto tarda en aparecer con tu SD y tus archivos, y que la miniatura sale con los colores correctos. En el simulador solo se comprobó el diseño y la comprobación de firmas.

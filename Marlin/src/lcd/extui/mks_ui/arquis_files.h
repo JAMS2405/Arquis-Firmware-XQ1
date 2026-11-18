@@ -31,3 +31,6 @@
 #include <lvgl.h>
 
 void arq_print_confirm_draw(lv_obj_t *scr, const char *file_name, lv_event_cb_t ok_cb, lv_event_cb_t cancel_cb);
+
+// Miniatura del archivo elegido (solo LECTURA): se pinta fila a fila desde GUI_RefreshPage, sin escribir en la flash ni iniciar nada.
+void arq_files_poll();

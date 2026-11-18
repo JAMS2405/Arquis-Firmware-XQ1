@@ -29,6 +29,7 @@ static void flush_cb(lv_disp_drv_t *drv, const lv_area_t *a, lv_color_t *c) {
   lv_disp_flush_ready(drv);
 }
 static void run(int n = 20) { for (int i = 0; i < n; ++i) { lv_tick_inc(10); lv_task_handler(); } }
+static int g_thumb_x = 2, g_thumb_y = 36;
 static int g_thumb_pct = -1;   // >= 0: simula la miniatura del G-code que la interfaz original pinta fuera de LVGL (x 2, y 36, 200x200)
 static void paint_thumb(int pct) {
   const int line = 200 - 200 * pct / 100;
@@ -38,7 +39,7 @@ static void paint_thumb(int pct) {
       uint16_t c = d2 < 70 * 70 ? 0xFD20 : d2 < 90 * 90 ? 0xC618 : 0x7BEF;       // "pieza" naranja con borde gris
       if (y < line) c = (c >> 1) & 0x7BEF;                                         // pendiente: atenuado
       if (y == line && pct < 100) c = 0x05BF;                                      // linea de altura
-      fb[(36 + y) * ARQ_W + 2 + x] = c;
+      fb[(g_thumb_y + y) * ARQ_W + g_thumb_x + x] = c;
     }
 }
 static void dump(const char *name) {
@@ -164,7 +165,7 @@ static arq_files_model_t fmodel(int n, uint8_t mask, bool up, bool down, bool no
   arq_files_model_t m; memset(&m, 0, sizeof(m)); m.n = n; m.dir_mask = mask; m.can_up = up; m.can_down = down; m.no_card = nocard; m.title = title;
   for (int i = 0; i < ARQ_FILE_ROWS; ++i) m.name[i] = fnames[i]; return m; }
 static void files_screen(const arq_files_model_t &m, const char *shot) { lv_obj_t *s = new_screen(); arq_files_build(s, ccb); arq_files_update(&m); if (shot) dump(shot); }
-static void confirm_screen(const char *file, const char *shot) { lv_obj_t *s = new_screen(); arq_confirm_build(s, ccb, file); if (shot) dump(shot); }
+static void confirm_screen(const char *file, const char *shot, bool thumb = false) { lv_obj_t *s = new_screen(); arq_confirm_build(s, ccb, file, thumb); if (shot) { if (thumb) { g_thumb_x = ARQ_CONFIRM_THUMB_X; g_thumb_y = ARQ_CONFIRM_THUMB_Y; g_thumb_pct = 0; } dump(shot); g_thumb_pct = -1; g_thumb_x = 2; g_thumb_y = 36; } }
 
 // ---- Componentes y iconos ------------------------------------------------------------------------------------------------------
 static arq_temp_tile_t c_t1, c_t2, c_t3, c_t4;
@@ -564,7 +565,7 @@ static void tests() {
         c_last = -1; tap(20, 22); CHECK(c_last == ARQ_FLID_BACK, "explorador: Atras");
         arq_files_model_t m2 = fmodel(3, 0, false, false); arq_files_update(&m2); run(); pick_last = -9; tap(200, 52 + 4 * 42 + 19); CHECK(pick_last == -1, "explorador: una fila sin archivo no se puede tocar");
         arq_files_model_t m3 = fmodel(6, 0, false, true); arq_files_update(&m3); run(); c_last = -1; tap(444, 100); CHECK(c_last == -1, "explorador: sin pagina anterior el boton esta deshabilitado");
-        confirm_screen("soporte.gcode", nullptr); c_count = 0; tap(140, 270); CHECK(c_count == 1 && c_last == ARQ_PC_CANCEL, "confirmar: Cancelar"); c_count = 0; tap(340, 270); CHECK(c_count == 1 && c_last == ARQ_PC_OK, "confirmar: Imprimir");
+        confirm_screen("soporte.gcode", nullptr, true); c_count = 0; tap(280, 240); CHECK(c_count == 1 && c_last == ARQ_PC_CANCEL, "confirmar: Cancelar"); c_count = 0; tap(420, 240); CHECK(c_count == 1 && c_last == ARQ_PC_OK, "confirmar: Imprimir");
         new_screen(); run(); } }
   }
 
@@ -624,7 +625,8 @@ int main(int argc, char **argv) {
     files_screen(fmodel(4, 1 << 2, true, false, false, "pruebas"), "fil_2_carpeta");
     files_screen(fmodel(0, 0, false, false, true), "fil_3_sin_sd");
     files_screen(fmodel(0, 0, false, false, false, "pruebas"), "fil_4_vacia");
-    confirm_screen("soporte_motor_nema17_v3_final.gcode", "fil_5_confirmar");
+    confirm_screen("soporte_motor_nema17_v3_final.gcode", "fil_5_confirmar", true);
+    confirm_screen("tapa_caja.gcode", "fil_6_confirmar_sin_miniatura", false);
   }
   tests();
   return fails ? 1 : 0;

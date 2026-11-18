@@ -42,6 +42,7 @@
 
 #if ENABLED(ARQUIS_UI)
   #include "arquis_print.h"
+  #include "arquis_files.h"
 #endif
 
 #if ENABLED(POWER_LOSS_RECOVERY)
@@ -747,6 +748,7 @@ void print_time_run() {
 void GUI_RefreshPage() {
   #if ENABLED(ARQUIS_UI)
     arq_print_poll();   // fin de impresion desde cualquier pantalla (ver arquis_print.cpp)
+    arq_files_poll();   // miniatura de la confirmacion de "Imprimir archivo" (ver arquis_files.cpp)
   #endif
   if ((systick_uptime_millis % 1000) == 0) temps_update_flag = true;
   if ((systick_uptime_millis % 3000) == 0) printing_rate_update_flag = true;

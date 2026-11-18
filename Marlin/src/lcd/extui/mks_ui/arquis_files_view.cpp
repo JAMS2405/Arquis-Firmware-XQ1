@@ -136,14 +136,20 @@ int8_t arq_files_pick(lv_obj_t *o, const lv_point_t *p) {
   return (int8_t)i;
 }
 
-void arq_confirm_build(lv_obj_t *scr, lv_event_cb_t cb, const char *file_name) {
+void arq_confirm_build(lv_obj_t *scr, lv_event_cb_t cb, const char *file_name, bool has_thumb) {
   arq_theme_init();
   arq_header_t hd;
   arq_header_create(&hd, scr, "Imprimir archivo", false, cb, ARQ_PC_CANCEL);
-  lv_obj_t *card = arq_card_create(scr, 40, 60, ARQ_W - 80, 150, ARQ_LAYOUT_DIALOG, ARQ_BTN_SECONDARY, nullptr, 0);
+  if (!has_thumb) {                                   // recuadro del mismo tamano que la miniatura
+    lv_obj_t *ph = arq_card_create(scr, ARQ_CONFIRM_THUMB_X, ARQ_CONFIRM_THUMB_Y, ARQ_CONFIRM_THUMB_S, ARQ_CONFIRM_THUMB_S, ARQ_LAYOUT_TILE, ARQ_BTN_SECONDARY, nullptr, 0);
+    arq_card_set_icon(ph, &arq_icon_file, ARQ_TINT_MUTED);
+    arq_card_set_title(ph, "Sin miniatura", ARQ_TEXT_MUTED);
+  }
+  const lv_coord_t rx = ARQ_CONFIRM_THUMB_X + ARQ_CONFIRM_THUMB_S + ARQ_GAP + 2, rw = ARQ_W - ARQ_MARGIN - rx;
+  lv_obj_t *card = arq_card_create(scr, rx, ARQ_CONFIRM_THUMB_Y, rw, 128, ARQ_LAYOUT_DIALOG, ARQ_BTN_SECONDARY, nullptr, 0);
   arq_card_set_title(card, "\xC2\xBFImprimir este archivo?", ARQ_TEXT_BODY);
   arq_card_set_sub(card, file_name, ARQ_TEXT_MUTED);
-  const lv_coord_t bw = (ARQ_W - 80 - ARQ_GAP) / 2;
-  arq_button_create(scr, 40, 226, bw, 68, nullptr, "Cancelar", ARQ_BTN_SECONDARY, cb, ARQ_PC_CANCEL);
-  arq_button_create(scr, 40 + bw + ARQ_GAP, 226, bw, 68, &arq_icon_play, "Imprimir", ARQ_BTN_PRIMARY, cb, ARQ_PC_OK);
+  const lv_coord_t by = ARQ_CONFIRM_THUMB_Y + 128 + ARQ_GAP, bh = ARQ_CONFIRM_THUMB_Y + ARQ_CONFIRM_THUMB_S - by, bw = (rw - ARQ_GAP) / 2;
+  arq_button_create(scr, rx, by, bw, bh, nullptr, "Cancelar", ARQ_BTN_SECONDARY, cb, ARQ_PC_CANCEL);
+  arq_button_create(scr, rx + bw + ARQ_GAP, by, rw - bw - ARQ_GAP, bh, nullptr, "Imprimir", ARQ_BTN_PRIMARY, cb, ARQ_PC_OK);
 }

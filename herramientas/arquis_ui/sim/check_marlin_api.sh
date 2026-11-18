@@ -8,7 +8,7 @@ LV=${1:-/tmp/arquis_lvgl}
 MKS="$(cd ../../../Marlin/src/lcd/extui/mks_ui && pwd)"
 T=$(mktemp -d); mkdir -p "$T/src/lcd/extui/mks_ui"
 cp -r ../stub/inc ../stub/module ../stub/sd ../stub/gcode ../stub/feature ../stub/MarlinCore.h "$T/src/"
-cp ../stub/draw_ui.h "$T/src/lcd/extui/mks_ui/"
+cp ../stub/draw_ui.h ../stub/SPI_TFT.h ../stub/tft_lvgl_configuration.h "$T/src/lcd/extui/mks_ui/"
 cp $MKS/arquis_*.h $MKS/arquis_data.cpp $MKS/arquis_nav.cpp $MKS/arquis_dashboard.cpp $MKS/arquis_dashboard_view.cpp $MKS/arquis_print.cpp $MKS/arquis_print_view.cpp $MKS/arquis_objects_view.cpp $MKS/arquis_ctrl_view.cpp $MKS/arquis_controls.cpp $MKS/arquis_widgets.cpp $MKS/arquis_theme.cpp $MKS/arquis_logic.cpp "$T/src/lcd/extui/mks_ui/" 2>/dev/null
 cp $MKS/arquis_icons.h $MKS/arquis_logo.h $MKS/draw_cancel_object.cpp "$T/src/lcd/extui/mks_ui/"
 cp "$MKS/../../../feature/cancel_object.h" "$T/src/feature/"   # cabecera REAL de Marlin

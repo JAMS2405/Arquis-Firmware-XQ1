@@ -2,7 +2,7 @@
 #pragma once
 #include <lvgl.h>
 #include "../../../inc/MarlinConfigPre.h"
-typedef enum { MAIN_UI, PRINT_READY_UI, PRINTING_UI, PRINT_FILE_UI, CANCEL_OBJECT_UI, PREHEAT_UI, FAN_UI, MOVE_MOTOR_UI, EXTRUSION_UI, OPERATE_UI } DISP_STATE;
+typedef enum { MAIN_UI, PRINT_READY_UI, PRINTING_UI, DIALOG_UI, PRINT_FILE_UI, CANCEL_OBJECT_UI, PREHEAT_UI, FAN_UI, MOVE_MOTOR_UI, EXTRUSION_UI, OPERATE_UI } DISP_STATE;
 typedef struct { DISP_STATE _disp_state[100]; int _disp_index; } DISP_STATE_STACK;
 extern DISP_STATE_STACK disp_state_stack;
 extern DISP_STATE disp_state;
@@ -16,6 +16,7 @@ typedef struct UI_Config_Struct {
   uint8_t extruSpeed;
   static constexpr uint8_t eSpeedH = 20, eSpeedN = 10, eSpeedL = 1;
   uint8_t print_state;
+  uint8_t dialogType;
   uint16_t moveSpeed, moveSpeed_bak;
   float move_dist;
   int16_t hotendTargetTempBak;
@@ -42,4 +43,8 @@ lv_obj_t* lv_btn_create(lv_obj_t *par, lv_coord_t x, lv_coord_t y, lv_coord_t w,
 
 extern char public_buf_l[30];
 void lv_draw_preHeat(); void lv_draw_extrusion(); void lv_draw_filament_change(); void lv_draw_change_speed(); void lv_draw_baby_stepping(); void update_spi_flash();
-enum { DIALOG_TYPE_PRINT_FILE = 1 }; void lv_draw_dialog(uint8_t type); void lv_draw_media_select(); void lv_clear_print_file(); typedef struct { uint8_t dummy; } disp_stub_t;
+enum { DIALOG_TYPE_PRINT_FILE = 1 };
+#include "print_file_types.h"    // LIST_FILE/DIR_OFFSET REALES (extraidos de draw_print_file.h por check_marlin_api.sh)
+extern uint8_t sel_id; bool have_pre_pic(char *path); int ascii2dec_test(char *ascii);
+#define HAS_GCODE_PREVIEW 1
+void lv_draw_dialog(uint8_t type); void lv_draw_media_select(); void lv_clear_print_file(); typedef struct { uint8_t dummy; } disp_stub_t;

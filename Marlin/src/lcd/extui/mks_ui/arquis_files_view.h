@@ -49,6 +49,11 @@ void   arq_files_update(const arq_files_model_t *m);
 void   arq_files_forget();
 int8_t arq_files_pick(lv_obj_t *o, const lv_point_t *p);      // fila bajo el punto (coord. de pantalla); -1 = ninguna
 
-// Confirmacion de "Imprimir archivo": cabecera con Atras/Cancelar, nombre del archivo y botones [Cancelar] [Imprimir] (5 objetos)
+// Confirmacion de "Imprimir archivo": cabecera con Atras/Cancelar, nombre del archivo y botones [Cancelar] [Imprimir].
+// Si el archivo tiene miniatura, la zona ARQ_CONFIRM_THUMB_* (200 x 200) queda LIBRE de objetos LVGL: la miniatura se pinta directamente
+// en la pantalla (arquis_files.cpp), igual que hace la interfaz original. Sin miniatura se muestra un recuadro "Sin miniatura".
+#define ARQ_CONFIRM_THUMB_X 10
+#define ARQ_CONFIRM_THUMB_Y 56
+#define ARQ_CONFIRM_THUMB_S 200
 enum { ARQ_PC_CANCEL = 11, ARQ_PC_OK };
-void arq_confirm_build(lv_obj_t *scr, lv_event_cb_t cb, const char *file_name);
+void arq_confirm_build(lv_obj_t *scr, lv_event_cb_t cb, const char *file_name, bool has_thumb);
