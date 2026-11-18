@@ -71,6 +71,7 @@ static lv_obj_t *buttonExt1, *labelExt1, *buttonFanstate, *labelFan;
 
 enum { ID_TOOL = 1, ID_SET, ID_PRINT, ID_INFO_EXT, ID_INFO_BED, ID_INFO_FAN };
 
+#if DISABLED(ARQUIS_UI)   // con ARQUIS_UI el Dashboard usa su propio manejador (arquis_dashboard.cpp)
 static void event_handler(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   lv_clear_ready_print();
@@ -83,6 +84,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
     case ID_PRINT: TERN(MULTI_VOLUME, lv_draw_media_select(), lv_draw_print_file()); break;
   }
 }
+#endif // DISABLED(ARQUIS_UI)
 
 lv_obj_t *limit_info, *det_info;
 lv_style_t limit_style, det_style;

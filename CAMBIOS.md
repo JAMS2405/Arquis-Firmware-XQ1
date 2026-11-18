@@ -93,3 +93,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v9 — Primera compilacion real (PC del usuario)
 - `arquis_data.cpp`: `print_job_timer.duration()` devuelve `millis_t` (segundos) en Marlin 2.1.2.10, no `duration_t`. Quitado `.value`.
 - Causa: mi cabecera stub `herramientas/arquis_ui/stub/module/printcounter.h` tenia la firma equivocada y la comprobacion previa dio un falso OK. Stub corregido.
+
+## v10 — Primera compilacion completa correcta (PC del usuario)
+- `pio run -e mks_robin_nano_v3_1_usb_flash_drive_msc`: SUCCESS. RAM 59.5 % (77996 B), Flash 84.8 % (403152 de 475136 B, quedan 71984 B).
+- Unica advertencia propia: `event_handler` sin usar en `draw_ready_print.cpp` con ARQUIS_UI activo -> envuelto en `#if DISABLED(ARQUIS_UI)` (el original queda intacto al desactivar ARQUIS_UI).
