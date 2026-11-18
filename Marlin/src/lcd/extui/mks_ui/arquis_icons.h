@@ -29,6 +29,12 @@ extern const lv_img_dsc_t arq_icon_home;
 extern const lv_img_dsc_t arq_icon_file;
 extern const lv_img_dsc_t arq_icon_speed;
 
+#define ARQ_ICON_SMALL 20
+// Iconos pequenos (20 px): ventiladores
+extern const lv_img_dsc_t arq_icon_s_fan;
+extern const lv_img_dsc_t arq_icon_s_heatsink;
+extern const lv_img_dsc_t arq_icon_s_aux;
+
 #ifdef __cplusplus
 }
 #endif

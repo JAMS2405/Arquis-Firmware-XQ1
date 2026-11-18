@@ -35,14 +35,19 @@
  */
 
 #include "arquis_theme.h"
+#include "arquis_logo.h"
+#include "arquis_logic.h"
 
 typedef enum {
   ARQ_LAYOUT_TILE,     // boton de navegacion: icono arriba, texto debajo (centrado)
   ARQ_LAYOUT_BUTTON,   // boton: icono y/o texto en una linea (centrado)
-  ARQ_LAYOUT_STAT,     // tarjeta de dato: icono + titulo, punto de estado, valor grande, subtitulo
+  ARQ_LAYOUT_STAT,     // tarjeta de dato: icono + titulo, punto de estado, valor grande (+ valor pequeno a la derecha), subtitulo
   ARQ_LAYOUT_CHIP,     // indicador: punto de color + texto
-  ARQ_LAYOUT_HEADER,   // barra superior con titulo
-  ARQ_LAYOUT_BAR       // barra de progreso
+  ARQ_LAYOUT_HEADER,   // barra superior con logo y titulo
+  ARQ_LAYOUT_BAR,      // barra de progreso
+  ARQ_LAYOUT_FANS,     // lista de ventiladores (icono, nombre, porcentaje, mini barra)
+  ARQ_LAYOUT_PRINT,    // tarjeta de impresion: archivo, barra, porcentaje, estado, tiempos
+  ARQ_LAYOUT_DIALOG    // cuadro de dialogo: titulo y mensaje con ajuste de linea
 } arq_layout_t;
 
 lv_obj_t * arq_card_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
@@ -50,12 +55,16 @@ lv_obj_t * arq_card_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coor
 void arq_card_set_icon(lv_obj_t *c, const lv_img_dsc_t *icon, arq_tint_t tint);
 void arq_card_set_title(lv_obj_t *c, const char *text, arq_text_t role);
 void arq_card_set_value(lv_obj_t *c, const char *text, arq_text_t role);
+void arq_card_set_value2(lv_obj_t *c, const char *text);      // texto pequeno a la derecha del valor (p. ej. objetivo)
 void arq_card_set_sub(lv_obj_t *c, const char *text, arq_text_t role);
 void arq_card_set_dot(lv_obj_t *c, arq_tint_t tint);          // ARQ_TINT_AUTO oculta el punto
-void arq_card_set_percent(lv_obj_t *c, uint8_t percent);      // solo ARQ_LAYOUT_BAR
+void arq_card_set_percent(lv_obj_t *c, uint8_t percent);      // barra / tarjeta de impresion
+void arq_card_set_bar_tint(lv_obj_t *c, arq_tint_t tint);     // color de relleno de la barra (ARQ_TINT_AUTO = azul del tema)
+void arq_card_set_logo(lv_obj_t *c, bool show);               // solo cabecera: muestra la marca ARQUIS
 void arq_card_refresh(lv_obj_t *c);                           // redibuja (si el contenido de un buffer cambio)
 
 void       arq_screen_apply(lv_obj_t *scr);                   // fondo de pantalla ARQUIS
+void       arq_group_add_clickables(lv_group_t *g, lv_obj_t *scr);   // registra las tarjetas clicables de la pantalla en el grupo de la perilla
 
 // Atajos ----------------------------------------------------------------------------------------------
 lv_obj_t * arq_nav_tile_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h, const lv_img_dsc_t *icon,
@@ -66,14 +75,23 @@ lv_obj_t * arq_chip_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coor
 lv_obj_t * arq_progress_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h);
 #define    arq_progress_set(bar, pct) arq_card_set_percent((bar), (pct))
 
-// Cabecera de pantalla: barra con titulo y, opcionalmente, boton Atras (2 objetos)
+// Cabecera de pantalla: barra con titulo (y logo) y, opcionalmente, boton Atras (1 o 2 objetos)
 typedef struct { lv_obj_t *bar, *back; } arq_header_t;
-void arq_header_create(arq_header_t *hd, lv_obj_t *parent, const char *static_title, lv_event_cb_t back_cb, uint16_t back_id);
+void arq_header_create(arq_header_t *hd, lv_obj_t *parent, const char *static_title, bool logo, lv_event_cb_t back_cb, uint16_t back_id);
 
-// Tarjeta de temperatura (hotend / cama): 1 objeto -----------------------------------------------------
-typedef enum { ARQ_TEMP_OFF, ARQ_TEMP_HEATING, ARQ_TEMP_READY, ARQ_TEMP_COOLING } arq_temp_state_t;
-typedef struct { lv_obj_t *card; int16_t cur, tgt; uint8_t state; char vbuf[10], tbuf[16]; } arq_temp_tile_t;
+// Tarjeta de temperatura (hotend / cama): 1 objeto --------------------------------------------------------
+typedef struct { lv_obj_t *card; int16_t cur, tgt; uint8_t state; char vbuf[10], tbuf[10]; } arq_temp_tile_t;
 void arq_temp_tile_create(arq_temp_tile_t *t, lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
-                          const lv_img_dsc_t *icon, const char *static_name);
-void arq_temp_tile_update(arq_temp_tile_t *t, int16_t cur, int16_t target);   // solo redibuja si cambia algo
-arq_temp_state_t arq_temp_state(int16_t cur, int16_t target);
+                          const lv_img_dsc_t *icon, const char *static_name, lv_event_cb_t cb = nullptr, uint16_t id = 0);
+void arq_temp_tile_update(arq_temp_tile_t *t, int16_t cur, int16_t target, int16_t tol);   // solo redibuja si cambia algo
+
+// Lista de ventiladores: el llamador conserva el arreglo de filas ------------------------------------------
+typedef struct { const lv_img_dsc_t *icon; const char *label; uint8_t pct; char txt[6]; } arq_fan_row_t;
+#define ARQ_FAN_ROWS_MAX 3
+void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n);
+
+// Dialogo de confirmacion (modal, sobre la capa superior). Solo uno abierto a la vez: 4 objetos, se liberan al cerrar.
+lv_obj_t * arq_dialog_open(const char *title, const char *msg, const char *ok_text, const char *cancel_text, bool danger,
+                           lv_event_cb_t cb, uint16_t ok_id, uint16_t cancel_id);
+void       arq_dialog_close();
+bool       arq_dialog_is_open();

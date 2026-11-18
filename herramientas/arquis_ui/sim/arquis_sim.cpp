@@ -1,12 +1,13 @@
-// Simulador PC de ARQUIS UI: compila LVGL 6.1.1-MKS real + arquis_theme/widgets/icons/fuentes y vuelca capturas PPM.
-// Usa el mismo tipo de bufer parcial que el firmware (480 x 14 px) para que el renderizado sea el real.
+// Simulador PC de ARQUIS UI: compila LVGL 6.1.1-MKS real + la vista del Dashboard y los componentes, los ejecuta (en ARM de 32 bits
+// con qemu-user) y vuelca capturas PPM. Usa el mismo bufer parcial que el firmware (480 x 14 px) y el heap de 16 KB.
+// OJO: aqui los datos del Dashboard son "snapshots" de PRUEBA para ejercitar la VISTA; la lectura real de Marlin
+// (arquis_data.cpp) no corre en el simulador.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "arquis_widgets.h"
+#include "arquis_dashboard_view.h"
 
-// Ganchos que en el firmware real definen draw_print_file.cpp (miniatura de G-code) y la libreria: aqui no se usan.
-extern "C" {
+extern "C" {   // ganchos que el firmware real define en draw_print_file.cpp (miniatura de G-code) y la libreria: no se usan aqui
   uint32_t lv_open_gcode_file(char *) { return 0; }
   void lv_gcode_file_read(uint8_t *) {}
   void lv_close_gcode_file() {}
@@ -16,32 +17,31 @@ extern "C" {
 static uint16_t fb[ARQ_W * ARQ_H];
 static lv_disp_buf_t disp_buf;
 static lv_color_t buf1[ARQ_W * 14];
+static const char *outdir = ".";
 
 static void flush_cb(lv_disp_drv_t *drv, const lv_area_t *a, lv_color_t *c) {
   for (int y = a->y1; y <= a->y2; ++y)
     for (int x = a->x1; x <= a->x2; ++x) fb[y * ARQ_W + x] = (c++)->full;
   lv_disp_flush_ready(drv);
 }
-
+static void run(int n = 20) { for (int i = 0; i < n; ++i) { lv_tick_inc(10); lv_task_handler(); } }
 static void dump(const char *name) {
-  for (int i = 0; i < 20; ++i) { lv_tick_inc(10); lv_task_handler(); }
-  FILE *f = fopen(name, "wb");
+  run();
+  char p[256]; snprintf(p, sizeof(p), "%s/%s.ppm", outdir, name);
+  FILE *f = fopen(p, "wb");
   fprintf(f, "P6\n%d %d\n255\n", ARQ_W, ARQ_H);
   for (int i = 0; i < ARQ_W * ARQ_H; ++i) {
-    const uint16_t v = fb[i];
-    const uint8_t r = (v >> 11) & 31, g = (v >> 5) & 63, b = v & 31;
+    const uint16_t v = fb[i]; const uint8_t r = (v >> 11) & 31, g = (v >> 5) & 63, b = v & 31;
     fputc((r << 3) | (r >> 2), f); fputc((g << 2) | (g >> 4), f); fputc((b << 3) | (b >> 2), f);
   }
   fclose(f);
 }
+static uint32_t used() { lv_mem_monitor_t m; lv_mem_monitor(&m); return m.total_size - m.free_size; }
+static uint32_t biggest() { lv_mem_monitor_t m; lv_mem_monitor(&m); return m.free_biggest_size; }
+static int fails = 0, ev_count = 0, ev_last = -1;
+#define CHECK(c, ...) do { if (c) { printf("[test] OK    "); } else { printf("[test] FALLA "); ++fails; } printf(__VA_ARGS__); printf("\n"); } while (0)
 
-static void mem(const char *tag) {
-  lv_mem_monitor_t m; lv_mem_monitor(&m);
-  printf("[mem] %-28s heap LVGL: usado %5u B de %u B (%u%%), max bloque libre %u B, objetos creados OK\n",
-         tag, (unsigned)(m.total_size - m.free_size), (unsigned)m.total_size, (unsigned)m.used_pct, (unsigned)m.free_biggest_size);
-}
-
-static void cb(lv_obj_t *, lv_event_t) {}
+static void cb(lv_obj_t *o, lv_event_t ev) { if (ev == LV_EVENT_RELEASED) { ++ev_count; ev_last = o->mks_obj_id; } }
 
 static lv_obj_t * new_screen() {
   lv_obj_t *old = lv_scr_act(), *scr = lv_obj_create(nullptr, nullptr);   // como el firmware: se libera la pantalla anterior
@@ -51,155 +51,208 @@ static lv_obj_t * new_screen() {
   return scr;
 }
 
-
-// Costo en heap LVGL de cada componente (bytes), medido en ARM de 32 bits.
-static uint32_t used() { lv_mem_monitor_t m; lv_mem_monitor(&m); return m.total_size - m.free_size; }
-#define COST(name, expr) { lv_obj_t *s_ = new_screen(); uint32_t a_ = used(); expr; printf("[coste] %-36s %4u B\n", name, (unsigned)(used() - a_)); (void)s_; }
-static void costs() {
-  static arq_temp_tile_t tt; static arq_header_t hd;
-  COST("pantalla vacia (ref)", (void)0)
-  COST("boton de navegacion (icono+texto)", arq_nav_tile_create(s_, 0, 0, 100, 90, &arq_icon_gear, ARQ_TINT_ACCENT, "Ajustes", ARQ_BTN_SECONDARY, cb, 1))
-  COST("boton (icono + texto)", arq_button_create(s_, 0, 0, 120, 48, &arq_icon_check, "Iniciar", ARQ_BTN_SUCCESS, cb, 1))
-  COST("indicador de estado (chip)", arq_chip_create(s_, 0, 0, 100, "Lista", ARQ_TINT_OK))
-  COST("tarjeta de temperatura", arq_temp_tile_create(&tt, s_, 0, 0, 148, 124, &arq_icon_nozzle, "Hotend"))
-  COST("cabecera con Atras", arq_header_create(&hd, s_, "Titulo", cb, 1))
-  COST("cabecera sin Atras", arq_header_create(&hd, s_, "Titulo", nullptr, 0))
-  COST("barra de progreso", arq_progress_create(s_, 0, 0, 200, 12))
-}
-
-// ---- Dashboard (boceto para revision) -----------------------------------------------------------------
-static arq_temp_tile_t t_hot, t_bed;
-static char fan_buf[8];
-
-static void dashboard(int hot, int hot_t, int bed, int bed_t, int fan, const char *state, arq_tint_t tint, const char *shot) {
-  lv_obj_t *scr = new_screen();
-  arq_header_t hd; arq_header_create(&hd, scr, "ARQUIS XQ1", nullptr, 0);
-  arq_chip_create(scr, ARQ_W - ARQ_MARGIN - 130, 8, 130, state, tint);
-  const lv_coord_t y1 = ARQ_HEADER_H + 10, h1 = 124, w1 = 148;
-  arq_temp_tile_create(&t_hot, scr, ARQ_MARGIN, y1, w1, h1, &arq_icon_nozzle, "Hotend");
-  arq_temp_tile_create(&t_bed, scr, ARQ_MARGIN + w1 + ARQ_GAP, y1, w1, h1, &arq_icon_bed, "Cama");
-  arq_temp_tile_update(&t_hot, hot, hot_t);
-  arq_temp_tile_update(&t_bed, bed, bed_t);
-  lv_obj_t *f = arq_card_create(scr, ARQ_MARGIN + 2 * (w1 + ARQ_GAP), y1, ARQ_W - 2 * ARQ_MARGIN - 2 * (w1 + ARQ_GAP), h1, ARQ_LAYOUT_STAT, ARQ_BTN_SECONDARY, nullptr, 0);
-  snprintf(fan_buf, sizeof(fan_buf), "%d%%", fan);
-  arq_card_set_icon(f, &arq_icon_fan, ARQ_TINT_ACCENT);
-  arq_card_set_title(f, "Ventilador", ARQ_TEXT_BODY);
-  arq_card_set_value(f, fan_buf, fan ? ARQ_TEXT_NUM_L_OK : ARQ_TEXT_NUM_L);
-  arq_card_set_sub(f, fan ? "Activo" : "Detenido", ARQ_TEXT_MUTED);
-  arq_card_set_dot(f, fan ? ARQ_TINT_OK : ARQ_TINT_MUTED);
-  const lv_coord_t y2 = y1 + h1 + ARQ_GAP, h2 = ARQ_H - y2 - ARQ_MARGIN, n = 5, w2 = (ARQ_W - 2 * ARQ_MARGIN - (n - 1) * ARQ_GAP) / n;
-  struct { const lv_img_dsc_t *i; const char *t; arq_btn_kind_t k; arq_tint_t tint; } nav[] = {
-    { &arq_icon_print, "Imprimir", ARQ_BTN_PRIMARY, ARQ_TINT_AUTO }, { &arq_icon_move, "Mover", ARQ_BTN_SECONDARY, ARQ_TINT_ACCENT },
-    { &arq_icon_temp, "Temp.", ARQ_BTN_SECONDARY, ARQ_TINT_ACCENT }, { &arq_icon_level, "Calibrar", ARQ_BTN_SECONDARY, ARQ_TINT_ACCENT },
-    { &arq_icon_gear, "Ajustes", ARQ_BTN_SECONDARY, ARQ_TINT_ACCENT } };
-  for (int i = 0; i < n; ++i)
-    arq_nav_tile_create(scr, ARQ_MARGIN + i * (w2 + ARQ_GAP), y2, w2, h2, nav[i].i, nav[i].tint, nav[i].t, nav[i].k, cb, 100 + i);
-  dump(shot);
-  mem(shot);
-}
-
-// ---- Hoja de componentes --------------------------------------------------------------------------------
-static void iconos(const char *shot) {
-  lv_obj_t *scr = new_screen();
-  arq_header_t hd; arq_header_create(&hd, scr, "ARQUIS UI - Iconos (40 px)", cb, 1);
-  static const lv_img_dsc_t *all[] = { &arq_icon_folder, &arq_icon_move, &arq_icon_temp, &arq_icon_gear, &arq_icon_print, &arq_icon_nozzle, &arq_icon_bed,
-    &arq_icon_fan, &arq_icon_play, &arq_icon_pause, &arq_icon_stop, &arq_icon_back, &arq_icon_check, &arq_icon_close, &arq_icon_warn, &arq_icon_level,
-    &arq_icon_tools, &arq_icon_wifi, &arq_icon_home, &arq_icon_file, &arq_icon_speed };
-  static const arq_tint_t tints[] = { ARQ_TINT_ACCENT, ARQ_TINT_TEXT, ARQ_TINT_OK, ARQ_TINT_WARN, ARQ_TINT_DANGER, ARQ_TINT_MUTED };
-  for (int i = 0; i < 21; ++i) {
-    lv_obj_t *c = arq_card_create(scr, 12 + (i % 7) * 64, 56 + (i / 7) * 82, 56, 56, ARQ_LAYOUT_BUTTON, ARQ_BTN_SECONDARY, nullptr, 0);
-    arq_card_set_icon(c, all[i], tints[i % 6]);
+// ---- Snapshots de prueba (estados que debe poder mostrar el Dashboard) ---------------------------------------------------------
+static arq_snapshot_t make(arq_pstate_t st) {
+  arq_snapshot_t s; memset(&s, 0, sizeof(s));
+  s.hot = { true, 24, 0, 3 }; s.bed = { true, 23, 0, 3 };
+  s.fan_n = 2; s.fan[0] = { ARQ_FAN_LAYER, 0, 0 }; s.fan[1] = { ARQ_FAN_AUX, 1, 0 };
+  s.state = st;
+  switch (st) {
+    case ARQ_PS_IDLE: break;
+    case ARQ_PS_HEATING: s.hot.cur = 168; s.hot.tgt = 210; s.bed.cur = 60; s.bed.tgt = 60; s.fan[0].pct = 0; break;
+    case ARQ_PS_AT_TEMP: s.hot.cur = 210; s.hot.tgt = 210; s.bed.cur = 60; s.bed.tgt = 60; break;
+    case ARQ_PS_COOLING: s.hot.cur = 118; s.hot.tgt = 0; s.bed.cur = 41; s.bed.tgt = 0; s.fan[0].pct = 100; break;
+    case ARQ_PS_PRINTING: case ARQ_PS_PAUSED:
+      s.hot.cur = 209; s.hot.tgt = 210; s.bed.cur = 60; s.bed.tgt = 60; s.fan[0].pct = 85; s.fan[1].pct = 40;
+      s.job = s.sd_job = true; s.pct = 62; s.elapsed_s = 2 * 3600 + 15 * 60; s.remaining_s = arq_remaining_s(s.elapsed_s, s.pct);
+      strcpy(s.file, "soporte_motor_nema17_v3_final.gcode");
+      if (st == ARQ_PS_PAUSED) { s.hot.cur = 205; s.fan[0].pct = 0; }
+      break;
+    case ARQ_PS_ERROR: s.hot.cur = 24; break;
   }
-  lv_obj_t *acc = arq_card_create(scr, 12, 288, 456, 26, ARQ_LAYOUT_CHIP, ARQ_BTN_SECONDARY, nullptr, 0);
-  arq_card_set_title(acc, "Ñandú: áéíóú ¿Qué? ¡Listo! 215°C", ARQ_TEXT_MUTED);
-  dump(shot);
-  mem(shot);
+  return s;
 }
 
-static arq_temp_tile_t c_t1, c_t2, c_t3;
+static void dashboard(const arq_snapshot_t &s, const char *shot) {
+  lv_obj_t *scr = new_screen();
+  arq_dash_build(scr, cb, "Arquis XQ1", &s);
+  arq_dash_update(&s);
+  if (shot) dump(shot);
+}
 
+// ---- Componentes y iconos ------------------------------------------------------------------------------------------------------
+static arq_temp_tile_t c_t1, c_t2, c_t3, c_t4;
 static void components(const char *shot) {
   lv_obj_t *scr = new_screen();
-  arq_header_t hd; arq_header_create(&hd, scr, "ARQUIS UI - Componentes", cb, 1);
+  arq_header_t hd; arq_header_create(&hd, scr, "ARQUIS UI - Componentes", false, cb, 1);
   arq_chip_create(scr, 10, 52, 100, "Lista", ARQ_TINT_OK);
-  arq_chip_create(scr, 118, 52, 140, "Calentando", ARQ_TINT_WARN);
-  arq_chip_create(scr, 266, 52, 120, "Error", ARQ_TINT_DANGER);
-  arq_chip_create(scr, 386, 52, 84, "Pausa", ARQ_TINT_ACCENT);
+  arq_chip_create(scr, 118, 52, 130, "Calentando", ARQ_TINT_WARN);
+  arq_chip_create(scr, 256, 52, 110, "Error", ARQ_TINT_DANGER);
+  arq_chip_create(scr, 374, 52, 96, "Enfriando", ARQ_TINT_ACCENT);
   arq_button_create(scr, 10, 88, 108, 44, nullptr, "Primario", ARQ_BTN_PRIMARY, cb, 2);
   arq_button_create(scr, 126, 88, 108, 44, nullptr, "Secundario", ARQ_BTN_SECONDARY, cb, 3);
   arq_button_create(scr, 242, 88, 108, 44, &arq_icon_check, "Iniciar", ARQ_BTN_SUCCESS, cb, 4);
   arq_button_create(scr, 358, 88, 112, 44, nullptr, "Cancelar", ARQ_BTN_DANGER, cb, 5);
-  arq_temp_tile_create(&c_t1, scr, 10, 140, 148, 124, &arq_icon_nozzle, "Hotend");   arq_temp_tile_update(&c_t1, 24, 0);
-  arq_temp_tile_create(&c_t2, scr, 166, 140, 148, 124, &arq_icon_nozzle, "Hotend");  arq_temp_tile_update(&c_t2, 168, 210);
-  arq_temp_tile_create(&c_t3, scr, 322, 140, 148, 124, &arq_icon_bed, "Cama");       arq_temp_tile_update(&c_t3, 60, 60);
-  lv_obj_t *bar = arq_progress_create(scr, 10, 282, 376, 12);
-  arq_progress_set(bar, 62);
-  static char pct[8]; snprintf(pct, sizeof(pct), "62%%");
-  lv_obj_t *pl = arq_card_create(scr, 394, 274, 76, 28, ARQ_LAYOUT_CHIP, ARQ_BTN_SECONDARY, nullptr, 0);
-  arq_card_set_title(pl, pct, ARQ_TEXT_BODY);
+  const int w = 110, gap = 6;
+  arq_temp_tile_create(&c_t1, scr, 10, 140, w, 124, &arq_icon_nozzle, "Hot");  arq_temp_tile_update(&c_t1, 24, 0, 3);
+  arq_temp_tile_create(&c_t2, scr, 10 + (w + gap), 140, w, 124, &arq_icon_nozzle, "Hot"); arq_temp_tile_update(&c_t2, 168, 210, 3);
+  arq_temp_tile_create(&c_t3, scr, 10 + 2 * (w + gap), 140, w, 124, &arq_icon_bed, "Cama"); arq_temp_tile_update(&c_t3, 60, 60, 3);
+  arq_temp_tile_create(&c_t4, scr, 10 + 3 * (w + gap), 140, w, 124, &arq_icon_bed, "Cama"); arq_temp_tile_update(&c_t4, 71, 0, 3);
+  lv_obj_t *bar = arq_progress_create(scr, 10, 282, 376, 12); arq_progress_set(bar, 62);
   dump(shot);
-  mem(shot);
 }
 
-// ---- Prueba de eventos: el boton marca "pulsado" y reenvia los eventos con el id correcto (como espera el codigo MKS) ----
-static int ev_count = 0, ev_last_id = -1, ev_clicked = 0;
-static void test_cb(lv_obj_t *o, lv_event_t ev) { ++ev_count; ev_last_id = o->mks_obj_id; if (ev == LV_EVENT_CLICKED) ++ev_clicked; }
-static int fails = 0;
-#define CHECK(c, msg) do { if (c) printf("[test] OK    %s\n", msg); else { printf("[test] FALLA %s\n", msg); ++fails; } } while (0)
-static void test_events(const char *dir) {
+static void iconos(const char *shot) {
   lv_obj_t *scr = new_screen();
-  lv_obj_t *b = arq_nav_tile_create(scr, 100, 100, 100, 90, &arq_icon_gear, ARQ_TINT_ACCENT, "Ajustes", ARQ_BTN_SECONDARY, test_cb, 777);
-  lv_obj_t *p = arq_nav_tile_create(scr, 250, 100, 100, 90, &arq_icon_print, ARQ_TINT_AUTO, "Imprimir", ARQ_BTN_PRIMARY, test_cb, 778);
-  lv_obj_t *ro = arq_chip_create(scr, 10, 10, 100, "Solo lectura", ARQ_TINT_OK);
-  CHECK(lv_obj_get_click(b), "boton con callback es clicable");
-  CHECK(!lv_obj_get_click(ro), "chip sin callback no es clicable");
-  lv_event_send(b, LV_EVENT_PRESSED, nullptr);
-  lv_event_send(p, LV_EVENT_PRESSED, nullptr);
-  char f[256]; snprintf(f, sizeof(f), "%s/botones_pulsados.ppm", dir); dump(f);
-  CHECK(ev_count == 2 && ev_last_id == 778, "PRESSED llega al callback con el mks_obj_id correcto");
-  lv_event_send(b, LV_EVENT_RELEASED, nullptr);
-  lv_event_send(b, LV_EVENT_CLICKED, nullptr);
-  CHECK(ev_clicked == 1 && ev_last_id == 777, "CLICKED llega al callback con id 777");
-  // Entrada tactil real: pulsar sobre el boton a traves de LVGL
-  static lv_point_t pt = { 150, 140 }; static bool down = false;
-  static lv_indev_drv_t idrv; lv_indev_drv_init(&idrv); idrv.type = LV_INDEV_TYPE_POINTER;
-  idrv.read_cb = [](lv_indev_drv_t *, lv_indev_data_t *d) -> bool { d->point = pt; d->state = down ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL; return false; };
-  lv_indev_drv_register(&idrv);
-  ev_clicked = 0; down = true; for (int i = 0; i < 10; ++i) { lv_tick_inc(10); lv_task_handler(); }
-  down = false; for (int i = 0; i < 10; ++i) { lv_tick_inc(10); lv_task_handler(); }
-  CHECK(ev_clicked == 1, "toque real en pantalla (indev) genera CLICKED en el boton");
-  pt.x = 20; pt.y = 20; down = true; ev_clicked = 0; for (int i = 0; i < 5; ++i) { lv_tick_inc(10); lv_task_handler(); }
-  down = false; for (int i = 0; i < 5; ++i) { lv_tick_inc(10); lv_task_handler(); }
-  CHECK(ev_clicked == 0, "toque fuera de los botones no dispara nada");
-  // Actualizar con los mismos valores no debe redibujar
-  static arq_temp_tile_t tt; lv_obj_t *s2 = new_screen(); arq_temp_tile_create(&tt, s2, 10, 10, 148, 124, &arq_icon_nozzle, "Hotend");
-  arq_temp_tile_update(&tt, 200, 210);
-  for (int i = 0; i < 5; ++i) { lv_tick_inc(10); lv_task_handler(); }
-  uint32_t inv = 0; lv_disp_t *d = lv_disp_get_default(); for (int i = 0; i < LV_INV_BUF_SIZE; ++i) inv += d->inv_p ? 0 : 0;
-  CHECK(d->inv_p == 0, "sin cambios no queda nada pendiente de redibujar");
-  arq_temp_tile_update(&tt, 200, 210); CHECK(d->inv_p == 0, "update con los mismos valores no invalida la tarjeta");
-  arq_temp_tile_update(&tt, 201, 210); CHECK(d->inv_p > 0, "update con valor nuevo si invalida la tarjeta");
-  (void)inv;
-  printf("[test] %s\n", fails ? "HAY FALLOS" : "todas las pruebas pasaron");
+  arq_header_t hd; arq_header_create(&hd, scr, "ARQUIS UI - Iconos y estados", true, nullptr, 0);
+  static const lv_img_dsc_t *all[] = { &arq_icon_folder, &arq_icon_move, &arq_icon_temp, &arq_icon_gear, &arq_icon_print, &arq_icon_nozzle, &arq_icon_bed,
+    &arq_icon_fan, &arq_icon_play, &arq_icon_pause, &arq_icon_stop, &arq_icon_back, &arq_icon_check, &arq_icon_close, &arq_icon_warn, &arq_icon_level,
+    &arq_icon_tools, &arq_icon_wifi, &arq_icon_home, &arq_icon_file, &arq_icon_speed };
+  for (int i = 0; i < 14; ++i) {
+    lv_obj_t *c = arq_card_create(scr, 10 + (i % 7) * 66, 52 + (i / 7) * 62, 58, 54, ARQ_LAYOUT_BUTTON, ARQ_BTN_SECONDARY, nullptr, 0);
+    arq_card_set_icon(c, all[i], ARQ_TINT_ACCENT);
+  }
+  // Estados de un mismo icono: normal, seleccionado, activo, deshabilitado, advertencia, error
+  static const char *names[] = { "Normal", "Selecc.", "Activo", "Deshab.", "Aviso", "Error" };
+  static const arq_icon_state_t states[] = { ARQ_ICON_NORMAL, ARQ_ICON_SELECTED, ARQ_ICON_ACTIVE, ARQ_ICON_DISABLED, ARQ_ICON_WARNING, ARQ_ICON_ERROR };
+  for (int i = 0; i < 6; ++i) {
+    lv_obj_t *c = arq_card_create(scr, 10 + i * 77, 178, 72, 78, ARQ_LAYOUT_TILE, i == 1 ? ARQ_BTN_PRIMARY : ARQ_BTN_SECONDARY, nullptr, 0);
+    arq_card_set_icon(c, &arq_icon_gear, arq_icon_state_tint(states[i]));
+    arq_card_set_title(c, names[i], ARQ_TEXT_BODY);
+  }
+  lv_obj_t *acc = arq_card_create(scr, 10, 266, 460, 28, ARQ_LAYOUT_CHIP, ARQ_BTN_SECONDARY, nullptr, 0);
+  arq_card_set_title(acc, "Ñandú: áéíóú ¿Qué? ¡Listo! 215°C", ARQ_TEXT_MUTED);
+  dump(shot);
+}
+
+// ---- Dialogo -----------------------------------------------------------------------------------------------------------------
+static int dlg_ok = 0, dlg_cancel = 0;
+static void dlg_cb(lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; if (o->mks_obj_id == 901) ++dlg_ok; else ++dlg_cancel; arq_dialog_close(); }
+
+// ---- Pruebas de memoria, navegacion y eventos -----------------------------------------------------------------------------
+static void screen_stub(int objects) {       // pantalla ajena (como un menu MKS con varios botones)
+  lv_obj_t *s = new_screen();
+  for (int i = 0; i < objects; ++i) arq_card_create(s, 10 + (i % 5) * 90, 60 + (i / 5) * 60, 80, 50, ARQ_LAYOUT_BUTTON, ARQ_BTN_SECONDARY, cb, 200 + i);
+}
+
+static void tests() {
+  new_screen(); run();
+  const uint32_t base = used(), base_big = biggest();
+  printf("[mem] base (pantalla vacia): %u B usados, mayor bloque libre %u B\n", (unsigned)base, (unsigned)base_big);
+
+  // 1) Creacion y destruccion repetida del Dashboard (todos los estados)
+  for (int i = 0; i < 300; ++i) {
+    arq_pstate_t st = (arq_pstate_t)(i % 7);
+    arq_snapshot_t s = make(st);
+    dashboard(s, nullptr);
+    if (i == 0) printf("[mem] Dashboard 'Lista' usa %u B\n", (unsigned)(used() - base));
+  }
+  new_screen(); run();
+  CHECK(used() == base, "300 ciclos crear/destruir Dashboard: heap final %u B (base %u B)", (unsigned)used(), (unsigned)base);
+  CHECK(biggest() >= base_big, "sin fragmentacion: mayor bloque libre %u B (>= base %u B)", (unsigned)biggest(), (unsigned)base_big);
+
+  // 2) Pico de memoria del Dashboard por estado
+  uint32_t peak = 0;
+  for (int st = 0; st < 7; ++st) { new_screen(); const uint32_t b = used(); arq_snapshot_t s = make((arq_pstate_t)st); dashboard(s, nullptr); const uint32_t u = used() - b; if (u > peak) peak = u; printf("[mem] Dashboard estado %d: %u B\n", st, (unsigned)u); }
+  CHECK(peak < 6000, "pico del Dashboard %u B (< 6000 B)", (unsigned)peak);
+
+  // 3) Navegacion Dashboard <-> otra pantalla, con cambio de modo (reposo <-> imprimiendo)
+  for (int i = 0; i < 200; ++i) { arq_snapshot_t s = make(i % 2 ? ARQ_PS_PRINTING : ARQ_PS_IDLE); dashboard(s, nullptr); screen_stub(12); }
+  new_screen(); run();
+  CHECK(used() == base, "200 idas y vueltas Dashboard<->pantalla de 12 botones: heap %u B (base %u B)", (unsigned)used(), (unsigned)base);
+
+  // 4) Actualizacion de temperaturas: 3000 refrescos con valores cambiantes y transiciones de estado
+  { arq_snapshot_t s = make(ARQ_PS_HEATING); dashboard(s, nullptr); const uint32_t u0 = used();
+    for (int i = 0; i < 3000; ++i) {
+      s.hot.cur = 20 + (i % 200); s.hot.tgt = (i / 50) % 2 ? 210 : 0; s.bed.cur = 20 + (i % 80); s.bed.tgt = (i / 70) % 2 ? 60 : 0;
+      s.fan[0].pct = i % 101; s.elapsed_s = i * 5; { const int16_t c[2] = { s.hot.cur, s.bed.cur }, t[2] = { s.hot.tgt, s.bed.tgt }, tol[2] = { 3, 3 }; s.state = arq_printer_state(false, false, false, 2, c, t, tol); }
+      arq_dash_update(&s); if (i % 10 == 0) run(2);
+    }
+    CHECK(used() == u0, "3000 refrescos de temperaturas/ventiladores: heap constante %u B", (unsigned)used()); }
+
+  // 5) Dialogo de confirmacion: abrir/cerrar repetidamente (y con el Dashboard debajo)
+  { arq_snapshot_t s = make(ARQ_PS_PRINTING); dashboard(s, nullptr); run(); const uint32_t u0 = used();
+    arq_dialog_open("Cancelar impresion", "Se detendra la impresion en curso. Esta accion no se puede deshacer.", "Cancelar", "Seguir", true, dlg_cb, 901, 902);
+    run(); const uint32_t ud = used() - u0; printf("[mem] Dialogo abierto: %u B\n", (unsigned)ud);
+    CHECK(arq_dialog_is_open(), "el dialogo queda abierto");
+    dump("dialogo_cancelar");
+    arq_dialog_close(); run();
+    for (int i = 0; i < 300; ++i) { arq_dialog_open("Titulo", "Mensaje", "Aceptar", "Cancelar", i % 2, dlg_cb, 901, 902); run(1); arq_dialog_close(); }
+    run();
+    CHECK(used() == u0 && !arq_dialog_is_open(), "300 aperturas/cierres de dialogo: heap %u B (antes %u B)", (unsigned)used(), (unsigned)u0);
+    // toque real sobre "Cancelar" (boton de la derecha) y sobre el velo
+    static lv_point_t pt; static bool down = false;
+    static lv_indev_drv_t idrv; lv_indev_drv_init(&idrv); idrv.type = LV_INDEV_TYPE_POINTER;
+    idrv.read_cb = [](lv_indev_drv_t *, lv_indev_data_t *d) -> bool { d->point = pt; d->state = down ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL; return false; };
+    lv_indev_drv_register(&idrv);
+    auto tap = [&](int x, int y) { pt.x = x; pt.y = y; down = true; run(6); down = false; run(6); };
+    arq_dialog_open("Cancelar impresion", "Msg", "Cancelar", "Seguir", true, dlg_cb, 901, 902);
+    ev_count = 0; tap(60, 80);   // fuera del panel, sobre un boton del Dashboard: el velo debe absorberlo
+    CHECK(ev_count == 0 && arq_dialog_is_open(), "el velo del dialogo bloquea los toques al Dashboard");
+    tap(340, 224);                // boton rojo (confirmar)
+    CHECK(dlg_ok == 1 && !arq_dialog_is_open(), "toque en el boton de confirmar ejecuta la accion y cierra");
+    arq_dialog_open("T", "M", "Cancelar", "Seguir", true, dlg_cb, 901, 902);
+    tap(130, 224);                // boton izquierdo (seguir)
+    CHECK(dlg_cancel == 1 && dlg_ok == 1 && !arq_dialog_is_open(), "toque en 'Seguir' cierra sin ejecutar la accion"); }
+
+  // 6) Eventos: los accesos del Dashboard llegan con el id correcto y el toque real funciona
+  { arq_snapshot_t s = make(ARQ_PS_IDLE); dashboard(s, nullptr); run();
+    static lv_point_t pt; static bool down = false;
+    static lv_indev_drv_t idrv; lv_indev_drv_init(&idrv); idrv.type = LV_INDEV_TYPE_POINTER;
+    idrv.read_cb = [](lv_indev_drv_t *, lv_indev_data_t *d) -> bool { d->point = pt; d->state = down ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL; return false; };
+    lv_indev_drv_register(&idrv);
+    auto tap = [&](int x, int y) { pt.x = x; pt.y = y; down = true; run(6); down = false; run(6); };
+    struct { int x, y, id; const char *n; } t[] = { { 52, 250, ARQ_ID_PRINT, "Imprimir" }, { 145, 250, ARQ_ID_MOVE, "Mover" }, { 238, 250, ARQ_ID_TEMP, "Temp." },
+      { 331, 250, ARQ_ID_TOOLS, "Herram." }, { 424, 250, ARQ_ID_SETTINGS, "Ajustes" }, { 80, 110, ARQ_ID_HOT, "tarjeta Hotend" }, { 236, 110, ARQ_ID_BED, "tarjeta Cama" }, { 400, 110, ARQ_ID_FANS, "tarjeta Ventiladores" } };
+    for (auto &c : t) { ev_count = 0; ev_last = -1; tap(c.x, c.y); CHECK(ev_count == 1 && ev_last == c.id, "toque en %s -> id %d", c.n, ev_last); }
+    s = make(ARQ_PS_PRINTING); arq_dash_update(&s); run();
+    ev_count = 0; ev_last = -1; tap(95, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_PRINT, "con impresion activa, la tarjeta de impresion envia ARQ_ID_PRINT (la pantalla decide: supervision)");
+    ev_count = 0; ev_last = -1; tap(239, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_MOVE, "con impresion activa, 'Mover' sigue disponible en su nuevo sitio (id %d)", ev_last);
+    ev_count = 0; ev_last = -1; tap(427, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_SETTINGS, "con impresion activa, 'Ajustes' sigue disponible (id %d)", ev_last);
+    ev_count = 0; ev_last = -1; tap(333, 250); CHECK(ev_count == 1 && ev_last == ARQ_ID_TEMP, "con impresion activa, 'Temp.' sigue disponible (id %d)", ev_last); }
+
+  // 6b) Perilla (encoder): las tarjetas se registran en el grupo, el foco avanza y se dibuja el anillo
+  // Ciclo completo con perilla repetido: la primera vuelta puede reservar estructuras globales de LVGL (una sola vez); las siguientes no deben crecer
+  for (int i = 0; i < 3; ++i) { arq_snapshot_t s0 = make(ARQ_PS_IDLE); dashboard(s0, nullptr); lv_group_t *g0 = lv_group_create(); arq_group_add_clickables(g0, lv_scr_act()); lv_group_focus_next(g0); run(); new_screen(); run(); lv_group_del(g0); }
+  new_screen(); run(); const uint32_t ref = used();   // referencia (incluye los controladores de entrada ya registrados por pruebas anteriores)
+  { arq_snapshot_t s = make(ARQ_PS_IDLE); dashboard(s, nullptr); run();
+    lv_group_t *grp = lv_group_create(); arq_group_add_clickables(grp, lv_scr_act());
+    CHECK(lv_group_get_focused(grp) != nullptr, "el grupo de la perilla recibe las tarjetas del Dashboard");
+    int n = 0; lv_obj_t *first = lv_group_get_focused(grp);
+    do { ++n; lv_group_focus_next(grp); } while (lv_group_get_focused(grp) != first && n < 20);
+    CHECK(n == 8, "la perilla recorre las 8 tarjetas clicables (recorridas: %d)", n);
+    lv_group_focus_next(grp); lv_group_focus_next(grp); lv_group_focus_next(grp); lv_group_focus_next(grp); lv_group_focus_next(grp);
+    dump("dash_foco_perilla");
+    ev_count = 0; lv_event_send(lv_group_get_focused(grp), LV_EVENT_RELEASED, nullptr);
+    CHECK(ev_count == 1, "pulsar la perilla sobre la tarjeta con foco dispara su accion");
+    new_screen(); run(); lv_group_del(grp);
+    for (int i = 0; i < 100; ++i) { arq_snapshot_t s1 = make(ARQ_PS_IDLE); dashboard(s1, nullptr); lv_group_t *g1 = lv_group_create(); arq_group_add_clickables(g1, lv_scr_act()); lv_group_focus_next(g1); run(2); new_screen(); lv_group_del(g1); }
+    new_screen(); run();
+    CHECK(used() == ref, "sin fugas tras 100 ciclos con perilla: heap %u B (antes %u B)", (unsigned)used(), (unsigned)ref); }
+
+  // 7) Actualizar con el mismo snapshot no redibuja
+  { arq_snapshot_t s = make(ARQ_PS_HEATING); dashboard(s, nullptr); run(); lv_disp_t *d = lv_disp_get_default();
+    arq_dash_update(&s); CHECK(d->inv_p == 0, "snapshot sin cambios: nada que redibujar");
+    s.hot.cur = 169; arq_dash_update(&s); CHECK(d->inv_p > 0 && d->inv_p <= 3, "cambio de un valor: solo se invalida lo afectado (%u zonas)", (unsigned)d->inv_p); }
+
+  printf("[test] %s\n", fails ? "HAY FALLOS" : "TODAS LAS PRUEBAS DEL SIMULADOR PASARON");
 }
 
 int main(int argc, char **argv) {
   setvbuf(stdout, nullptr, _IONBF, 0);
+  if (argc > 1) outdir = argv[1];
   lv_init();
   lv_disp_buf_init(&disp_buf, buf1, nullptr, ARQ_W * 14);
   lv_disp_drv_t drv; lv_disp_drv_init(&drv);
   drv.flush_cb = flush_cb; drv.buffer = &disp_buf;
   lv_disp_drv_register(&drv);
-  mem("tras lv_init");
-  costs();
-  test_events(argc > 1 ? argv[1] : ".");
-  const char *dir = argc > 1 ? argv[1] : ".";
-  char p[256];
-  snprintf(p, sizeof(p), "%s/componentes.ppm", dir); components(p);
-  snprintf(p, sizeof(p), "%s/iconos.ppm", dir); iconos(p);
-  snprintf(p, sizeof(p), "%s/dashboard_listo.ppm", dir);
-  dashboard(24, 0, 23, 0, 0, "Lista", ARQ_TINT_OK, p);
-  snprintf(p, sizeof(p), "%s/dashboard_calentando.ppm", dir);
-  dashboard(168, 210, 60, 60, 35, "Calentando", ARQ_TINT_WARN, p);
-  return 0;
+  printf("[mem] tras lv_init: %u B usados de 16384 B\n", (unsigned)used());
+
+  static const char *names[] = { "dash_1_lista", "dash_2_calentando", "dash_3_temp_alcanzada", "dash_4_enfriando", "dash_5_imprimiendo", "dash_6_pausada", "dash_7_error" };
+  for (int st = 0; st < 7; ++st) { arq_snapshot_t s = make((arq_pstate_t)st); dashboard(s, names[st]); }
+  components("componentes");
+  iconos("iconos");
+  { arq_snapshot_t s = make(ARQ_PS_PRINTING); dashboard(s, nullptr); arq_dialog_open("Cancelar impresion", "Se detendra la impresion en curso. Esta accion no se puede deshacer.", "Cancelar", "Seguir", true, dlg_cb, 901, 902); dump("dialogo_cancelar"); arq_dialog_close(); }
+  tests();
+  return fails ? 1 : 0;
 }

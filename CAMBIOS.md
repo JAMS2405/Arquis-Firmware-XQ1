@@ -81,3 +81,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v6: ARQUIS UI etapa 1 (sistema visual)
 - Nuevos archivos `arquis_theme.*`, `arquis_widgets.*`, `arquis_icons.*`, `arq_font_*.c` en `mks_ui/`. No modifican pantallas ni lógica existentes. Detalle y medidas: `docs/arquis/ARQUIS_UI_etapa1.md`.
 - IMPORTANTE (assets): el build de PlatformIO descarga los iconos ORIGINALES de Makerbase en `.pio/build/<entorno>/assets`. No copies esa carpeta a la SD: usa `sd_assets` de este repo renombrada a `assets`.
+
+## v7: ARQUIS UI etapa 1 (cierre) + etapa 2 (Dashboard funcional)
+- Nuevo Dashboard (`ARQUIS_UI` en Configuration.h) que sustituye la pantalla principal; la original sigue disponible comentando esa línea. Informe completo, medidas y limitaciones: `docs/arquis/ARQUIS_UI_etapas_1_2.md`.
+- Nuevo `sd_assets/bmp_logo.bin` (splash con el logo oficial). Para verlo: carpeta `assets` en la SD + arranque (recarga la flash de la placa).

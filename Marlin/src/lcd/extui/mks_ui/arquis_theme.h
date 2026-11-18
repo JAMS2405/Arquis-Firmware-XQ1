@@ -71,6 +71,11 @@ typedef enum { ARQ_TEXT_BODY, ARQ_TEXT_MUTED, ARQ_TEXT_ACCENT, ARQ_TEXT_OK, ARQ_
                ARQ_TEXT_NUM_L, ARQ_TEXT_NUM_L_OK, ARQ_TEXT_NUM_L_WARN, ARQ_TEXT_NUM_M, ARQ_TEXT_COUNT } arq_text_t;
 typedef enum { ARQ_BTN_PRIMARY, ARQ_BTN_SECONDARY, ARQ_BTN_SUCCESS, ARQ_BTN_DANGER, ARQ_BTN_GHOST, ARQ_BTN_COUNT } arq_btn_kind_t;
 
+// Estados visuales de un icono (misma geometria, distinto color): reglas de color ARQUIS
+//  AZUL = navegacion/seleccion, VERDE = correcto/activo, AMBAR = calentando/advertencia, ROJO = error/peligro, GRIS = deshabilitado
+typedef enum { ARQ_ICON_NORMAL, ARQ_ICON_SELECTED, ARQ_ICON_ACTIVE, ARQ_ICON_DISABLED, ARQ_ICON_WARNING, ARQ_ICON_ERROR } arq_icon_state_t;
+arq_tint_t arq_icon_state_tint(arq_icon_state_t s);
+
 void arq_theme_init();   // Idempotente. Llamar una vez antes de crear widgets.
 
 lv_color_t arq_tint_color(arq_tint_t t);
@@ -79,6 +84,8 @@ const lv_style_t* arq_style_screen();
 const lv_style_t* arq_style_panel();
 const lv_style_t* arq_style_panel_pressed();
 const lv_style_t* arq_style_chip();
+const lv_style_t* arq_style_focus();      // anillo azul de foco (navegacion con perilla)
+const lv_style_t* arq_style_scrim();      // velo oscuro tras un dialogo
 const lv_style_t* arq_style_header();
 const lv_style_t* arq_style_text(arq_text_t role);
 const lv_style_t* arq_style_icon(arq_tint_t tint);

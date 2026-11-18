@@ -43,6 +43,10 @@
 #include "mks_hardware.h"
 #include <stdio.h>
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_dashboard.h"   // ARQUIS UI: el Dashboard sustituye a esta pantalla
+#endif
+
 #define ICON_POS_Y          260
 #define TARGET_LABEL_MOD_Y -36
 #define LABEL_MOD_Y         30
@@ -123,6 +127,9 @@ void mks_disp_test() {
 }
 
 void lv_draw_ready_print() {
+  #if ENABLED(ARQUIS_UI)
+    arq_dashboard_draw();
+  #else   // ---- pantalla original MKS (se conserva intacta) ----
   char buf[30] = {0};
   lv_obj_t *buttonTool;
 
@@ -206,6 +213,7 @@ void lv_draw_ready_print() {
 
     lv_temp_refr();
   }
+  #endif // ARQUIS_UI
 
   #if ENABLED(TOUCH_SCREEN_CALIBRATION)
     // If calibration is required, let's trigger it now, handles the case when there is default value in configuration files
@@ -217,6 +225,10 @@ void lv_draw_ready_print() {
 }
 
 void lv_temp_refr() {
+  #if ENABLED(ARQUIS_UI)
+    arq_dashboard_refresh();
+    return;
+  #endif
   #if HAS_HOTEND
     sprintf(public_buf_l, printing_menu.temp1, thermalManager.wholeDegHotend(0), thermalManager.degTargetHotend(0));
     lv_label_set_text(labelExt1, public_buf_l);
@@ -240,6 +252,10 @@ void lv_temp_refr() {
 }
 
 void lv_clear_ready_print() {
+  #if ENABLED(ARQUIS_UI)
+    arq_dashboard_clear();
+    return;
+  #endif
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif

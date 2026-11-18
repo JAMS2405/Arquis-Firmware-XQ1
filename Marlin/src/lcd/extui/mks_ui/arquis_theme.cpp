@@ -23,7 +23,7 @@
 #include "arquis_theme.h"
 
 // Todos los estilos viven en RAM estatica (sin heap de LVGL).
-static lv_style_t st_chip, st_screen, st_panel, st_panel_pr, st_header, st_bar_bg, st_bar_indic;
+static lv_style_t st_focus, st_scrim, st_chip, st_screen, st_panel, st_panel_pr, st_header, st_bar_bg, st_bar_indic;
 static lv_style_t st_text[ARQ_TEXT_COUNT];
 static lv_style_t st_icon[ARQ_TINT_COUNT];
 static lv_style_t st_dot[ARQ_TINT_COUNT];
@@ -89,11 +89,22 @@ void arq_theme_init() {
   st_panel.body.border.opa = LV_OPA_COVER;
   st_panel.body.border.part = LV_BORDER_FULL;
 
+  flat(st_focus, ARQ_COL_BG, ARQ_RADIUS);
+  st_focus.body.opa = LV_OPA_TRANSP;
+  st_focus.body.border.color = ARQ_COL_BLUE;
+  st_focus.body.border.width = 3;
+  st_focus.body.border.opa = LV_OPA_COVER;
+  st_focus.body.border.part = LV_BORDER_FULL;
+
+  flat(st_scrim, ARQ_COL_BG, 0);
+  st_scrim.body.opa = LV_OPA_70;
+
   st_chip = st_panel;
   st_chip.body.radius = LV_RADIUS_CIRCLE;
 
   st_panel_pr = st_panel;
   st_panel_pr.body.main_color = st_panel_pr.body.grad_color = ARQ_COL_PANEL_HI;
+  st_panel_pr.body.border.color = ARQ_COL_BLUE;       // azul = interaccion
 
   flat(st_header, ARQ_COL_PANEL, 0);
   st_header.body.border.color = ARQ_COL_LINE;
@@ -139,6 +150,8 @@ void arq_theme_init() {
 const lv_style_t* arq_style_screen()        { return &st_screen; }
 const lv_style_t* arq_style_panel()         { return &st_panel; }
 const lv_style_t* arq_style_panel_pressed() { return &st_panel_pr; }
+const lv_style_t* arq_style_focus()         { return &st_focus; }
+const lv_style_t* arq_style_scrim()         { return &st_scrim; }
 const lv_style_t* arq_style_chip()          { return &st_chip; }
 const lv_style_t* arq_style_header()        { return &st_header; }
 const lv_style_t* arq_style_bar_bg()        { return &st_bar_bg; }
@@ -152,5 +165,16 @@ const lv_style_t* arq_style_btn(arq_btn_kind_t k, lv_btn_state_t s) {
     case LV_BTN_STATE_PR: case LV_BTN_STATE_TGL_PR: return &st_btn[k][1];
     case LV_BTN_STATE_INA: return &st_btn_ina;
     default: return &st_btn[k][0];
+  }
+}
+
+arq_tint_t arq_icon_state_tint(arq_icon_state_t s) {
+  switch (s) {
+    case ARQ_ICON_SELECTED: return ARQ_TINT_DARK;      // sobre fondo azul de seleccion
+    case ARQ_ICON_ACTIVE:   return ARQ_TINT_OK;
+    case ARQ_ICON_DISABLED: return ARQ_TINT_MUTED;
+    case ARQ_ICON_WARNING:  return ARQ_TINT_WARN;
+    case ARQ_ICON_ERROR:    return ARQ_TINT_DANGER;
+    default:                return ARQ_TINT_ACCENT;
   }
 }

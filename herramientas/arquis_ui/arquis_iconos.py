@@ -52,13 +52,21 @@ ICONS = {
  'speed':   f'<g {S}><path d="M7 33a17 17 0 1 1 34 0"/><path d="M24 33l8-11"/><circle cx="24" cy="33" r="2.6" {F}/></g>',
 }
 
-def render(svg):
+S2 = 'fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"'
+SMALL = {   # 20x20: ventiladores (trazo mas grueso para que se lea a tamano pequeno)
+ 'fan':      f'<g {S2}><circle cx="24" cy="24" r="19"/><path transform="rotate(0 24 24)" d="M24 21c0-8 6-13 12-9-1 7-6 9-12 9z"/><path transform="rotate(120 24 24)" d="M24 21c0-8 6-13 12-9-1 7-6 9-12 9z"/><path transform="rotate(240 24 24)" d="M24 21c0-8 6-13 12-9-1 7-6 9-12 9z"/></g>',
+ 'heatsink': f'<g {S2}><path d="M6 41h36M12 41V9M21 41V9M30 41V9M39 41V9"/></g>',
+ 'aux':      f'<g {S2}><rect x="6" y="6" width="36" height="36" rx="6"/><circle cx="24" cy="24" r="9"/><circle cx="24" cy="24" r="2.5" fill="#fff" stroke="none"/></g>',
+}
+N2 = 20
+
+def render(svg, N=N):
     xml = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="{N*8}" height="{N*8}">{svg}</svg>'
     png = cairosvg.svg2png(bytestring=xml.encode())
     a = Image.open(io.BytesIO(png)).convert('RGBA').split()[3]
     return np.asarray(a.resize((N, N), Image.LANCZOS), dtype=np.uint8)
 
-def pack4(a):
+def pack4(a):  # filas alineadas a byte, nibble alto primero (formato LV_IMG_CF_ALPHA_4BIT)
     q = np.rint(a.astype(np.float32) / 17.0).astype(np.uint8)      # 0..15
     rows = []
     for r in q:
@@ -68,6 +76,8 @@ def pack4(a):
 
 previews = {k: render(v) for k, v in ICONS.items()}
 data = {k: pack4(a) for k, a in previews.items()}
+prev_s = {k: render(v, N2) for k, v in SMALL.items()}
+data_s = {k: pack4(a) for k, a in prev_s.items()}
 names = list(ICONS)
 stride = (N + 1) // 2
 c = ['/* ARQUIS UI - iconos 40x40, mascara de transparencia de 4 bits. ARCHIVO GENERADO por herramientas/arquis_ui/arquis_iconos.py: no editar a mano. */',
@@ -80,10 +90,20 @@ for k in names:
     c.append('};')
     c.append(f'const lv_img_dsc_t arq_icon_{k} = {{ .header = {{ .cf = LV_IMG_CF_ALPHA_4BIT, .always_zero = 0, .reserved = 0, .w = {N}, .h = {N} }}, .data_size = {len(d)}, .data = arq_icon_{k}_map }};')
     c.append('')
+stride2 = (N2 + 1) // 2
+for k in SMALL:
+    d = data_s[k]
+    c.append(f'static const uint8_t arq_icon_s_{k}_map[] = {{')
+    for i in range(0, len(d), stride2):
+        c.append('  ' + ','.join(f'0x{x:02x}' for x in d[i:i+stride2]) + ',')
+    c.append('};')
+    c.append(f'const lv_img_dsc_t arq_icon_s_{k} = {{ .header = {{ .cf = LV_IMG_CF_ALPHA_4BIT, .always_zero = 0, .reserved = 0, .w = {N2}, .h = {N2} }}, .data_size = {len(d)}, .data = arq_icon_s_{k}_map }};')
+    c.append('')
 open(os.path.join(OUT, 'arquis_icons.c'), 'w').write('\n'.join(c))
 h = ['/* ARQUIS UI - iconos (generado por herramientas/arquis_ui/arquis_iconos.py) */', '#pragma once', '#include "lvgl.h"', '#ifdef __cplusplus', 'extern "C" {', '#endif', '',
      f'#define ARQ_ICON_SIZE {N}', '']
 h += [f'extern const lv_img_dsc_t arq_icon_{k};' for k in names]
+h += ['', f'#define ARQ_ICON_SMALL {N2}', '// Iconos pequenos (20 px): ventiladores'] + [f'extern const lv_img_dsc_t arq_icon_s_{k};' for k in SMALL]
 h += ['', '#ifdef __cplusplus', '}', '#endif', '']
 open(os.path.join(OUT, 'arquis_icons.h'), 'w').write('\n'.join(h))
 # hoja de contacto
@@ -94,4 +114,4 @@ for i, k in enumerate(names):
     col = Image.new('RGB', (N, N), (0x30, 0xAC, 0xE3))
     sheet.paste(col, (8 + (i % cols) * 56, 8 + (i // cols) * 56), a)
 sheet.resize((sheet.width * 2, sheet.height * 2), Image.NEAREST).save(os.path.join(HERE, 'iconos_hoja.png'))
-print('OK', len(names), 'iconos,', len(names) * N * stride, 'bytes de Flash')
+print('OK', len(names), 'iconos 40 px +', len(SMALL), 'de 20 px,', len(names) * N * stride + len(SMALL) * N2 * stride2, 'bytes de Flash')

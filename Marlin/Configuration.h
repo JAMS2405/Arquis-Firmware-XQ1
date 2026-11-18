@@ -3219,6 +3219,9 @@
 //
 #define TOUCH_SCREEN
 
+// ARQUIS UI: interfaz propia (Dashboard). Comenta esta linea para volver a la pantalla principal original de MKS.
+#define ARQUIS_UI
+
 // Arquis: intercambia los 2 bytes de cada pixel antes de enviarlo a la pantalla.
 // DESACTIVADO: la libreria LVGL de Makerbase usa LV_COLOR_16_SWAP=0 y la pantalla recibe el orden nativo,
 // que es el que usan los .bin de sd_assets (RGB565 little-endian). Con esta linea activa TODO se ve con
