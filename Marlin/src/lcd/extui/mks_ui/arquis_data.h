@@ -44,6 +44,7 @@ typedef struct {
   uint8_t      pct;          // 0..100, valido solo si sd_job
   uint32_t     elapsed_s;    // tiempo de impresion de Marlin (print_job_timer)
   uint32_t     remaining_s;  // 0 = desconocido (no se inventa)
+  int32_t      z_cmm;        // altura Z actual en centesimas de mm (current_position.z, el mismo valor que muestra la interfaz original)
   char         file[44];
 } arq_snapshot_t;
 

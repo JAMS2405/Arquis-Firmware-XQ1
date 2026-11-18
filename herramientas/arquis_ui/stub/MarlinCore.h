@@ -4,3 +4,7 @@ extern MarlinState marlin_state;
 inline bool IsStopped() { return marlin_state == MF_STOPPED; }
 bool printingIsActive();
 bool printingIsPaused();
+
+class __FlashStringHelper; typedef const __FlashStringHelper* FSTR_P;
+#define F(str) (reinterpret_cast<const __FlashStringHelper *>(str))
+extern bool wait_for_heatup;

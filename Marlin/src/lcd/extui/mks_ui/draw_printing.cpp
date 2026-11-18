@@ -35,6 +35,10 @@
 #include "../../../gcode/gcode.h"
 #include "../../../inc/MarlinConfig.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_print.h"   // pantalla de supervision ARQUIS (sustituye a la original; esta se conserva con ARQUIS_UI desactivado)
+#endif
+
 #if HAS_GCODE_PREVIEW
   #include "SPI_TFT.h"
   #include "../../../libs/W25Qxx.h"
@@ -49,6 +53,7 @@
   #include "../../marlinui.h"
 #endif
 
+#if DISABLED(ARQUIS_UI)
 extern lv_group_t *g;
 static lv_obj_t *scr;
 static lv_obj_t *labelExt1, *labelFan, *labelZpos, *labelTime;
@@ -76,10 +81,13 @@ enum {
   ID_FAN
 };
 
+#endif // DISABLED(ARQUIS_UI)
+
 bool once_flag; // = false
 extern bool flash_preview_begin, default_preview_flg, gcode_preview_over;
 extern uint32_t To_pre_view;
 
+#if DISABLED(ARQUIS_UI)
 static void event_handler(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   if (gcode_preview_over) return;
@@ -142,6 +150,8 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
   }
 }
 
+#endif // DISABLED(ARQUIS_UI)
+
 #if HAS_GCODE_PREVIEW
 /**
  * Arquis: la miniatura (200x200 en x=2,y=36) se "llena" de abajo hacia arriba segun el avance.
@@ -174,6 +184,19 @@ void preview_fill_update(uint8_t pct) {
   preview_fill_line = line;
 }
 #endif
+
+#if ENABLED(ARQUIS_UI)
+
+// Pantalla ARQUIS (arquis_print.cpp). Las funciones disp_*() las sigue llamando GUI_RefreshPage()/print_time_run() como siempre:
+// el refresco real se hace una vez por segundo en arq_print_refresh().
+void lv_draw_printing() { arq_print_draw(); }
+void disp_ext_temp()    { arq_print_refresh(); }
+void disp_bed_temp()    {}
+void disp_fan_speed()   {}
+void disp_print_time()  {}
+void disp_fan_Zpos()    {}
+
+#else   // ---- pantalla original MKS (se conserva intacta) ----
 
 void lv_draw_printing() {
   disp_state_stack._disp_index = 0;
@@ -297,6 +320,8 @@ void disp_fan_Zpos() {
   lv_label_set_text(labelZpos, public_buf_l);
 }
 
+#endif // ARQUIS_UI
+
 void reset_print_time() {
   print_time.hours   = 0;
   print_time.minutes = 0;
@@ -311,6 +336,10 @@ void stop_print_time() { print_time.start = 0; }
 void setProBarRate() {
   int rate;
   volatile long long rate_tmp_r;
+
+  #if ENABLED(ARQUIS_UI)
+    if (gCfgItems.curFilesize == 0) return;   // sin tamano de archivo no se puede calcular (evita dividir por cero con trabajos iniciados desde un host)
+  #endif
 
   if (!gCfgItems.from_flash_pic) {
     #if HAS_MEDIA
@@ -331,6 +360,12 @@ void setProBarRate() {
   #if HAS_GCODE_PREVIEW
     if (disp_state == PRINTING_UI && !flash_preview_begin && !default_preview_flg) preview_fill_update((uint8_t)rate);
   #endif
+
+  #if ENABLED(ARQUIS_UI)
+    // La barra, el porcentaje y el fin de impresion los gestiona arquis_print.cpp (arq_print_refresh / arq_print_poll).
+    // Aqui solo queda el relleno de la miniatura, que es de la interfaz original.
+    return;
+  #else
 
   if (rate <= 0) return;
 
@@ -361,13 +396,18 @@ void setProBarRate() {
       }
     }
   }
+  #endif // ARQUIS_UI
 }
 
 void lv_clear_printing() {
+  #if ENABLED(ARQUIS_UI)
+    arq_print_clear();
+  #else
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif
   lv_obj_del(scr);
+  #endif
 }
 
 #endif // HAS_TFT_LVGL_UI

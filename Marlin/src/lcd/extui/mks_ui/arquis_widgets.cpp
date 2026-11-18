@@ -29,8 +29,9 @@ typedef struct {
   const lv_img_dsc_t *icon;
   const char *title, *value, *value2, *sub;
   arq_fan_row_t *fans;
+  arq_list_row_t *rows;
   lv_event_cb_t user_cb;
-  uint8_t layout, kind, icon_tint, title_role, value_role, sub_role, dot_tint, bar_tint, flags, pct, nfans;
+  uint8_t layout, kind, icon_tint, title_role, value_role, sub_role, dot_tint, bar_tint, flags, pct, nfans, nrows;
 } arq_card_ext_t;
 
 #define F_PRESSED  0x01
@@ -168,6 +169,35 @@ static void draw_print(const lv_area_t *mask, const arq_card_ext_t *e, const lv_
   }
 }
 
+// Supervision de impresion: archivo, barra, porcentaje grande y dos lineas de tiempo a su derecha.
+static void draw_job(const lv_area_t *mask, const arq_card_ext_t *e, const lv_area_t &a) {
+  const lv_coord_t w = lv_area_get_width(&a), x0 = a.x1, y0 = a.y1;
+  lv_draw_rect(&a, mask, arq_style_panel(), LV_OPA_COVER);
+  if (e->title) draw_text_fit(mask, x0 + 12, y0 + 8, w - 24, e->title, arq_style_text(ARQ_TEXT_BODY));
+  draw_bar(mask, x0 + 12, y0 + 34, w - 24, 8, e->pct, (arq_tint_t)e->bar_tint);
+  if (e->value) draw_text(mask, x0 + 12, y0 + 47, e->value, arq_style_text(e->value_role >= ARQ_TEXT_NUM_L ? (arq_text_t)e->value_role : ARQ_TEXT_NUM_L));
+  const lv_coord_t cx = x0 + 12 + 108, cw = w - 12 - 108 - 12;
+  if (e->value2) draw_text_fit(mask, cx, y0 + 50, cw, e->value2, arq_style_text(ARQ_TEXT_BODY));
+  if (e->sub)    draw_text_fit(mask, cx, y0 + 72, cw, e->sub, arq_style_text((arq_text_t)e->sub_role));
+}
+
+// Lista de datos: [punto] nombre ................ valor / objetivo
+static void draw_list(const lv_area_t *mask, const arq_card_ext_t *e, const lv_area_t &a) {
+  const lv_coord_t w = lv_area_get_width(&a), x0 = a.x1, y0 = a.y1;
+  lv_point_t t1, t2;
+  lv_draw_rect(&a, mask, arq_style_panel(), LV_OPA_COVER);
+  for (uint8_t i = 0; i < e->nrows && i < ARQ_LIST_ROWS_MAX; ++i) {
+    const arq_list_row_t &r = e->rows[i];
+    const lv_coord_t ry = y0 + ARQ_LIST_PAD + i * ARQ_LIST_ROW_H;
+    if (r.dot != ARQ_TINT_AUTO) draw_dot(mask, x0 + 17, ry + 9, 4, (arq_tint_t)r.dot);
+    draw_text(mask, x0 + 32, ry, r.label, arq_style_text(ARQ_TEXT_MUTED));
+    lv_coord_t rx = x0 + w - 14;
+    if (r.v2[0]) { text_size(&t2, r.v2, arq_style_text(ARQ_TEXT_MUTED)); rx -= t2.x; draw_text(mask, rx, ry, r.v2, arq_style_text(ARQ_TEXT_MUTED)); rx -= 6; }
+    text_size(&t1, r.v1, arq_style_text(ARQ_TEXT_BODY));
+    draw_text(mask, rx - t1.x, ry, r.v1, arq_style_text(ARQ_TEXT_BODY));
+  }
+}
+
 static bool card_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t mode) {
   if (mode == LV_DESIGN_COVER_CHK) return false;        // esquinas redondeadas: no cubre todo el area
   if (mode != LV_DESIGN_DRAW_MAIN) return true;
@@ -204,6 +234,8 @@ static bool card_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t 
     case ARQ_LAYOUT_STAT: draw_stat(mask, e, a, icon_st, pressed); break;
     case ARQ_LAYOUT_FANS: draw_fans(mask, e, a, pressed); break;
     case ARQ_LAYOUT_PRINT: draw_print(mask, e, a, btn); break;
+    case ARQ_LAYOUT_JOB: draw_job(mask, e, a); break;
+    case ARQ_LAYOUT_LIST: draw_list(mask, e, a); break;
 
     case ARQ_LAYOUT_CHIP: {
       lv_draw_rect(&a, mask, arq_style_chip(), LV_OPA_COVER);
@@ -292,6 +324,7 @@ void arq_card_set_percent(lv_obj_t *c, uint8_t p)                 { NN(c) upd<ui
 void arq_card_set_bar_tint(lv_obj_t *c, arq_tint_t t)             { NN(c) upd<uint8_t>(c, ext(c)->bar_tint, t); }
 void arq_card_set_logo(lv_obj_t *c, bool s)                       { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = s ? (e->flags | F_LOGO) : (e->flags & ~F_LOGO); upd<uint8_t>(c, e->flags, f); }
 void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->fans = rows; upd<uint8_t>(c, e->nfans, n); lv_obj_invalidate(c); }
+void arq_card_set_rows(lv_obj_t *c, arq_list_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->rows = rows; e->nrows = n; lv_obj_invalidate(c); }
 void arq_card_refresh(lv_obj_t *c)                                { NN(c) lv_obj_invalidate(c); }
 void arq_card_set_disabled(lv_obj_t *c, bool d) {
   NN(c)
@@ -392,9 +425,14 @@ lv_obj_t * arq_dialog_open(const char *title, const char *msg, const char *ok_te
   arq_card_set_title(dlg_panel, title, ARQ_TEXT_BODY);
   arq_card_set_sub(dlg_panel, msg, ARQ_TEXT_MUTED);
   const lv_coord_t bw = (pw - 48) / 2, by = py + ph - 16 - 48;
-  dlg_cancel = arq_button_create(top, px + 16, by, bw, 48, nullptr, cancel_text, ARQ_BTN_SECONDARY, cb, cancel_id);
-  dlg_ok = arq_button_create(top, px + 32 + bw, by, bw, 48, nullptr, ok_text, danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY, cb, ok_id);
-  if (!dlg_panel || !dlg_ok || !dlg_cancel) { arq_dialog_close(); return nullptr; }   // sin memoria: no queda un dialogo a medias
+  dlg_cancel = nullptr;
+  if (cancel_text) {
+    dlg_cancel = arq_button_create(top, px + 16, by, bw, 48, nullptr, cancel_text, ARQ_BTN_SECONDARY, cb, cancel_id);
+    dlg_ok = arq_button_create(top, px + 32 + bw, by, bw, 48, nullptr, ok_text, danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY, cb, ok_id);
+  }
+  else   // informativo: un solo boton ancho
+    dlg_ok = arq_button_create(top, px + 16, by, pw - 32, 48, nullptr, ok_text, danger ? ARQ_BTN_DANGER : ARQ_BTN_PRIMARY, cb, ok_id);
+  if (!dlg_panel || !dlg_ok || (cancel_text && !dlg_cancel)) { arq_dialog_close(); return nullptr; }   // sin memoria: no queda un dialogo a medias
   return dlg_panel;
 }
 

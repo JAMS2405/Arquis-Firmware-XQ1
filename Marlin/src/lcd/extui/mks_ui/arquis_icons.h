@@ -28,6 +28,8 @@ extern const lv_img_dsc_t arq_icon_wifi;
 extern const lv_img_dsc_t arq_icon_home;
 extern const lv_img_dsc_t arq_icon_file;
 extern const lv_img_dsc_t arq_icon_speed;
+extern const lv_img_dsc_t arq_icon_objects;
+extern const lv_img_dsc_t arq_icon_sliders;
 
 #define ARQ_ICON_SMALL 20
 // Iconos pequenos (20 px): ventiladores

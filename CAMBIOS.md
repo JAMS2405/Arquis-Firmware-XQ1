@@ -97,3 +97,11 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v10 — Primera compilacion completa correcta (PC del usuario)
 - `pio run -e mks_robin_nano_v3_1_usb_flash_drive_msc`: SUCCESS. RAM 59.5 % (77996 B), Flash 84.8 % (403152 de 475136 B, quedan 71984 B).
 - Unica advertencia propia: `event_handler` sin usar en `draw_ready_print.cpp` con ARQUIS_UI activo -> envuelto en `#if DISABLED(ARQUIS_UI)` (el original queda intacto al desactivar ARQUIS_UI).
+
+## v11 — Etapa 3: supervisión de la impresión
+- Nueva pantalla de supervisión ARQUIS (`arquis_print*.cpp/.h`); con `ARQUIS_UI` desactivado, `draw_printing.cpp` queda idéntico al original.
+- Botón **Inicio** (solo cambia de pantalla), Pausar/Reanudar coherente con el estado real (P7), Cancelar con confirmación, Objetos, Opciones.
+- **C3** resuelto: fin de impresión detectado desde cualquier pantalla (aplazado si no es Dashboard/supervisión) con diálogo informativo.
+- Porcentaje con el mismo cálculo que la barra original (descuenta la miniatura), división por cero evitada.
+- Widgets nuevos: tarjeta de avance (JOB), lista de datos (LIST), diálogo informativo; iconos nuevos `objects` y `sliders`.
+- Documento: `docs/arquis/ARQUIS_UI_etapa_3.md`. Estado: simulador OK; compilación completa y pantalla real pendientes de validar.

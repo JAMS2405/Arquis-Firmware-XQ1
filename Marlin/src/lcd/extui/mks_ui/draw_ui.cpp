@@ -40,6 +40,10 @@
 #include "../../../module/planner.h"
 #include "../../../inc/MarlinConfig.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_print.h"
+#endif
+
 #if ENABLED(POWER_LOSS_RECOVERY)
   #include "../../../feature/powerloss.h"
 #endif
@@ -741,6 +745,9 @@ void print_time_run() {
 }
 
 void GUI_RefreshPage() {
+  #if ENABLED(ARQUIS_UI)
+    arq_print_poll();   // fin de impresion desde cualquier pantalla (ver arquis_print.cpp)
+  #endif
   if ((systick_uptime_millis % 1000) == 0) temps_update_flag = true;
   if ((systick_uptime_millis % 3000) == 0) printing_rate_update_flag = true;
 

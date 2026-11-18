@@ -47,7 +47,9 @@ typedef enum {
   ARQ_LAYOUT_BAR,      // barra de progreso
   ARQ_LAYOUT_FANS,     // lista de ventiladores (icono, nombre, porcentaje, mini barra)
   ARQ_LAYOUT_PRINT,    // tarjeta de impresion: archivo, barra, porcentaje, estado, tiempos
-  ARQ_LAYOUT_DIALOG    // cuadro de dialogo: titulo y mensaje con ajuste de linea
+  ARQ_LAYOUT_DIALOG,   // cuadro de dialogo: titulo y mensaje con ajuste de linea
+  ARQ_LAYOUT_JOB,      // supervision: archivo, barra, porcentaje grande y dos lineas de tiempo (title, value, value2, sub, pct)
+  ARQ_LAYOUT_LIST      // lista de datos: punto de estado, nombre y valor (+ objetivo) alineados a la derecha
 } arq_layout_t;
 
 // Todas las funciones aceptan nullptr (si el heap de LVGL se agota, arq_card_create devuelve nullptr y nada falla).
@@ -92,7 +94,15 @@ typedef struct { const lv_img_dsc_t *icon; const char *label; uint8_t pct; char 
 #define ARQ_FAN_ROWS_MAX 3
 void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n);
 
-// Dialogo de confirmacion (modal, sobre la capa superior). Solo uno abierto a la vez: 4 objetos, se liberan al cerrar.
+// Lista de datos (ARQ_LAYOUT_LIST): el llamador conserva el arreglo de filas
+typedef struct { const char *label; char v1[16]; char v2[10]; uint8_t dot; } arq_list_row_t;   // dot: arq_tint_t (ARQ_TINT_AUTO = sin punto)
+#define ARQ_LIST_ROWS_MAX 4
+#define ARQ_LIST_ROW_H    22
+#define ARQ_LIST_PAD      6
+void arq_card_set_rows(lv_obj_t *c, arq_list_row_t *rows, uint8_t n);
+
+// Dialogo de confirmacion (modal, sobre la capa superior). Solo uno abierto a la vez: 4 objetos (3 si es informativo), se liberan al cerrar.
+// cancel_text == nullptr -> dialogo informativo con un solo boton (ok_text).
 lv_obj_t * arq_dialog_open(const char *title, const char *msg, const char *ok_text, const char *cancel_text, bool danger,
                            lv_event_cb_t cb, uint16_t ok_id, uint16_t cancel_id);
 void       arq_dialog_close();

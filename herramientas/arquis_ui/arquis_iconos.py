@@ -50,6 +50,8 @@ ICONS = {
  'home':    f'<g {S}><path d="M6 24L24 8l18 16M11 21v19h26V21"/><path d="M20 40V30h8v10"/></g>',
  'file':    f'<g {S}><path d="M11 5.500h18l9 9V42H11z"/><path d="M29 5.500v9h9"/><path d="M17 26h14M17 33h10"/></g>',
  'speed':   f'<g {S}><path d="M7 33a17 17 0 1 1 34 0"/><path d="M24 33l8-11"/><circle cx="24" cy="33" r="2.6" {F}/></g>',
+ 'objects': f'<g {S}><rect x="6" y="6" width="16" height="16" rx="3"/><rect x="26" y="6" width="16" height="16" rx="3"/><rect x="6" y="26" width="16" height="16" rx="3"/><rect x="26" y="26" width="16" height="16" rx="3"/><path d="M30.500 10.500l7 7M37.500 10.500l-7 7"/></g>',
+ 'sliders': f'<g {S}><path d="M7 12h34M7 24h34M7 36h34"/><circle cx="17" cy="12" r="3.800" {F}/><circle cx="31" cy="24" r="3.800" {F}/><circle cx="20" cy="36" r="3.800" {F}/></g>',
 }
 
 S2 = 'fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"'

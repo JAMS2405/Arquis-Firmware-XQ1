@@ -22,3 +22,6 @@
 #define MACHINE_NAME "Arquis XQ1"
 #define ZERO(a) memset((void*)a, 0, sizeof(a))
 #define TERN(O,A,B) B      // MULTI_VOLUME no esta activo en esta configuracion
+#define ENA_CANCEL_OBJECTS 1
+#define ENA_POWER_LOSS_RECOVERY 1
+#define HAS_SUICIDE 1

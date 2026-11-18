@@ -25,11 +25,13 @@
 #if HAS_TFT_LVGL_UI && ENABLED(ARQUIS_UI)
 
 #include "arquis_data.h"
+#include "draw_ui.h"       // gCfgItems / uiCfg: tamano del archivo y estado de impresion de la interfaz original
 
 #include "../../../inc/MarlinConfig.h"
 #include "../../../MarlinCore.h"
 #include "../../../module/temperature.h"
 #include "../../../module/printcounter.h"
+#include "../../../module/motion.h"
 #include "../../../sd/cardreader.h"
 
 #include <string.h>
@@ -41,6 +43,21 @@
 #ifndef TEMP_BED_HYSTERESIS
   #define TEMP_BED_HYSTERESIS 3
 #endif
+
+extern uint32_t To_pre_view;
+
+// Mismo calculo que la barra de la interfaz original (setProBarRate): descuenta la miniatura incrustada en el G-code, para que el
+// porcentaje coincida con el relleno de la miniatura. Solo vale si el trabajo lo inicio esta interfaz (curFilesize es suyo);
+// para cualquier otro trabajo (p. ej. desde un host) se usa el porcentaje de Marlin.
+static uint8_t job_percent() {
+  const uint8_t st = uiCfg.print_state;
+  if ((st == WORKING || st == PAUSING || st == PAUSED || st == RESUMING || st == REPRINTED) && gCfgItems.curFilesize > 0) {
+    int64_t idx = (int64_t)card.getIndex(), size = (int64_t)gCfgItems.curFilesize;
+    if (gCfgItems.from_flash_pic) { const int64_t off = (int64_t)PREVIEW_SIZE + (int64_t)To_pre_view; idx -= off; size -= off; }
+    if (size > 0) { const int64_t r = idx * 100 / size; return r < 0 ? 0 : r > 100 ? 100 : (uint8_t)r; }
+  }
+  return (uint8_t)card.percentDone();
+}
 
 bool arq_data_job_active() { return printingIsActive() || printingIsPaused(); }
 
@@ -70,6 +87,8 @@ void arq_data_read(arq_snapshot_t *s) {
       s->fan[s->fan_n++] = { ARQ_FAN_AUX, f, (uint8_t)thermalManager.fanSpeedPercent(f) };
   #endif
 
+  s->z_cmm = (int32_t)(current_position.z * 100.0f + (current_position.z >= 0 ? 0.5f : -0.5f));
+
   // --- Estado de impresion (funciones reales de Marlin) ---
   const bool paused = printingIsPaused(), printing = !paused && printingIsActive();
   s->job = paused || printing;
@@ -78,7 +97,7 @@ void arq_data_read(arq_snapshot_t *s) {
     if (s->job && card.isFileOpen()) {
       s->sd_job = true;
       arq_strlcpy(s->file, card.longest_filename(), sizeof(s->file));
-      s->pct = card.percentDone();
+      s->pct = job_percent();
     }
   #endif
   if (s->job) {
