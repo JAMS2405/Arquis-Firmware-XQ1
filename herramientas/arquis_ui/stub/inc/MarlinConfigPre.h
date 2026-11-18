@@ -54,3 +54,13 @@
 char *dtostrf(double, signed char, unsigned char, char *);
 #define DISABLED(O) (!ENABLED(O))
 #define strcpy_P strcpy
+#define ENA_HAS_SUICIDE 1
+#define ENA_AUTO_BED_LEVELING_BILINEAR 1
+#define ENA_PRINTCOUNTER 1
+#define ENA_EEPROM_SETTINGS 1
+#define MAX_EXT_SPEED_PERCENT 999
+#define MIN_EXT_SPEED_PERCENT 10
+#define X_MIN_POS 0
+#define Y_MIN_POS 0
+#define X_MAX_POS 220
+#define Y_MAX_POS 220

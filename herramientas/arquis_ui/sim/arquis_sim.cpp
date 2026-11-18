@@ -10,6 +10,7 @@
 #include "arquis_objects_view.h"
 #include "arquis_ctrl_view.h"
 #include "arquis_files_view.h"
+#include "arquis_tools_view.h"
 
 extern "C" {   // ganchos que el firmware real define en draw_print_file.cpp (miniatura de G-code) y la libreria: no se usan aqui
   uint32_t lv_open_gcode_file(char *) { return 0; }
@@ -142,7 +143,7 @@ static void temps_screen(const arq_temps_model_t &m, const char *shot, bool hot 
 static const char *const fan_names[2] = { "Capa", "Aux 1" };
 static void fans_screen(uint8_t n, uint8_t sel, uint8_t p0, uint8_t p1, const char *shot) { lv_obj_t *s = new_screen(); arq_fanctl_build(s, ccb, n, fan_names); arq_fanctl_model_t m; memset(&m, 0, sizeof(m)); m.n = n; m.sel = sel; m.pct[0] = p0; m.pct[1] = p1; arq_fanctl_update(&m); if (shot) dump(shot); }
 static arq_move_model_t mmodel(int step, int homed) { arq_move_model_t m; memset(&m, 0, sizeof(m)); m.pos_cmm[0] = 12550; m.pos_cmm[1] = -340; m.pos_cmm[2] = 1205; m.homed = homed; m.step = step; return m; }
-static void move_screen(const arq_move_model_t &m, const char *shot) { lv_obj_t *s = new_screen(); arq_move_build(s, ccb); arq_move_update(&m); if (shot) dump(shot); }
+static void move_screen(const arq_move_model_t &m, const char *shot) { lv_obj_t *s = new_screen(); arq_move_build(s, ccb, false); arq_move_update(&m); if (shot) dump(shot); }
 static arq_extrude_model_t emodel(int cur, int tgt, bool ok, int amount) { arq_extrude_model_t m; memset(&m, 0, sizeof(m)); m.cur = cur; m.tgt = tgt; m.tol = 3; m.min_temp = 170; m.hot_enough = ok; m.amount = amount; m.step_mm = 5; m.speed = 1; return m; }
 static void extrude_screen(const arq_extrude_model_t &m, const char *shot, bool multi = false) { lv_obj_t *s = new_screen(); arq_extrude_build(s, ccb, multi); arq_extrude_update(&m); if (shot) dump(shot); }
 static void opts_screen(bool working, bool objs, bool autooff, const char *shot) {
@@ -166,6 +167,22 @@ static arq_files_model_t fmodel(int n, uint8_t mask, bool up, bool down, bool no
   for (int i = 0; i < ARQ_FILE_ROWS; ++i) m.name[i] = fnames[i]; return m; }
 static void files_screen(const arq_files_model_t &m, const char *shot) { lv_obj_t *s = new_screen(); arq_files_build(s, ccb); arq_files_update(&m); if (shot) dump(shot); }
 static void confirm_screen(const char *file, const char *shot, bool thumb = false) { lv_obj_t *s = new_screen(); arq_confirm_build(s, ccb, file, thumb); if (shot) { if (thumb) { g_thumb_x = ARQ_CONFIRM_THUMB_X; g_thumb_y = ARQ_CONFIRM_THUMB_Y; g_thumb_pct = 0; } dump(shot); g_thumb_pct = -1; g_thumb_x = 2; g_thumb_y = 36; } }
+
+// ---- Etapa 5: Velocidad, Nivelar cama, Sistema, Babystep ---------------------------------------------------------------------------
+static void speed_screen(int feed, int flow, int sel, int step, const char *shot) { lv_obj_t *s = new_screen(); arq_speed_build(s, ccb); arq_speed_model_t m = { (int16_t)feed, (int16_t)flow, (uint8_t)sel, (uint8_t)step }; arq_speed_update(&m); if (shot) dump(shot); }
+static void level_screen(const char *shot) { lv_obj_t *s = new_screen(); arq_level_model_t m; memset(&m, 0, sizeof(m)); m.bed_x = m.bed_y = 220; int xs[5] = { 30, 190, 190, 30, 110 }, ys[5] = { 30, 30, 190, 190, 110 }; for (int i = 0; i < 5; ++i) { m.x[i] = xs[i]; m.y[i] = ys[i]; } arq_level_build(s, ccb, &m); if (shot) dump(shot); }
+static arq_info_list_t il, ir;
+static void info_screen(const char *shot) {
+  memset(&il, 0, sizeof(il)); memset(&ir, 0, sizeof(ir));
+  il.title = "Sistema"; ir.title = "Diagn\xC3\xB3stico";
+  const char *ln[7] = { "M\xC3\xA1quina", "Firmware", "Placa", "Compilaci\xC3\xB3n", "Encendida", "Impresiones", "Tiempo total" }, *lv[7] = { "Arquis XQ1", "Marlin 2.1.2.10", "MKS Robin Nano V3", "2026-11-13", "2 h 15 min", "12 (10 ok)", "41 h 20 min" };
+  const char *rn[7] = { "Sensor hotend", "Sensor cama", "Final X", "Final Y", "Final Z", "Tarjeta SD", "Marlin" }, *rv[7] = { "25\xC2\xB0", "24\xC2\xB0", "Abierto", "Abierto", "Activado", "Montada", "Normal" };
+  const uint8_t dots[7] = { ARQ_TINT_OK, ARQ_TINT_OK, ARQ_TINT_MUTED, ARQ_TINT_MUTED, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_OK };
+  for (int i = 0; i < 7; ++i) { il.rows[i].label = ln[i]; snprintf(il.rows[i].v1, sizeof(il.rows[i].v1), "%s", lv[i]); il.rows[i].dot = ARQ_TINT_AUTO; rv[i]; ir.rows[i].label = rn[i]; snprintf(ir.rows[i].v1, sizeof(ir.rows[i].v1), "%s", rv[i]); ir.rows[i].dot = dots[i]; }
+  il.n = ir.n = 7;
+  lv_obj_t *s = new_screen(); arq_info_build(s, ccb, "Sistema y diagn\xC3\xB3stico", &il, &ir); arq_info_refresh(); if (shot) dump(shot);
+}
+static void baby_screen(int off_um, int step, const char *shot) { lv_obj_t *s = new_screen(); arq_move_build(s, ccb, true); arq_move_model_t m; memset(&m, 0, sizeof(m)); m.step = step; m.z_off_um = off_um; arq_move_update(&m); if (shot) dump(shot); }
 
 // ---- Componentes y iconos ------------------------------------------------------------------------------------------------------
 static arq_temp_tile_t c_t1, c_t2, c_t3, c_t4;
@@ -567,6 +584,33 @@ static void tests() {
         arq_files_model_t m3 = fmodel(6, 0, false, true); arq_files_update(&m3); run(); c_last = -1; tap(444, 100); CHECK(c_last == -1, "explorador: sin pagina anterior el boton esta deshabilitado");
         confirm_screen("soporte.gcode", nullptr, true); c_count = 0; tap(280, 240); CHECK(c_count == 1 && c_last == ARQ_PC_CANCEL, "confirmar: Cancelar"); c_count = 0; tap(420, 240); CHECK(c_count == 1 && c_last == ARQ_PC_OK, "confirmar: Imprimir");
         new_screen(); run(); } }
+    // 12) Etapa 5: Velocidad, Nivelar cama, Sistema, Babystep ----------------------------------------------------------------
+    { new_screen(); run(); const uint32_t b = used();
+      struct S { const char *name; void (*mk)(); } scr[] = {
+        { "Velocidad", [] { speed_screen(100, 85, 0, 5, nullptr); } }, { "Nivelar cama", [] { level_screen(nullptr); } },
+        { "Sistema", [] { info_screen(nullptr); } }, { "Babystep", [] { baby_screen(-1250, 0, nullptr); } } };
+      for (auto &c : scr) { new_screen(); const uint32_t b1 = used(); c.mk(); const uint32_t u = used() - b1; printf("[mem] %s: %u B\n", c.name, (unsigned)u); CHECK(u < 5200, "%s: %u B de heap (< 5200 B)", c.name, (unsigned)u); }
+      for (int i = 0; i < 100; ++i) for (auto &c : scr) c.mk();
+      new_screen(); run(); const uint32_t u1 = used();
+      for (int i = 0; i < 100; ++i) for (auto &c : scr) c.mk();
+      new_screen(); run(); const uint32_t u2 = used();
+      CHECK(u2 <= u1 && u1 <= b + 16, "Etapa 5: 400 + 400 ciclos de las 4 pantallas: sin fugas (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b);
+      speed_screen(100, 85, 0, 5, nullptr);
+      struct T { int x, y, id; const char *n; } t4[] = { { 20, 22, ARQ_SID_BACK, "Atras" }, { 100, 90, ARQ_SID_FEED, "Movimiento" }, { 100, 180, ARQ_SID_FLOW, "Extrusion" }, { 50, 290, ARQ_SID_S1, "1%" },
+        { 110, 290, ARQ_SID_S5, "5%" }, { 170, 290, ARQ_SID_S10, "10%" }, { 300, 250, ARQ_SID_DEC, "menos" }, { 410, 250, ARQ_SID_INC, "mas" } };
+      for (auto &t : t4) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Velocidad: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
+      level_screen(nullptr);
+      // las posiciones de los 5 botones caen donde corresponde: 1 abajo-izquierda, 2 abajo-derecha, 3 arriba-derecha, 4 arriba-izquierda, 5 centro
+      struct P { int x, y, id; const char *n; } pp[] = { { 6 + 4 + 5 + 27, 52 + 4 + 5 + 27 + 190 - 0, ARQ_LID_P1, "punto 1" } };
+      (void)pp;
+      { lv_obj_t *sc = lv_scr_act(); int found = 0; for (lv_obj_t *c = lv_obj_get_child_back(sc, nullptr); c; c = lv_obj_get_child_back(sc, c)) { if (lv_obj_get_click(c) && c->mks_obj_id >= ARQ_LID_P1 && c->mks_obj_id <= ARQ_LID_P5) {
+            lv_area_t a; lv_obj_get_coords(c, &a); c_count = 0; tap((a.x1 + a.x2) / 2, (a.y1 + a.y2) / 2); if (c_count == 1 && c_last == c->mks_obj_id) ++found; } }
+        CHECK(found == 5, "Nivelar cama: los 5 puntos reciben su toque (%d de 5)", found); }
+      c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_LID_BACK, "Nivelar cama: Atras");
+      baby_screen(0, 1, nullptr);
+      struct T5 { int x, y, id; const char *n; } t5[] = { { 120, 90, ARQ_MID_YP, "Y+" }, { 50, 160, ARQ_MID_XN, "X-" }, { 285, 100, ARQ_MID_ZP, "Z+" }, { 285, 220, ARQ_MID_ZN, "Z-" }, { 400, 145, ARQ_MID_S01, "0,01 mm" }, { 400, 210, ARQ_MID_S1, "0,05 mm" }, { 400, 278, ARQ_MID_S10, "0,1 mm" } };
+      for (auto &t : t5) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Babystep: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
+      new_screen(); run(); }
   }
 
   printf("[test] %s\n", fails ? "HAY FALLOS" : "TODAS LAS PRUEBAS DEL SIMULADOR PASARON");
@@ -627,6 +671,15 @@ int main(int argc, char **argv) {
     files_screen(fmodel(0, 0, false, false, false, "pruebas"), "fil_4_vacia");
     confirm_screen("soporte_motor_nema17_v3_final.gcode", "fil_5_confirmar", true);
     confirm_screen("tapa_caja.gcode", "fil_6_confirmar_sin_miniatura", false);
+    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[8] = { { &arq_icon_temp, "Temperatura", nullptr, 1 }, { &arq_icon_down, "Extruir", nullptr, 1 }, { &arq_icon_move, "Mover", nullptr, 1 }, { &arq_icon_home, "Home", nullptr, 1 },
+        { &arq_icon_level, "Nivel. auto", nullptr, 1 }, { &arq_icon_level, "Nivelar cama", nullptr, 1 }, { &arq_icon_filament, "Filamento", nullptr, 1 }, { &arq_icon_tools, "M\xC3\xA1s", nullptr, 1 } };
+      arq_opts_build(sc, ccb, "Herramientas", it, 8); dump("st5_5_herramientas"); }
+    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[5] = { { &arq_icon_gear, "Par\xC3\xA1metros", nullptr, 1 }, { &arq_icon_file, "Memoria", nullptr, 1 }, { &arq_icon_fan, "Ventiladores", nullptr, 1 }, { &arq_icon_tools, "Sistema", nullptr, 1 }, { &arq_icon_power, "Apagar", nullptr, 1 } };
+      arq_opts_build(sc, ccb, "Ajustes", it, 5); dump("st5_6_ajustes"); }
+    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[6] = { { &arq_icon_home, "Home todo", nullptr, 1 }, { &arq_icon_right, "Home X", nullptr, 1 }, { &arq_icon_up, "Home Y", nullptr, 1 }, { &arq_icon_down, "Home Z", nullptr, 1 }, { &arq_icon_power, "Motores off", nullptr, 1 }, { &arq_icon_power, "Motores XY", nullptr, 1 } };
+      arq_opts_build(sc, ccb, "Home", it, 6); dump("st5_7_home"); }
+    speed_screen(100, 85, 0, 5, "st5_1_velocidad"); level_screen("st5_2_nivelar"); info_screen("st5_3_sistema"); baby_screen(-1250, 0, "st5_4_babystep");
+
   }
   tests();
   return fails ? 1 : 0;

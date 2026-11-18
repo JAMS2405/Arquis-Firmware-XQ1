@@ -2,7 +2,7 @@
 #pragma once
 #include <lvgl.h>
 #include "../../../inc/MarlinConfigPre.h"
-typedef enum { MAIN_UI, PRINT_READY_UI, PRINTING_UI, DIALOG_UI, PRINT_FILE_UI, CANCEL_OBJECT_UI, PREHEAT_UI, FAN_UI, MOVE_MOTOR_UI, EXTRUSION_UI, OPERATE_UI } DISP_STATE;
+typedef enum { TOOL_UI, ZERO_UI, SET_UI, ABOUT_UI, BABYSTEP_UI, CHANGE_SPEED_UI, LEVELING_UI, MAIN_UI, PRINT_READY_UI, PRINTING_UI, DIALOG_UI, PRINT_FILE_UI, CANCEL_OBJECT_UI, PREHEAT_UI, FAN_UI, MOVE_MOTOR_UI, EXTRUSION_UI, OPERATE_UI } DISP_STATE;
 typedef struct { DISP_STATE _disp_state[100]; int _disp_index; } DISP_STATE_STACK;
 extern DISP_STATE_STACK disp_state_stack;
 extern DISP_STATE disp_state;
@@ -17,11 +17,14 @@ typedef struct UI_Config_Struct {
   static constexpr uint8_t eSpeedH = 20, eSpeedN = 10, eSpeedL = 1;
   uint8_t print_state;
   uint8_t dialogType;
+  uint8_t stepPrintSpeed;
+  bool leveling_first_time;
   uint16_t moveSpeed, moveSpeed_bak;
   float move_dist;
   int16_t hotendTargetTempBak;
 } UI_CFG; extern UI_CFG uiCfg;
-typedef struct { bool from_flash_pic; bool encoder_enable; bool finish_power_off; uint32_t curFilesize; } GCFG; extern GCFG gCfgItems;   // (real: mas campos)
+struct xy_int_stub { int16_t x, y; };
+typedef struct { xy_int_stub trammingPos[5]; bool from_flash_pic; bool encoder_enable; bool finish_power_off; uint32_t curFilesize; } GCFG; extern GCFG gCfgItems;   // (real: mas campos)
 typedef struct { int16_t days; uint16_t hours; uint8_t minutes; volatile int8_t seconds; int8_t ms_10; int8_t start; } PRINT_TIME; extern PRINT_TIME print_time;
 #define PREVIEW_SIZE 202720
 lv_obj_t* lv_screen_create(DISP_STATE newScreenType, const char *title = nullptr);
@@ -48,3 +51,8 @@ enum { DIALOG_TYPE_PRINT_FILE = 1 };
 extern uint8_t sel_id; bool have_pre_pic(char *path); int ascii2dec_test(char *ascii);
 #define HAS_GCODE_PREVIEW 1
 void lv_draw_dialog(uint8_t type); void lv_draw_media_select(); void lv_clear_print_file(); typedef struct { uint8_t dummy; } disp_stub_t;
+
+// --- Etapa 5 (firmas de draw_ui.h y draw_*.h reales) ---
+void lv_draw_home(); void lv_draw_manualLevel(); void lv_draw_more(); void lv_draw_language(); void lv_draw_machine_para(); void lv_draw_eeprom_settings(); void lv_draw_about(); void lv_draw_tool(); void lv_draw_set();
+void get_gcode_command(int addr, uint8_t *d);
+#define AUTO_LEVELING_COMMAND_ADDR 1

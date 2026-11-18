@@ -188,11 +188,15 @@ static void draw_list(const lv_area_t *mask, const arq_card_ext_t *e, const lv_a
   const lv_coord_t w = lv_area_get_width(&a), x0 = a.x1, y0 = a.y1;
   lv_point_t t1, t2;
   lv_draw_rect(&a, mask, arq_style_panel(), LV_OPA_COVER);
-  for (uint8_t i = 0; i < e->nrows && i < ARQ_LIST_ROWS_MAX; ++i) {
+  const lv_coord_t top = (e->title && e->title[0]) ? 26 : 0;       // titulo opcional sobre las filas
+  if (top) draw_text(mask, x0 + 12, y0 + 6, e->title, arq_style_text((arq_text_t)e->title_role));
+  bool any_dot = false;                                              // sin puntos de estado, las etiquetas se alinean al borde
+  for (uint8_t i = 0; i < e->nrows && i < ARQ_LIST_DRAW_MAX; ++i) if (e->rows[i].dot != ARQ_TINT_AUTO) any_dot = true;
+  for (uint8_t i = 0; i < e->nrows && i < ARQ_LIST_DRAW_MAX; ++i) {
     const arq_list_row_t &r = e->rows[i];
-    const lv_coord_t ry = y0 + ARQ_LIST_PAD + i * ARQ_LIST_ROW_H;
+    const lv_coord_t ry = y0 + ARQ_LIST_PAD + top + i * ARQ_LIST_ROW_H;
     if (r.dot != ARQ_TINT_AUTO) draw_dot(mask, x0 + 17, ry + 9, 4, (arq_tint_t)r.dot);
-    draw_text(mask, x0 + 32, ry, r.label, arq_style_text(ARQ_TEXT_MUTED));
+    draw_text(mask, x0 + (any_dot ? 32 : 12), ry, r.label, arq_style_text(ARQ_TEXT_MUTED));
     lv_coord_t rx = x0 + w - 14;
     if (r.v2[0]) { text_size(&t2, r.v2, arq_style_text(ARQ_TEXT_MUTED)); rx -= t2.x; draw_text(mask, rx, ry, r.v2, arq_style_text(ARQ_TEXT_MUTED)); rx -= 6; }
     text_size(&t1, r.v1, arq_style_text(ARQ_TEXT_BODY));

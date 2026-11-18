@@ -1,0 +1,4 @@
+#pragma once
+#define SHORT_BUILD_VERSION "2.1.2.10"
+#define STRING_DISTRIBUTION_DATE "2026-11-13"
+#define BOARD_INFO_NAME "MKS Robin Nano V3"

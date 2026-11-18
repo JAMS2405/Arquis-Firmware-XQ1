@@ -24,6 +24,17 @@
 
 #if HAS_TFT_LVGL_UI
 
+#if ENABLED(ARQUIS_UI)
+
+// Pantalla ARQUIS (arquis_tools.cpp / arquis_*_view.cpp). Con ARQUIS_UI desactivado se usa la pantalla original, que sigue abajo intacta.
+#include "draw_ui.h"
+#include "arquis_tools.h"
+
+void lv_draw_set()  { arq_settings_draw(); }
+void lv_clear_set() { arq_settings_clear(); }
+
+#else   // ---- pantalla original MKS (se conserva intacta) ----
+
 #include "draw_ready_print.h"
 #include "draw_set.h"
 #include "draw_ui.h"
@@ -132,5 +143,7 @@ void lv_clear_set() {
   #endif
   lv_obj_del(scr);
 }
+
+#endif // ARQUIS_UI
 
 #endif // HAS_TFT_LVGL_UI

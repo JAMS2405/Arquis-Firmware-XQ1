@@ -55,9 +55,11 @@ enum { ARQ_MID_BACK = 1, ARQ_MID_XP, ARQ_MID_XN, ARQ_MID_YP, ARQ_MID_YN, ARQ_MID
 typedef struct {
   int32_t pos_cmm[3];               // X, Y, Z en centesimas de mm
   uint8_t homed;                    // bit0 X, bit1 Y, bit2 Z referenciados
-  uint8_t step;                     // 0 = 0,1 mm; 1 = 1 mm; 2 = 10 mm
+  uint8_t step;                     // 0 = 0,1 mm; 1 = 1 mm; 2 = 10 mm   (babystep: 0,01 / 0,05 / 0,1 mm)
+  int32_t z_off_um;                 // babystep: offset Z de la sonda en micras (mm * 1000)
 } arq_move_model_t;
-void arq_move_build(lv_obj_t *scr, lv_event_cb_t cb);
+// baby = true: pantalla de babystep (mismos botones; muestra el offset Z y los pasos finos)
+void arq_move_build(lv_obj_t *scr, lv_event_cb_t cb, bool baby = false);
 void arq_move_update(const arq_move_model_t *m);
 void arq_move_forget();
 

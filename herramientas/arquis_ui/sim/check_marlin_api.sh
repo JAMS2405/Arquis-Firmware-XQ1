@@ -9,7 +9,7 @@ MKS="$(cd ../../../Marlin/src/lcd/extui/mks_ui && pwd)"
 T=$(mktemp -d); mkdir -p "$T/src/lcd/extui/mks_ui"
 cp -r ../stub/inc ../stub/module ../stub/sd ../stub/gcode ../stub/feature ../stub/MarlinCore.h "$T/src/"
 cp ../stub/draw_ui.h ../stub/SPI_TFT.h ../stub/tft_lvgl_configuration.h "$T/src/lcd/extui/mks_ui/"
-cp $MKS/arquis_*.h $MKS/arquis_data.cpp $MKS/arquis_nav.cpp $MKS/arquis_dashboard.cpp $MKS/arquis_dashboard_view.cpp $MKS/arquis_print.cpp $MKS/arquis_print_view.cpp $MKS/arquis_objects_view.cpp $MKS/arquis_ctrl_view.cpp $MKS/arquis_controls.cpp $MKS/arquis_widgets.cpp $MKS/arquis_theme.cpp $MKS/arquis_logic.cpp "$T/src/lcd/extui/mks_ui/" 2>/dev/null
+cp $MKS/arquis_*.h $MKS/arquis_data.cpp $MKS/arquis_nav.cpp $MKS/arquis_dashboard.cpp $MKS/arquis_dashboard_view.cpp $MKS/arquis_print.cpp $MKS/arquis_print_view.cpp $MKS/arquis_objects_view.cpp $MKS/arquis_ctrl_view.cpp $MKS/arquis_controls.cpp $MKS/arquis_tools_view.cpp $MKS/arquis_tools.cpp $MKS/arquis_widgets.cpp $MKS/arquis_theme.cpp $MKS/arquis_logic.cpp "$T/src/lcd/extui/mks_ui/" 2>/dev/null
 cp $MKS/arquis_icons.h $MKS/arquis_logo.h $MKS/draw_cancel_object.cpp "$T/src/lcd/extui/mks_ui/"
 cp "$MKS/../../../feature/cancel_object.h" "$T/src/feature/"   # cabecera REAL de Marlin
 python3 - "$MKS/draw_print_file.h" "$T/src/lcd/extui/mks_ui/print_file_types.h" <<'PY'
@@ -26,7 +26,7 @@ for m in re.finditer(r"#else   // ---- explorador ARQUIS[^\n]*\n(.*?)#endif // A
 open(sys.argv[2],"w").write("\n".join(out))
 PY
 CXX=${CXX:-arm-none-eabi-g++}
-for f in arquis_data arquis_nav arquis_dashboard arquis_print arquis_objects_view arquis_ctrl_view arquis_controls arquis_files arquis_files_view draw_cancel_object draw_print_file_arq; do
+for f in arquis_data arquis_nav arquis_dashboard arquis_print arquis_objects_view arquis_ctrl_view arquis_controls arquis_tools_view arquis_tools arquis_files arquis_files_view draw_cancel_object draw_print_file_arq; do
   $CXX -mcpu=cortex-m4 -mthumb -std=gnu++17 -fno-exceptions -fno-rtti -Wall -Wextra -Wno-unused-parameter -I"$LV" -I"$T/src/lcd/extui/mks_ui" -include stdint.h \
        -fsyntax-only "$T/src/lcd/extui/mks_ui/$f.cpp" && echo "OK  $f.cpp compila contra las firmas de Marlin"
 done

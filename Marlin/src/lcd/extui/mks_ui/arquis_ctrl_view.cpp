@@ -130,15 +130,16 @@ void arq_fanctl_update(const arq_fanctl_model_t *m) {
 }
 
 // ==== Mover ======================================================================================================================
-static struct { arq_header_t hd; lv_obj_t *dir[6], *list, *st[3], *chip; bool built, valid; arq_move_model_t prev; } M;
+static struct { arq_header_t hd; lv_obj_t *dir[6], *list, *st[3], *chip; bool built, valid, baby; arq_move_model_t prev; } M;
 static arq_list_row_t m_rows[3];
 static char m_chip[32];
 
 void arq_move_forget() { memset(&M, 0, sizeof(M)); }
 
-void arq_move_build(lv_obj_t *scr, lv_event_cb_t cb) {
+void arq_move_build(lv_obj_t *scr, lv_event_cb_t cb, bool baby) {
   arq_move_forget();
-  arq_header_create(&M.hd, scr, "Mover", false, cb, ARQ_MID_BACK);
+  M.baby = baby;
+  arq_header_create(&M.hd, scr, baby ? "Babystep" : "Mover", false, cb, ARQ_MID_BACK);
   const lv_coord_t c = 68, g = 6, x1 = ARQ_MARGIN + c + g, x2 = x1 + c + g, y1 = CY0 + c + g, y2 = y1 + c + g;
   M.dir[0] = arq_nav_tile_create(scr, x1, CY0, c, c, &arq_icon_up,    ARQ_TINT_ACCENT, "Y+", ARQ_BTN_SECONDARY, cb, ARQ_MID_YP);
   M.dir[1] = arq_nav_tile_create(scr, ARQ_MARGIN, y1, c, c, &arq_icon_left,  ARQ_TINT_ACCENT, "X-", ARQ_BTN_SECONDARY, cb, ARQ_MID_XN);
@@ -148,12 +149,15 @@ void arq_move_build(lv_obj_t *scr, lv_event_cb_t cb) {
   M.dir[4] = arq_nav_tile_create(scr, zx, CY0, zw, zh, &arq_icon_up,   ARQ_TINT_ACCENT, "Z+", ARQ_BTN_SECONDARY, cb, ARQ_MID_ZP);
   M.dir[5] = arq_nav_tile_create(scr, zx, CY0 + zh + g, zw, zh, &arq_icon_down, ARQ_TINT_ACCENT, "Z-", ARQ_BTN_SECONDARY, cb, ARQ_MID_ZN);
   const lv_coord_t rx = zx + zw + ARQ_GAP, rw = ARQ_W - ARQ_MARGIN - rx;
-  M.list = arq_card_create(scr, rx, CY0, rw, ARQ_LIST_PAD * 2 + 3 * ARQ_LIST_ROW_H - 4, ARQ_LAYOUT_LIST, ARQ_BTN_SECONDARY, nullptr, 0);
-  m_rows[0].label = "X"; m_rows[1].label = "Y"; m_rows[2].label = "Z";
-  arq_card_set_rows(M.list, m_rows, 3);
-  static const char *const st_txt[3] = { "0,1 mm", "1 mm", "10 mm" };
-  const lv_coord_t sy0 = CY0 + ARQ_LIST_PAD * 2 + 3 * ARQ_LIST_ROW_H - 4 + g, sh = (CY1 - sy0 - 2 * g) / 3;
-  for (uint8_t i = 0; i < 3; ++i) M.st[i] = arq_button_create(scr, rx, sy0 + i * (sh + g), rw, sh, nullptr, st_txt[i], ARQ_BTN_SECONDARY, cb, ARQ_MID_S01 + i);
+  const uint8_t nrows = baby ? 1 : 3;
+  const lv_coord_t lh = (baby ? 26 : 0) + ARQ_LIST_PAD * 2 + nrows * ARQ_LIST_ROW_H - 4;
+  M.list = arq_card_create(scr, rx, CY0, rw, lh, ARQ_LAYOUT_LIST, ARQ_BTN_SECONDARY, nullptr, 0);
+  m_rows[0].label = baby ? "" : "X"; m_rows[1].label = "Y"; m_rows[2].label = "Z";
+  arq_card_set_rows(M.list, m_rows, nrows);
+  if (baby) arq_card_set_title(M.list, "Offset Z", ARQ_TEXT_MUTED);
+  static const char *const st_txt[3] = { "0,1 mm", "1 mm", "10 mm" }, *const st_baby[3] = { "0,01 mm", "0,05 mm", "0,1 mm" };
+  const lv_coord_t sy0 = CY0 + lh + g, sh = (CY1 - sy0 - 2 * g) / 3;
+  for (uint8_t i = 0; i < 3; ++i) M.st[i] = arq_button_create(scr, rx, sy0 + i * (sh + g), rw, sh, nullptr, baby ? st_baby[i] : st_txt[i], ARQ_BTN_SECONDARY, cb, ARQ_MID_S01 + i);
   M.chip = arq_chip_create(scr, ARQ_MARGIN, y2 + c + ARQ_GAP, zx + zw - ARQ_MARGIN, "", ARQ_TINT_MUTED);
   arq_card_set_title(M.chip, m_chip, ARQ_TEXT_BODY);
   M.built = true;
@@ -168,16 +172,26 @@ static void fmt_mm(char *b, size_t n, int32_t cmm) {
 void arq_move_update(const arq_move_model_t *m) {
   if (!M.built || (M.valid && !memcmp(&M.prev, m, sizeof(*m)))) return;
   M.prev = *m; M.valid = true;
-  for (uint8_t i = 0; i < 3; ++i) {
-    fmt_mm(m_rows[i].v1, sizeof(m_rows[i].v1), m->pos_cmm[i]);
-    m_rows[i].v2[0] = 0;
-    m_rows[i].dot = (m->homed >> i) & 1 ? ARQ_TINT_OK : ARQ_TINT_WARN;
+  if (M.baby) {
+    const long u = m->z_off_um < 0 ? -m->z_off_um : m->z_off_um;
+    snprintf(m_rows[0].v1, sizeof(m_rows[0].v1), "%s%ld.%03ld mm", m->z_off_um < 0 ? "-" : "", u / 1000, u % 1000);
+    m_rows[0].v2[0] = 0; m_rows[0].dot = ARQ_TINT_AUTO;
+    arq_card_set_rows(M.list, m_rows, 1);
+    snprintf(m_chip, sizeof(m_chip), "Se guarda al volver");
+    arq_card_set_dot(M.chip, ARQ_TINT_ACCENT);
   }
-  arq_card_set_rows(M.list, m_rows, 3);
+  else {
+    for (uint8_t i = 0; i < 3; ++i) {
+      fmt_mm(m_rows[i].v1, sizeof(m_rows[i].v1), m->pos_cmm[i]);
+      m_rows[i].v2[0] = 0;
+      m_rows[i].dot = (m->homed >> i) & 1 ? ARQ_TINT_OK : ARQ_TINT_WARN;
+    }
+    arq_card_set_rows(M.list, m_rows, 3);
+    const bool all = (m->homed & 7) == 7;
+    snprintf(m_chip, sizeof(m_chip), "%s", all ? "Ejes referenciados" : "Ejes sin referenciar");
+    arq_card_set_dot(M.chip, all ? ARQ_TINT_OK : ARQ_TINT_WARN);
+  }
   for (uint8_t i = 0; i < 3; ++i) style_btn(M.st[i], m->step == i);
-  const bool all = (m->homed & 7) == 7;
-  snprintf(m_chip, sizeof(m_chip), "%s", all ? "Ejes referenciados" : "Ejes sin referenciar");
-  arq_card_set_dot(M.chip, all ? ARQ_TINT_OK : ARQ_TINT_WARN);
   arq_card_refresh(M.chip);
 }
 
