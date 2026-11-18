@@ -28,7 +28,7 @@ Seis recursos no los referencia nada (`arq_icon_check/folder/stop/warn`, `arq_lo
 | 2 | Fuente por defecto `lv_font_roboto_22` | ≈ 23 KB | **Descartado**: el teclado de texto usa los símbolos de esa fuente (borrar, flechas, aceptar) y la fuente ARQUIS no los trae |
 | 3 | Módulo Wi-Fi MKS | decenas de KB | **Descartado**: tienes el módulo instalado |
 | 4 | Recursos sin uso (6) | ≈ 0 si `--gc-sections` ya los quita; ≈ 5 KB si no | Verificar con el mapa |
-| 5 | Funciones de dibujo de texto repetidas en 5 vistas (`draw_text_fit`, `draw_text_cx`…) → una sola copia | ≈ 1–2 KB | Seguro; bajo beneficio |
+| 5 | Funciones de dibujo de texto repetidas (`draw_text_fit`, `draw_text_cx`…): solo hay 3 copias pequeñas | < 1 KB | **Descartado**: el beneficio no compensa el riesgo de tocar vistas ya probadas |
 | 6 | Compilar con LTO (`-flto`) en un entorno de prueba aparte | típico 3–8 % (≈ 13–35 KB) | Experimento opcional: mide y decide; no se activa por defecto |
 | 7 | Recortar `text16` a los glifos del español | ≈ 3,5 KB | No recomendado (nombres de archivo con otros acentos dejarían de verse) |
 Con 1 + 5 el margen pasaría de **39 KB a ≈ 70 KB** (≈ 85 % de uso).
