@@ -28,9 +28,9 @@
 
 // the colors of the last MKS Ui
 #undef LV_COLOR_BACKGROUND
-#define LV_COLOR_BACKGROUND LV_COLOR_MAKE(0x1A, 0x1A, 0x1A)
+#define LV_COLOR_BACKGROUND LV_COLOR_MAKE(0x0B, 0x12, 0x20)   // Arquis: azul noche (debe coincidir con tema_arquis.py)
 
-#define TFT_LV_PARA_BACK_BODY_COLOR  LV_COLOR_MAKE(0x4A, 0x52, 0xFF)
+#define TFT_LV_PARA_BACK_BODY_COLOR  LV_COLOR_MAKE(0x0E, 0x7F, 0xD0)   // Arquis: azul acento
 
 #include "tft_lvgl_configuration.h"
 #include "tft_multi_language.h"
@@ -102,7 +102,7 @@
 
 #define TICK_CYCLE 1
 
-#define PARA_SEL_ICON_TEXT_COLOR  LV_COLOR_MAKE(0x4A, 0x52, 0xFF);
+#define PARA_SEL_ICON_TEXT_COLOR  LV_COLOR_MAKE(0x00, 0xB4, 0xFF);
 
 #define TFT35
 
@@ -335,7 +335,8 @@ typedef enum {
   ENCODER_SETTINGS_UI,
   TOUCH_CALIBRATION_UI,
   GCODE_UI,
-  MEDIA_SELECT_UI
+  MEDIA_SELECT_UI,
+  CANCEL_OBJECT_UI
 } DISP_STATE;
 
 typedef struct {
@@ -430,6 +431,17 @@ extern keyboard_value_state keyboard_value;
 extern CFG_ITMES gCfgItems;
 extern UI_CFG uiCfg;
 extern DISP_STATE disp_state;
+
+// --- Arquis: miniatura con relleno por porcentaje + cancelar objetos ---
+extern uint8_t preview_src;        // 1 = copia en flash de la miniatura, 0 = imagen por defecto
+extern int16_t preview_fill_line;  // fila (0..200) donde empieza lo "ya impreso"; -1 = hay que repintar todo
+void preview_fill_update(uint8_t pct);
+#if ENABLED(CANCEL_OBJECTS)
+  void lv_draw_cancel_object();
+  void lv_clear_cancel_object();
+  void lv_refresh_cancel_object();
+  lv_obj_t* lv_cancel_object_button_create(lv_obj_t *par, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id);
+#endif
 extern DISP_STATE last_disp_state;
 extern DISP_STATE_STACK disp_state_stack;
 

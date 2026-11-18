@@ -28,6 +28,11 @@ public:
   static bool skipping;
   static int8_t object_count, active_object;
   static uint32_t canceled;
+  // Arquis: bounding box XY (mm) de cada objeto, aprendida mientras se imprime (para el mapa de la pantalla)
+  static uint32_t bbox_valid;
+  static int16_t bbox_x0[32], bbox_y0[32], bbox_x1[32], bbox_y1[32];
+  static void note_extrusion(const float x, const float y);
+  static bool has_bbox(const int8_t obj) { return obj >= 0 && obj < 32 && TEST(bbox_valid, obj); }
   static void set_active_object(const int8_t obj);
   static void cancel_object(const int8_t obj);
   static void uncancel_object(const int8_t obj);
@@ -35,7 +40,7 @@ public:
   static bool is_canceled(const int8_t obj) { return TEST(canceled, obj); }
   static void clear_active_object() { set_active_object(-1); }
   static void cancel_active_object() { cancel_object(active_object); }
-  static void reset() { canceled = 0x0000; object_count = 0; clear_active_object(); }
+  static void reset() { canceled = 0x0000; bbox_valid = 0x0000; object_count = 0; clear_active_object(); }
 };
 
 extern CancelObject cancelable;

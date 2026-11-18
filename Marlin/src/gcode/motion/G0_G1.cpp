@@ -22,6 +22,9 @@
 
 #include "../gcode.h"
 #include "../../module/motion.h"
+#if ENABLED(CANCEL_OBJECTS)
+  #include "../../feature/cancel_object.h"
+#endif
 
 #include "../../MarlinCore.h"
 
@@ -60,6 +63,12 @@ void GcodeSuite::G0_G1(TERN_(HAS_FAST_MOVES, const bool fast_move/*=false*/)) {
   #endif
 
   get_destination_from_command();                 // Get X Y [Z[I[J[K]]]] [E] F (and set cutter power)
+
+  #if ENABLED(CANCEL_OBJECTS)
+    // Arquis: aprender la posicion XY de cada objeto (para el mapa de cancelar objetos)
+    if (cancelable.active_object >= 0 && parser.seen('E') && (parser.seen('X') || parser.seen('Y')))
+      cancelable.note_extrusion(destination.x, destination.y);
+  #endif
 
   #ifdef G0_FEEDRATE
     if (fast_move) {

@@ -25,12 +25,16 @@
 #if HAS_TFT_LVGL_UI
 
 #include "draw_ui.h"
+
 #include <lv_conf.h>
 
 #include "../../../module/temperature.h"
 #include "../../../module/motion.h"
 #include "../../../sd/cardreader.h"
 #include "../../../inc/MarlinConfig.h"
+#if ENABLED(CANCEL_OBJECTS)
+  #include "../../../feature/cancel_object.h"
+#endif
 
 extern lv_group_t *g;
 static lv_obj_t *scr;
@@ -44,7 +48,8 @@ enum {
   ID_O_RETURN,
   ID_O_FAN,
   ID_O_POWER_OFF,
-  ID_O_BABY_STEP
+  ID_O_BABY_STEP,
+  ID_O_CANCEL_OBJ
 };
 
 static lv_obj_t *label_PowerOff;
@@ -111,6 +116,12 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       lv_clear_operation();
       lv_draw_baby_stepping();
       break;
+    #if ENABLED(CANCEL_OBJECTS)
+      case ID_O_CANCEL_OBJ:
+        lv_clear_operation();
+        lv_draw_cancel_object();
+        break;
+    #endif
   }
 }
 
@@ -160,6 +171,12 @@ void lv_draw_operation() {
       }
     #endif
   }
+
+  #if ENABLED(CANCEL_OBJECTS)
+    // Arquis: boton "Quitar objeto" (solo si el G-code trae objetos M486)
+    if (cancelable.object_count > 0)
+      lv_cancel_object_button_create(scr, BTN_X_PIXEL * 2 + INTERVAL_V * 3, BTN_Y_PIXEL + INTERVAL_H + titleHeight, event_handler, ID_O_CANCEL_OBJ);
+  #endif
 
   buttonBack = lv_imgbtn_create(scr, "F:/bmp_return.bin", BTN_X_PIXEL * 3 + INTERVAL_V * 4, BTN_Y_PIXEL + INTERVAL_H + titleHeight, event_handler, ID_O_RETURN);
 

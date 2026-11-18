@@ -1,3 +1,17 @@
+# Arquis Firmware XQ1
+
+Firmware de la impresora 3D **Arquis XQ1** (Arquis Soluciones Tecnologicas). Basado en Marlin 2.1.2.10 para MKS Robin Nano V3.1 con pantalla MKS TS35 (LVGL tactil).
+
+- Cambios y pasos para compilar/flashear: [`CAMBIOS.md`](CAMBIOS.md)
+- Capturas de las pantallas (maqueta): [`docs/arquis/`](docs/arquis/todas_las_pantallas.png)
+- Carpeta `assets` para la SD: [`sd_assets/`](sd_assets/) (tema Arquis + logo de arranque)
+- Herramientas (logo y tema): [`herramientas/`](herramientas/)
+- Ver exactamente lo que cambia Arquis respecto a Marlin: `git diff <commit-base> HEAD`
+
+> Estado: compilacion y pruebas en la impresora pendientes.
+
+---
+
 <p align="center"><img src="buildroot/share/pixmaps/logo/marlin-outrun-nf-500.png" height="250" alt="MarlinFirmware's logo" /></p>
 
 <h1 align="center">Marlin 3D Printer Firmware</h1>

@@ -35,6 +35,12 @@
 #include "../../../gcode/gcode.h"
 #include "../../../inc/MarlinConfig.h"
 
+#if HAS_GCODE_PREVIEW
+  #include "SPI_TFT.h"
+  #include "../../../libs/W25Qxx.h"
+  extern uint8_t bmp_public_buf[];
+#endif
+
 #if ENABLED(POWER_LOSS_RECOVERY)
   #include "../../../feature/powerloss.h"
 #endif
@@ -135,6 +141,39 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       break;
   }
 }
+
+#if HAS_GCODE_PREVIEW
+/**
+ * Arquis: la miniatura (200x200 en x=2,y=36) se "llena" de abajo hacia arriba segun el avance.
+ *  - Lo ya impreso (parte baja) se ve a todo color; lo pendiente (parte alta) se ve atenuado.
+ *  - Una linea azul marca la altura actual.
+ * Solo repinta las filas que cambiaron. Lee la copia de la miniatura que ya esta en la flash SPI.
+ */
+void preview_fill_update(uint8_t pct) {
+  if (pct > 100) pct = 100;
+  const int16_t line = 200 - (int16_t)((200UL * pct) / 100UL);   // filas >= line estan "impresas"
+  if (line == preview_fill_line) return;
+
+  const int16_t from = preview_fill_line < 0 ? 0   : (line < preview_fill_line ? line : preview_fill_line);
+  const int16_t to   = preview_fill_line < 0 ? 199 : (line > preview_fill_line ? line : preview_fill_line);
+  const uint32_t base = preview_src ? BAK_VIEW_ADDR_TFT35 : DEFAULT_VIEW_ADDR_TFT35;
+  const lv_color_t bg = LV_COLOR_BACKGROUND;
+  const uint16_t mark = lv_color_make(0x00, 0xB4, 0xFF).full;
+
+  W25QXX.init(SPI_QUARTER_SPEED);
+  for (int16_t row = from; row <= to && row < 200; row++) {
+    W25QXX.SPI_FLASH_BufferRead(bmp_public_buf, base + (uint32_t)row * 400, 400);
+    uint16_t *px = (uint16_t*)bmp_public_buf;
+    if (row == line && pct < 100)            // linea indicadora de altura
+      for (uint8_t i = 0; i < 200; i++) px[i] = mark;
+    else if (row < line)                     // pendiente: atenuado (mezclado con el fondo)
+      for (uint8_t i = 0; i < 200; i++) { lv_color_t c; c.full = px[i]; px[i] = lv_color_mix(c, bg, 70).full; }
+    SPI_TFT.setWindow(2, 36 + row, 200, 1);
+    SPI_TFT.tftio.WriteSequence(px, 200);
+  }
+  preview_fill_line = line;
+}
+#endif
 
 void lv_draw_printing() {
   disp_state_stack._disp_index = 0;
@@ -285,6 +324,13 @@ void setProBarRate() {
     #endif
     rate = (rate_tmp_r - (PREVIEW_SIZE + To_pre_view)) * 100 / (gCfgItems.curFilesize - (PREVIEW_SIZE + To_pre_view));
   }
+
+  if (rate < 0) rate = 0;
+  if (rate > 100) rate = 100;
+
+  #if HAS_GCODE_PREVIEW
+    if (disp_state == PRINTING_UI && !flash_preview_begin && !default_preview_flg) preview_fill_update((uint8_t)rate);
+  #endif
 
   if (rate <= 0) return;
 

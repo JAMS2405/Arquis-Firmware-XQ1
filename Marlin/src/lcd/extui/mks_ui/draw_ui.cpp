@@ -67,6 +67,8 @@ keyboard_value_state keyboard_value;
 
 uint32_t To_pre_view;
 bool gcode_preview_over, flash_preview_begin, default_preview_flg;
+uint8_t preview_src = 1;
+int16_t preview_fill_line = -1;
 uint32_t size = 809;
 uint16_t row;
 bool temps_update_flag;
@@ -371,14 +373,14 @@ void tft_style_init() {
   lv_style_copy(&style_sel_text, &lv_style_scr);
   style_sel_text.body.main_color   = LV_COLOR_BACKGROUND;
   style_sel_text.body.grad_color   = LV_COLOR_BACKGROUND;
-  style_sel_text.text.color        = LV_COLOR_YELLOW;
-  style_sel_text.text.sel_color    = LV_COLOR_YELLOW;
+  style_sel_text.text.color        = lv_color_hex(0xFFB020);   // Arquis: ambar
+  style_sel_text.text.sel_color    = lv_color_hex(0xFFB020);
   style_sel_text.text.font         = TERN(HAS_SPI_FLASH_FONT, &gb2312_puhui32, LV_FONT_DEFAULT);
   style_sel_text.line.width        = 0;
   style_sel_text.text.letter_space = 0;
   style_sel_text.text.line_space   = -5;
   lv_style_copy(&style_line, &lv_style_plain);
-  style_line.line.color   = LV_COLOR_MAKE(0x49, 0x54, 0xFF);
+  style_line.line.color   = LV_COLOR_MAKE(0x00, 0xB4, 0xFF);
   style_line.line.width   = 1;
   style_line.line.rounded = 1;
 
@@ -403,31 +405,31 @@ void tft_style_init() {
   style_para_back.text.font         = &TERN(HAS_SPI_FLASH_FONT, gb2312_puhui32, lv_font_roboto_22);
 
   lv_style_copy(&style_btn_rel, &lv_style_plain);
-  style_btn_rel.body.border.color = lv_color_hex3(0x269);
+  style_btn_rel.body.border.color = lv_color_hex(0x0A6FA8);
   style_btn_rel.body.border.width = 1;
-  style_btn_rel.body.main_color   = lv_color_hex3(0xADF);
-  style_btn_rel.body.grad_color   = lv_color_hex3(0x46B);
+  style_btn_rel.body.main_color   = lv_color_hex(0x3CC8FF);
+  style_btn_rel.body.grad_color   = lv_color_hex(0x0A7BC4);
   style_btn_rel.body.shadow.width = 4;
   style_btn_rel.body.shadow.type  = LV_SHADOW_BOTTOM;
   style_btn_rel.body.radius       = LV_RADIUS_CIRCLE;
-  style_btn_rel.text.color        = lv_color_hex3(0xDEF);
+  style_btn_rel.text.color        = lv_color_hex(0xEAF6FF);
   style_btn_rel.text.font         = &TERN(HAS_SPI_FLASH_FONT, gb2312_puhui32, lv_font_roboto_22);
 
   lv_style_copy(&style_btn_pr, &style_btn_rel);
-  style_btn_pr.body.border.color = lv_color_hex3(0x46B);
-  style_btn_pr.body.main_color   = lv_color_hex3(0x8BD);
-  style_btn_pr.body.grad_color   = lv_color_hex3(0x24A);
+  style_btn_pr.body.border.color = lv_color_hex(0x0A7BC4);
+  style_btn_pr.body.main_color   = lv_color_hex(0x2AA8E0);
+  style_btn_pr.body.grad_color   = lv_color_hex(0x0860A0);
   style_btn_pr.body.shadow.width = 2;
-  style_btn_pr.text.color        = lv_color_hex3(0xBCD);
+  style_btn_pr.text.color        = lv_color_hex(0xBFE3F5);
   style_btn_pr.text.font         = &TERN(HAS_SPI_FLASH_FONT, gb2312_puhui32, lv_font_roboto_22);
 
   lv_style_copy(&lv_bar_style_indic, &lv_style_pretty_color);
-  lv_bar_style_indic.text.color        = lv_color_hex3(0xADF);
-  lv_bar_style_indic.image.color       = lv_color_hex3(0xADF);
-  lv_bar_style_indic.line.color        = lv_color_hex3(0xADF);
-  lv_bar_style_indic.body.main_color   = lv_color_hex3(0xADF);
-  lv_bar_style_indic.body.grad_color   = lv_color_hex3(0xADF);
-  lv_bar_style_indic.body.border.color = lv_color_hex3(0xADF);
+  lv_bar_style_indic.text.color        = lv_color_hex(0x0A8FD6);
+  lv_bar_style_indic.image.color       = lv_color_hex(0x0A8FD6);
+  lv_bar_style_indic.line.color        = lv_color_hex(0x0A8FD6);
+  lv_bar_style_indic.body.main_color   = lv_color_hex(0x0A8FD6);
+  lv_bar_style_indic.body.grad_color   = lv_color_hex(0x0A8FD6);
+  lv_bar_style_indic.body.border.color = lv_color_hex(0x0A8FD6);
 }
 
 #define MAX_TITLE_LEN 28
@@ -479,6 +481,9 @@ char *getDispText(int index) {
     case EXTRUSION_UI:        strcpy(public_buf_l, extrude_menu.title); break;
     case CHANGE_SPEED_UI:     strcpy(public_buf_l, speed_menu.title); break;
     case FAN_UI:              strcpy(public_buf_l, fan_menu.title); break;
+    #if ENABLED(CANCEL_OBJECTS)
+      case CANCEL_OBJECT_UI:  strcpy(public_buf_l, "Cancelar objeto"); break;
+    #endif
     case PREHEAT_UI:
       switch (disp_state_stack._disp_state[disp_state_stack._disp_index]) {
         case OPERATE_UI:      strcpy(public_buf_l, preheat_menu.adjust_title);
@@ -644,6 +649,7 @@ char *creat_title_text() {
         row  = 0;
 
         gcode_preview_over = false;
+        preview_src = 1; preview_fill_line = -1; // Arquis: miniatura recien guardada en flash
 
         char *cur_name = strrchr(list_file.file_name[sel_id], '/');
 
@@ -676,6 +682,7 @@ char *creat_title_text() {
   }
 
   void draw_default_preview(int xpos_pixel, int ypos_pixel, uint8_t sel) {
+    preview_src = sel; preview_fill_line = -1; // Arquis: se repinta a todo color; el relleno se reaplica
     int index;
     int y_off = 0;
     W25QXX.init(SPI_QUARTER_SPEED);
@@ -777,6 +784,12 @@ void GUI_RefreshPage() {
       break;
 
     case OPERATE_UI: break;
+
+    #if ENABLED(CANCEL_OBJECTS)
+      case CANCEL_OBJECT_UI:
+        if (temps_update_flag) { temps_update_flag = false; lv_refresh_cancel_object(); }
+        break;
+    #endif
 
     case PAUSE_UI: break;
 
@@ -897,6 +910,9 @@ void clear_cur_ui() {
       case Z_OFFSET_WIZARD_UI:        lv_clear_z_offset_wizard(); break;
     #endif
     case OPERATE_UI:                  lv_clear_operation(); break;
+    #if ENABLED(CANCEL_OBJECTS)
+      case CANCEL_OBJECT_UI:          lv_clear_cancel_object(); break;
+    #endif
     case PAUSE_UI:                    break;
     case EXTRUSION_UI:                lv_clear_extrusion(); break;
     case PREHEAT_UI:                  lv_clear_preHeat(); break;
@@ -1008,6 +1024,9 @@ void draw_return_ui() {
         case Z_OFFSET_WIZARD_UI:        lv_draw_z_offset_wizard(); break;
       #endif
       case OPERATE_UI:                  lv_draw_operation(); break;
+      #if ENABLED(CANCEL_OBJECTS)
+        case CANCEL_OBJECT_UI:          lv_draw_cancel_object(); break;
+      #endif
       case PAUSE_UI:                    break;
       case EXTRUSION_UI:                lv_draw_extrusion(); break;
       case PREHEAT_UI:                  lv_draw_preHeat(); break;
