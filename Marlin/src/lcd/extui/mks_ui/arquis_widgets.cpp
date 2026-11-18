@@ -1,0 +1,254 @@
+/**
+ * Marlin 3D Printer Firmware
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ *
+ * Based on Sprinter and grbl.
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "arquis_widgets.h"
+
+#include <stdio.h>
+
+typedef struct {
+  const lv_img_dsc_t *icon;
+  const char *title, *value, *sub;
+  lv_event_cb_t user_cb;
+  uint8_t layout, kind, icon_tint, title_role, value_role, sub_role, dot_tint, flags, pct;
+} arq_card_ext_t;
+
+#define F_PRESSED 0x01
+
+static inline arq_card_ext_t * ext(lv_obj_t *o) { return (arq_card_ext_t *)lv_obj_get_ext_attr(o); }
+
+void arq_screen_apply(lv_obj_t *scr) {
+  arq_theme_init();
+  lv_obj_set_style(scr, arq_style_screen());
+}
+
+// ---- Dibujo ------------------------------------------------------------------------------------------------
+static void text_size(lv_point_t *sz, const char *t, const lv_style_t *st) {
+  lv_txt_get_size(sz, t, st->text.font, st->text.letter_space, st->text.line_space, LV_COORD_MAX, LV_TXT_FLAG_NONE);
+}
+
+static void draw_text(const lv_area_t *mask, lv_coord_t x, lv_coord_t y, const char *t, const lv_style_t *st) {
+  lv_point_t sz; text_size(&sz, t, st);
+  lv_area_t a = { x, y, (lv_coord_t)(x + sz.x), (lv_coord_t)(y + sz.y) };
+  lv_draw_label(&a, mask, st, LV_OPA_COVER, t, LV_TXT_FLAG_NONE, nullptr, nullptr, nullptr, LV_BIDI_DIR_LTR);
+}
+
+static void draw_icon(const lv_area_t *mask, lv_coord_t x, lv_coord_t y, const lv_img_dsc_t *icon, const lv_style_t *st) {
+  lv_area_t a = { x, y, (lv_coord_t)(x + ARQ_ICON_SIZE - 1), (lv_coord_t)(y + ARQ_ICON_SIZE - 1) };
+  lv_draw_img(&a, mask, icon, st, LV_OPA_COVER);
+}
+
+static void draw_dot(const lv_area_t *mask, lv_coord_t cx, lv_coord_t cy, lv_coord_t r, arq_tint_t tint) {
+  lv_area_t a = { (lv_coord_t)(cx - r), (lv_coord_t)(cy - r), (lv_coord_t)(cx + r - 1), (lv_coord_t)(cy + r - 1) };
+  lv_draw_rect(&a, mask, arq_style_dot(tint), LV_OPA_COVER);
+}
+
+static bool card_design(lv_obj_t *o, const lv_area_t *mask, lv_design_mode_t mode) {
+  if (mode == LV_DESIGN_COVER_CHK) return false;        // esquinas redondeadas: no cubre todo el area
+  if (mode != LV_DESIGN_DRAW_MAIN) return true;
+
+  const arq_card_ext_t *e = ext(o);
+  lv_area_t a; lv_obj_get_coords(o, &a);
+  const lv_coord_t w = lv_area_get_width(&a), h = lv_area_get_height(&a), x0 = a.x1, y0 = a.y1;
+  const arq_btn_kind_t kind = (arq_btn_kind_t)e->kind;
+  const bool pressed = e->flags & F_PRESSED;
+  const lv_style_t *btn = arq_style_btn(kind, pressed ? LV_BTN_STATE_PR : LV_BTN_STATE_REL);
+  const lv_style_t *icon_st = e->icon_tint == ARQ_TINT_AUTO ? btn : arq_style_icon((arq_tint_t)e->icon_tint);
+  lv_point_t ts = { 0, 0 };
+
+  switch (e->layout) {
+    case ARQ_LAYOUT_TILE: {
+      lv_draw_rect(&a, mask, btn, LV_OPA_COVER);
+      if (e->title) text_size(&ts, e->title, btn);
+      const lv_coord_t gap = 4, total = (e->icon ? ARQ_ICON_SIZE + gap : 0) + ts.y, top = y0 + (h - total) / 2;
+      if (e->icon) draw_icon(mask, x0 + (w - ARQ_ICON_SIZE) / 2, top, e->icon, icon_st);
+      if (e->title) draw_text(mask, x0 + (w - ts.x) / 2, top + (e->icon ? ARQ_ICON_SIZE + gap : 0), e->title, btn);
+    } break;
+
+    case ARQ_LAYOUT_BUTTON: {
+      lv_draw_rect(&a, mask, btn, LV_OPA_COVER);
+      if (e->title) text_size(&ts, e->title, btn);
+      const lv_coord_t gap = 8, total = (e->icon ? ARQ_ICON_SIZE : 0) + (e->icon && e->title ? gap : 0) + ts.x, left = x0 + (w - total) / 2;
+      if (e->icon) draw_icon(mask, left, y0 + (h - ARQ_ICON_SIZE) / 2, e->icon, icon_st);
+      if (e->title) draw_text(mask, left + (e->icon ? ARQ_ICON_SIZE + gap : 0), y0 + (h - ts.y) / 2, e->title, btn);
+    } break;
+
+    case ARQ_LAYOUT_STAT: {
+      lv_draw_rect(&a, mask, arq_style_panel(), LV_OPA_COVER);
+      if (e->icon) draw_icon(mask, x0 + 10, y0 + 10, e->icon, icon_st);
+      if (e->title) {
+        const lv_style_t *st = arq_style_text((arq_text_t)e->title_role);
+        text_size(&ts, e->title, st);
+        draw_text(mask, x0 + 58, y0 + 10 + (ARQ_ICON_SIZE - ts.y) / 2, e->title, st);
+      }
+      if (e->dot_tint != ARQ_TINT_AUTO) draw_dot(mask, x0 + w - 17, y0 + h - 19, 5, (arq_tint_t)e->dot_tint);   // punto de estado: abajo a la derecha, junto al subtitulo
+      if (e->value) draw_text(mask, x0 + 12, y0 + 54, e->value, arq_style_text((arq_text_t)e->value_role));
+      if (e->sub) {
+        const lv_style_t *st = arq_style_text((arq_text_t)e->sub_role);
+        text_size(&ts, e->sub, st);
+        draw_text(mask, x0 + 12, y0 + h - ts.y - 8, e->sub, st);
+      }
+    } break;
+
+    case ARQ_LAYOUT_CHIP: {
+      lv_draw_rect(&a, mask, arq_style_chip(), LV_OPA_COVER);
+      if (e->dot_tint != ARQ_TINT_AUTO) draw_dot(mask, x0 + 16, y0 + h / 2, 4, (arq_tint_t)e->dot_tint);
+      if (e->title) {
+        const lv_style_t *st = arq_style_text((arq_text_t)e->title_role);
+        text_size(&ts, e->title, st);
+        draw_text(mask, x0 + 28, y0 + (h - ts.y) / 2, e->title, st);
+      }
+    } break;
+
+    case ARQ_LAYOUT_HEADER: {
+      lv_draw_rect(&a, mask, arq_style_header(), LV_OPA_COVER);
+      if (e->title) {
+        const lv_style_t *st = arq_style_text((arq_text_t)e->title_role);
+        text_size(&ts, e->title, st);
+        draw_text(mask, x0 + (e->icon ? ARQ_HEADER_H + 8 : ARQ_MARGIN + 2), y0 + (h - ts.y) / 2, e->title, st);
+      }
+    } break;
+
+    case ARQ_LAYOUT_BAR: {
+      lv_draw_rect(&a, mask, arq_style_bar_bg(), LV_OPA_COVER);
+      if (e->pct) {
+        lv_area_t f = a;
+        f.x2 = a.x1 + (lv_coord_t)((int32_t)w * e->pct / 100) - 1;
+        if (f.x2 < a.x1 + h - 1) f.x2 = a.x1 + h - 1;            // ancho minimo: que el extremo redondeado se vea
+        lv_draw_rect(&f, mask, arq_style_bar_indic(), LV_OPA_COVER);
+      }
+    } break;
+  }
+  return true;
+}
+
+// Reenvia los eventos al callback de la pantalla; marca el estado "pulsado" para el aspecto del boton.
+static void card_event(lv_obj_t *o, lv_event_t ev) {
+  arq_card_ext_t *e = ext(o);
+  if (ev == LV_EVENT_PRESSED || ev == LV_EVENT_RELEASED || ev == LV_EVENT_PRESS_LOST) {
+    const bool p = (ev == LV_EVENT_PRESSED);
+    if (p != bool(e->flags & F_PRESSED)) { e->flags = p ? (e->flags | F_PRESSED) : (e->flags & ~F_PRESSED); lv_obj_invalidate(o); }
+  }
+  if (e->user_cb) e->user_cb(o, ev);
+}
+
+lv_obj_t * arq_card_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
+                           arq_layout_t layout, arq_btn_kind_t kind, lv_event_cb_t cb, uint16_t id) {
+  arq_theme_init();
+  lv_obj_t *o = lv_obj_create(parent, nullptr);
+  arq_card_ext_t *e = (arq_card_ext_t *)lv_obj_allocate_ext_attr(o, sizeof(arq_card_ext_t));
+  *e = arq_card_ext_t();
+  e->layout = layout; e->kind = kind; e->icon_tint = ARQ_TINT_AUTO; e->dot_tint = ARQ_TINT_AUTO;
+  e->title_role = e->value_role = e->sub_role = ARQ_TEXT_BODY;
+  e->user_cb = cb;
+  lv_obj_set_pos(o, x, y);
+  lv_obj_set_size(o, w, h);
+  lv_obj_set_design_cb(o, card_design);
+  lv_obj_set_click(o, cb != nullptr);
+  if (cb) lv_obj_set_event_cb_mks(o, card_event, id, "", 0);
+  return o;
+}
+
+template<typename T> static void upd(lv_obj_t *c, T &field, T v) { if (field != v) { field = v; lv_obj_invalidate(c); } }
+
+void arq_card_set_icon(lv_obj_t *c, const lv_img_dsc_t *icon, arq_tint_t tint) { arq_card_ext_t *e = ext(c); upd(c, e->icon, icon); upd<uint8_t>(c, e->icon_tint, tint); }
+void arq_card_set_title(lv_obj_t *c, const char *t, arq_text_t r) { arq_card_ext_t *e = ext(c); upd(c, e->title, t); upd<uint8_t>(c, e->title_role, r); }
+void arq_card_set_value(lv_obj_t *c, const char *t, arq_text_t r) { arq_card_ext_t *e = ext(c); upd(c, e->value, t); upd<uint8_t>(c, e->value_role, r); }
+void arq_card_set_sub(lv_obj_t *c, const char *t, arq_text_t r)   { arq_card_ext_t *e = ext(c); upd(c, e->sub, t); upd<uint8_t>(c, e->sub_role, r); }
+void arq_card_set_dot(lv_obj_t *c, arq_tint_t t)                  { upd<uint8_t>(c, ext(c)->dot_tint, t); }
+void arq_card_set_percent(lv_obj_t *c, uint8_t p)                 { upd<uint8_t>(c, ext(c)->pct, p > 100 ? 100 : p); }
+void arq_card_refresh(lv_obj_t *c)                                { lv_obj_invalidate(c); }
+
+// ---- Atajos ------------------------------------------------------------------------------------------------
+lv_obj_t * arq_nav_tile_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h, const lv_img_dsc_t *icon,
+                               arq_tint_t icon_tint, const char *text, arq_btn_kind_t kind, lv_event_cb_t cb, uint16_t id) {
+  lv_obj_t *o = arq_card_create(parent, x, y, w, h, ARQ_LAYOUT_TILE, kind, cb, id);
+  arq_card_set_icon(o, icon, icon_tint);
+  arq_card_set_title(o, text, ARQ_TEXT_BODY);
+  return o;
+}
+
+lv_obj_t * arq_button_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h, const lv_img_dsc_t *icon,
+                             const char *text, arq_btn_kind_t kind, lv_event_cb_t cb, uint16_t id) {
+  lv_obj_t *o = arq_card_create(parent, x, y, w, h, ARQ_LAYOUT_BUTTON, kind, cb, id);
+  arq_card_set_icon(o, icon, ARQ_TINT_AUTO);
+  arq_card_set_title(o, text, ARQ_TEXT_BODY);
+  return o;
+}
+
+lv_obj_t * arq_chip_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, const char *text, arq_tint_t dot_tint) {
+  lv_obj_t *o = arq_card_create(parent, x, y, w, 28, ARQ_LAYOUT_CHIP, ARQ_BTN_SECONDARY, nullptr, 0);
+  arq_card_set_title(o, text, ARQ_TEXT_BODY);
+  arq_card_set_dot(o, dot_tint);
+  return o;
+}
+
+lv_obj_t * arq_progress_create(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h) {
+  return arq_card_create(parent, x, y, w, h, ARQ_LAYOUT_BAR, ARQ_BTN_PRIMARY, nullptr, 0);
+}
+
+void arq_header_create(arq_header_t *hd, lv_obj_t *parent, const char *static_title, lv_event_cb_t back_cb, uint16_t back_id) {
+  hd->bar = arq_card_create(parent, 0, 0, ARQ_W, ARQ_HEADER_H, ARQ_LAYOUT_HEADER, ARQ_BTN_GHOST, nullptr, 0);
+  arq_card_set_title(hd->bar, static_title, ARQ_TEXT_BODY);
+  hd->back = nullptr;
+  if (back_cb) {
+    arq_card_set_icon(hd->bar, &arq_icon_back, ARQ_TINT_TEXT);      // (la flecha la dibuja el boton; el icono solo reserva espacio)
+    hd->back = arq_card_create(parent, 0, 0, ARQ_HEADER_H + 8, ARQ_HEADER_H, ARQ_LAYOUT_BUTTON, ARQ_BTN_GHOST, back_cb, back_id);
+    arq_card_set_icon(hd->back, &arq_icon_back, ARQ_TINT_TEXT);
+  }
+}
+
+// ---- Tarjeta de temperatura ---------------------------------------------------------------------------------
+arq_temp_state_t arq_temp_state(int16_t cur, int16_t target) {
+  if (target <= 0) return ARQ_TEMP_OFF;
+  if (cur >= target - 3 && cur <= target + 3) return ARQ_TEMP_READY;
+  return cur < target ? ARQ_TEMP_HEATING : ARQ_TEMP_COOLING;
+}
+
+void arq_temp_tile_create(arq_temp_tile_t *t, lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
+                          const lv_img_dsc_t *icon, const char *static_name) {
+  t->card = arq_card_create(parent, x, y, w, h, ARQ_LAYOUT_STAT, ARQ_BTN_SECONDARY, nullptr, 0);
+  arq_card_set_icon(t->card, icon, ARQ_TINT_ACCENT);
+  arq_card_set_title(t->card, static_name, ARQ_TEXT_BODY);
+  arq_card_set_value(t->card, t->vbuf, ARQ_TEXT_NUM_L);
+  arq_card_set_sub(t->card, t->tbuf, ARQ_TEXT_MUTED);
+  t->cur = t->tgt = -32768;
+  t->state = 255;
+  t->vbuf[0] = t->tbuf[0] = '\0';
+  arq_temp_tile_update(t, 0, 0);
+}
+
+void arq_temp_tile_update(arq_temp_tile_t *t, int16_t cur, int16_t target) {
+  if (cur == t->cur && target == t->tgt) return;           // nada cambio: no se toca LVGL
+  const arq_temp_state_t st = arq_temp_state(cur, target);
+  if (cur != t->cur) { t->cur = cur; snprintf(t->vbuf, sizeof(t->vbuf), "%d" "\xC2\xB0", cur); }
+  if (target != t->tgt) {
+    t->tgt = target;
+    if (target > 0) snprintf(t->tbuf, sizeof(t->tbuf), "Obj. %d" "\xC2\xB0", target);
+    else            snprintf(t->tbuf, sizeof(t->tbuf), "Apagado");
+  }
+  static const arq_tint_t dot_tint[] = { ARQ_TINT_MUTED, ARQ_TINT_WARN, ARQ_TINT_OK, ARQ_TINT_ACCENT };
+  static const arq_text_t val_role[] = { ARQ_TEXT_NUM_L, ARQ_TEXT_NUM_L_WARN, ARQ_TEXT_NUM_L_OK, ARQ_TEXT_NUM_L };
+  t->state = st;
+  arq_card_set_dot(t->card, dot_tint[st]);
+  arq_card_set_value(t->card, t->vbuf, val_role[st]);
+  arq_card_refresh(t->card);                                // el contenido del buffer cambio
+}

@@ -77,3 +77,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v5: byte swap desactivado
 - Con ARQUIS_TFT_BYTE_SWAP activo, un build propio (PlatformIO oficial) mostraba TODO con colores rotos, incluido el logo Makerbase interno. LVGL de Makerbase usa LV_COLOR_16_SWAP=0, asi que no hace falta intercambiar bytes: la linea queda comentada en Configuration.h.
 - El logo y los iconos se copian a la memoria flash de la placa desde la SD: pon la carpeta `assets` (contenido de sd_assets) en la raiz de la SD junto al firmware y arranca una vez.
+
+## v6: ARQUIS UI etapa 1 (sistema visual)
+- Nuevos archivos `arquis_theme.*`, `arquis_widgets.*`, `arquis_icons.*`, `arq_font_*.c` en `mks_ui/`. No modifican pantallas ni lógica existentes. Detalle y medidas: `docs/arquis/ARQUIS_UI_etapa1.md`.
+- IMPORTANTE (assets): el build de PlatformIO descarga los iconos ORIGINALES de Makerbase en `.pio/build/<entorno>/assets`. No copies esa carpeta a la SD: usa `sd_assets` de este repo renombrada a `assets`.
