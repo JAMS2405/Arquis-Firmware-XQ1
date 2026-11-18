@@ -248,7 +248,7 @@ void arq_settings_clear() { grid_settings.clear(); }
 static lv_obj_t *a_scr;
 static lv_task_t *a_task;
 static arq_info_list_t a_left, a_right;
-static char a_up[16], a_cnt[20], a_tot[16], a_sh[12], a_sb[12];
+static char a_up[24], a_cnt[20], a_tot[24];
 
 static void fmt_hm(char *b, size_t n, uint32_t s) { snprintf(b, n, "%lu h %02lu min", (unsigned long)(s / 3600), (unsigned long)((s / 60) % 60)); }
 

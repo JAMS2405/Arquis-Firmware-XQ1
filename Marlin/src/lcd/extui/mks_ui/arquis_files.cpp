@@ -32,6 +32,7 @@
 #include "../../../sd/cardreader.h"
 
 extern lv_group_t *g;
+extern uint8_t sel_id;      // la define draw_print_file.cpp; draw_ui.h no la declara (cada .cpp de MKS la declara con extern)
 bool have_pre_pic(char *path);      // draw_print_file.cpp (comprobacion original: el archivo tiene ";simage:" en su inicio)
 
 static lv_event_cb_t ok_handler, cancel_handler;
