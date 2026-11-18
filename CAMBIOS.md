@@ -73,3 +73,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - **Colores invertidos en pantalla** (fotos del usuario: fondo verde oliva, logo azul/verde al reves). Causa: el orden de los 2 bytes de cada pixel llegaba invertido al panel con el .bin compilado aqui. Correccion en un solo punto (`tft_spi.h`, opcion `ARQUIS_TFT_BYTE_SWAP` en Configuration.h) que cubre LVGL, logo, miniatura y colores del firmware. Si compilas tu con PlatformIO oficial y los colores salen mal, comenta esa linea.
 - **109 iconos nuevos** (`herramientas/iconos_extra.py`): mas/menos, dentro/fuera, extrusor 1/2, ventilador 0/50/100 %, velocidades, pasos de movimiento/temperatura/porcentaje, flechas X/Y/Z, origen X/Y/Z/todos, apagar, archivos/SD/USB, nivelacion 1-5, idiomas, pausa/parar/reanudar, atras/paginas y los 10 iconos pequenos de estado.
 - Sin rediseñar (no los usa casi nadie): interruptores enable/disable, marcos blank, back70x40, arrow, X_mode.
+
+## v5: byte swap desactivado
+- Con ARQUIS_TFT_BYTE_SWAP activo, un build propio (PlatformIO oficial) mostraba TODO con colores rotos, incluido el logo Makerbase interno. LVGL de Makerbase usa LV_COLOR_16_SWAP=0, asi que no hace falta intercambiar bytes: la linea queda comentada en Configuration.h.
+- El logo y los iconos se copian a la memoria flash de la placa desde la SD: pon la carpeta `assets` (contenido de sd_assets) en la raiz de la SD junto al firmware y arranca una vez.

@@ -3220,9 +3220,10 @@
 #define TOUCH_SCREEN
 
 // Arquis: intercambia los 2 bytes de cada pixel antes de enviarlo a la pantalla.
-// Necesario con el .bin compilado por Claude (colores salian invertidos: fondo verde, logo azul/verde al reves).
-// Si compilas tu mismo con PlatformIO oficial y los colores se ven mal, comenta esta linea.
-#define ARQUIS_TFT_BYTE_SWAP
+// DESACTIVADO: la libreria LVGL de Makerbase usa LV_COLOR_16_SWAP=0 y la pantalla recibe el orden nativo,
+// que es el que usan los .bin de sd_assets (RGB565 little-endian). Con esta linea activa TODO se ve con
+// colores rotos (fondo verde/oliva, logo Makerbase morado, bordes arcoiris). Activala solo si, sin ella, ocurre eso.
+//#define ARQUIS_TFT_BYTE_SWAP
 #if ENABLED(TOUCH_SCREEN)
   #define BUTTON_DELAY_EDIT      50 // (ms) Button repeat delay for edit screens
   #define BUTTON_DELAY_MENU     250 // (ms) Button repeat delay for menus
