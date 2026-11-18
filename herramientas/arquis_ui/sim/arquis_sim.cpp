@@ -9,6 +9,7 @@
 #include "arquis_print_view.h"
 #include "arquis_objects_view.h"
 #include "arquis_ctrl_view.h"
+#include "arquis_files_view.h"
 
 extern "C" {   // ganchos que el firmware real define en draw_print_file.cpp (miniatura de G-code) y la libreria: no se usan aqui
   uint32_t lv_open_gcode_file(char *) { return 0; }
@@ -156,6 +157,14 @@ static void opts_screen(bool working, bool objs, bool autooff, const char *shot)
   arq_opts_build(s, ccb, "Opciones", it, n);
   if (shot) dump(shot);
 }
+
+// ---- Explorador de archivos --------------------------------------------------------------------------------------------------------
+static const char *const fnames[ARQ_FILE_ROWS] = { "soporte_motor_nema17_v3_final.gcode", "tapa_caja_electronica.gcode", "pruebas", "benchy.gcode", "calibracion_flujo_0_4mm.gcode", "engrane_helicoidal_z32.gcode" };
+static arq_files_model_t fmodel(int n, uint8_t mask, bool up, bool down, bool nocard = false, const char *title = "Archivos") {
+  arq_files_model_t m; memset(&m, 0, sizeof(m)); m.n = n; m.dir_mask = mask; m.can_up = up; m.can_down = down; m.no_card = nocard; m.title = title;
+  for (int i = 0; i < ARQ_FILE_ROWS; ++i) m.name[i] = fnames[i]; return m; }
+static void files_screen(const arq_files_model_t &m, const char *shot) { lv_obj_t *s = new_screen(); arq_files_build(s, ccb); arq_files_update(&m); if (shot) dump(shot); }
+static void confirm_screen(const char *file, const char *shot) { lv_obj_t *s = new_screen(); arq_confirm_build(s, ccb, file); if (shot) dump(shot); }
 
 // ---- Componentes y iconos ------------------------------------------------------------------------------------------------------
 static arq_temp_tile_t c_t1, c_t2, c_t3, c_t4;
@@ -532,6 +541,31 @@ static void tests() {
       arq_temps_model_t same = tmodel(0, 187, 210, 44, 60); arq_temps_update(&same); CHECK(d->inv_p == 0, "Temperatura: modelo sin cambios, nada que redibujar");
       arq_temps_model_t chg = tmodel(0, 188, 210, 44, 60); arq_temps_update(&chg); CHECK(d->inv_p > 0 && d->inv_p <= 6, "Temperatura: un grado de cambio invalida pocas zonas (%u)", (unsigned)d->inv_p);
       new_screen(); run(); }
+
+    // 11) Explorador de archivos ----------------------------------------------------------------------------------------------
+    { new_screen(); run(); const uint32_t b = used();
+      files_screen(fmodel(6, 1 << 2, false, true), nullptr); const uint32_t u = used() - b;
+      printf("[mem] explorador: %u B\n", (unsigned)u);
+      CHECK(u < 3000, "explorador: %u B de heap (< 3000 B), 5 objetos con 6 filas", (unsigned)u);
+      for (int i = 0; i < 300; ++i) files_screen(fmodel(i % 7, i & 5, i & 1, i & 2), nullptr);
+      new_screen(); run(); const uint32_t u1 = used();
+      for (int i = 0; i < 300; ++i) files_screen(fmodel(i % 7, i & 5, i & 1, i & 2), nullptr);
+      new_screen(); run(); const uint32_t u2 = used();
+      CHECK(u2 <= u1 && u1 <= b + 16, "explorador, 300 + 300 ciclos: sin fugas (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b);
+      // toques: cada fila devuelve su indice mediante arq_files_pick (como el glue de draw_print_file.cpp)
+      static int pick_last; static lv_obj_t *list_obj;
+      auto fcb = [](lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; c_last = o->mks_obj_id;
+        if (o->mks_obj_id == ARQ_FLID_LIST) { lv_indev_t *in = lv_indev_get_act(); lv_point_t p; lv_indev_get_point(in, &p); pick_last = arq_files_pick(o, &p); } };
+      (void)list_obj;
+      { lv_obj_t *sc = new_screen(); arq_files_build(sc, fcb); arq_files_model_t m = fmodel(6, 1 << 2, true, true); arq_files_update(&m); run();
+        for (int i = 0; i < 6; ++i) { pick_last = -9; tap(200, 52 + i * 42 + 19); CHECK(pick_last == i, "explorador: tocar la fila %d devuelve %d", i + 1, pick_last); }
+        pick_last = -9; tap(200, 52 + 40); CHECK(pick_last == -1, "explorador: el hueco entre filas no selecciona nada");
+        c_last = -1; tap(444, 100); CHECK(c_last == ARQ_FLID_UP, "explorador: pagina anterior"); c_last = -1; tap(444, 250); CHECK(c_last == ARQ_FLID_DOWN, "explorador: pagina siguiente");
+        c_last = -1; tap(20, 22); CHECK(c_last == ARQ_FLID_BACK, "explorador: Atras");
+        arq_files_model_t m2 = fmodel(3, 0, false, false); arq_files_update(&m2); run(); pick_last = -9; tap(200, 52 + 4 * 42 + 19); CHECK(pick_last == -1, "explorador: una fila sin archivo no se puede tocar");
+        arq_files_model_t m3 = fmodel(6, 0, false, true); arq_files_update(&m3); run(); c_last = -1; tap(444, 100); CHECK(c_last == -1, "explorador: sin pagina anterior el boton esta deshabilitado");
+        confirm_screen("soporte.gcode", nullptr); c_count = 0; tap(140, 270); CHECK(c_count == 1 && c_last == ARQ_PC_CANCEL, "confirmar: Cancelar"); c_count = 0; tap(340, 270); CHECK(c_count == 1 && c_last == ARQ_PC_OK, "confirmar: Imprimir");
+        new_screen(); run(); } }
   }
 
   printf("[test] %s\n", fails ? "HAY FALLOS" : "TODAS LAS PRUEBAS DEL SIMULADOR PASARON");
@@ -585,7 +619,13 @@ int main(int argc, char **argv) {
     extrude_screen(emodel(210, 210, true, 35), "ctl_7_extruir");
     extrude_screen(emodel(28, 0, false, 0), "ctl_8_extruir_frio");
     opts_screen(true, true, true, "ctl_9_opciones_imprimiendo");
-    opts_screen(false, false, false, "ctl_10_opciones_pausa"); }
+    opts_screen(false, false, false, "ctl_10_opciones_pausa");
+    files_screen(fmodel(6, 1 << 2, false, true), "fil_1_lista");
+    files_screen(fmodel(4, 1 << 2, true, false, false, "pruebas"), "fil_2_carpeta");
+    files_screen(fmodel(0, 0, false, false, true), "fil_3_sin_sd");
+    files_screen(fmodel(0, 0, false, false, false, "pruebas"), "fil_4_vacia");
+    confirm_screen("soporte_motor_nema17_v3_final.gcode", "fil_5_confirmar");
+  }
   tests();
   return fails ? 1 : 0;
 }

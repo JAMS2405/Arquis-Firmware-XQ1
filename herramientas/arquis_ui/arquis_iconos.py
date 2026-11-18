@@ -66,6 +66,9 @@ S2 = 'fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke
 SMALL = {   # 20x20: ventiladores (trazo mas grueso para que se lea a tamano pequeno)
  'fan':      f'<g {S2}><circle cx="24" cy="24" r="19"/><path transform="rotate(0 24 24)" d="M24 21c0-8 6-13 12-9-1 7-6 9-12 9z"/><path transform="rotate(120 24 24)" d="M24 21c0-8 6-13 12-9-1 7-6 9-12 9z"/><path transform="rotate(240 24 24)" d="M24 21c0-8 6-13 12-9-1 7-6 9-12 9z"/></g>',
  'heatsink': f'<g {S2}><path d="M6 41h36M12 41V9M21 41V9M30 41V9M39 41V9"/></g>',
+ 'folder':   f'<g {S2}><path d="M6 14.500a3 3 0 0 1 3-3h9l4.500 5H39a3 3 0 0 1 3 3V37a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/></g>',
+ 'file':     f'<g {S2}><path d="M11 5.500h18l9 9V42H11z"/><path d="M29 5.500v9h9"/></g>',
+ 'chev':     f'<g {S2}><path d="M17 9l15 15-15 15"/></g>',
  'aux':      f'<g {S2}><rect x="6" y="6" width="36" height="36" rx="6"/><circle cx="24" cy="24" r="9"/><circle cx="24" cy="24" r="2.5" fill="#fff" stroke="none"/></g>',
 }
 N2 = 20

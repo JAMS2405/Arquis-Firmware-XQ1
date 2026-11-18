@@ -34,9 +34,14 @@
 #include "../../../sd/cardreader.h"
 #include "../../../inc/MarlinConfig.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_files_view.h"
+#endif
+
 static lv_obj_t *scr;
 extern lv_group_t*  g;
 
+#if DISABLED(ARQUIS_UI)
 static lv_obj_t *buttonPageUp, *buttonPageDown, *buttonBack,
                 *buttonGcode[FILE_BTN_CNT], *labelPageUp[FILE_BTN_CNT], *buttonText[FILE_BTN_CNT];
 
@@ -45,6 +50,7 @@ enum {
   ID_P_DOWN,
   ID_P_RETURN
 };
+#endif
 
 int8_t curDirLever = 0;
 LIST_FILE list_file;
@@ -117,6 +123,7 @@ bool have_pre_pic(char *path) {
   return false;
 }
 
+#if DISABLED(ARQUIS_UI)
 static void event_handler(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   uint8_t i, file_count = 0;
@@ -195,6 +202,98 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
   }
 }
 
+#else   // ---- explorador ARQUIS: mismas rutas de navegacion (busqueda, paginas, carpetas) que el original ----
+
+static char arq_title[24];
+
+static void arq_show(uint8_t file_count) {
+  arq_files_model_t m;
+  memset(&m, 0, sizeof(m));
+  m.n = file_count > ARQ_FILE_ROWS ? ARQ_FILE_ROWS : file_count;
+  for (uint8_t i = 0; i < m.n; ++i) {
+    m.name[i] = list_file.long_name[i];
+    if (list_file.IsFolder[i]) m.dir_mask |= (1 << i);
+  }
+  m.can_up   = dir_offset[curDirLever].curPage > 0;
+  m.can_down = dir_offset[curDirLever].cur_page_last_offset > 0;
+  m.no_card  = TERN(HAS_MEDIA, !card.isMounted(), true);
+  const char *slash = curDirLever > 0 ? strrchr(list_file.curDirPath, '/') : nullptr;
+  if (slash && slash[1]) { strncpy(arq_title, slash + 1, sizeof(arq_title) - 1); arq_title[sizeof(arq_title) - 1] = '\0'; }
+  else strcpy_P(arq_title, PSTR("Archivos"));
+  m.title = arq_title;
+  arq_files_update(&m);
+}
+
+static void event_handler(lv_obj_t *obj, lv_event_t event) {
+  if (event != LV_EVENT_RELEASED) return;
+  uint8_t file_count = 0;
+  switch (obj->mks_obj_id) {
+    case ARQ_FLID_UP:
+      if (dir_offset[curDirLever].curPage > 0) {
+        list_file.Sd_file_cnt = 0;
+        if (dir_offset[curDirLever].cur_page_first_offset >= FILE_NUM)
+          list_file.Sd_file_offset = dir_offset[curDirLever].cur_page_first_offset - FILE_NUM;
+        TERN_(HAS_MEDIA, file_count = search_file());
+        if (file_count != 0) { dir_offset[curDirLever].curPage--; arq_show(file_count); }
+      }
+      break;
+
+    case ARQ_FLID_DOWN:
+      if (dir_offset[curDirLever].cur_page_last_offset > 0) {
+        list_file.Sd_file_cnt    = 0;
+        list_file.Sd_file_offset = dir_offset[curDirLever].cur_page_last_offset + 1;
+        TERN_(HAS_MEDIA, file_count = search_file());
+        if (file_count != 0) { dir_offset[curDirLever].curPage++; arq_show(file_count); }
+        if (file_count < FILE_NUM) dir_offset[curDirLever].cur_page_last_offset = 0;
+      }
+      break;
+
+    case ARQ_FLID_BACK:
+      if (curDirLever > 0) {
+        int8_t *ch = (int8_t *)strrchr(list_file.curDirPath, '/');
+        if (ch) {
+          *ch = 0;
+          TERN_(HAS_MEDIA, card.cdup());
+          dir_offset[curDirLever].curPage               = 0;
+          dir_offset[curDirLever].cur_page_first_offset = 0;
+          dir_offset[curDirLever].cur_page_last_offset  = 0;
+          curDirLever--;
+          list_file.Sd_file_offset = dir_offset[curDirLever].cur_page_first_offset;
+          TERN_(HAS_MEDIA, file_count = search_file());
+          arq_show(file_count);
+        }
+      }
+      else {
+        lv_clear_print_file();
+        TERN(MULTI_VOLUME, lv_draw_media_select(), lv_draw_ready_print());
+      }
+      break;
+
+    case ARQ_FLID_LIST: {
+      lv_indev_t *in = lv_indev_get_act();
+      if (!in) break;
+      lv_point_t p;
+      lv_indev_get_point(in, &p);
+      const int8_t i = arq_files_pick(obj, &p);
+      if (i < 0 || list_file.file_name[i][0] == 0) break;
+      if (list_file.IsFolder[i]) {
+        strcpy(list_file.curDirPath, list_file.file_name[i]);
+        curDirLever++;
+        list_file.Sd_file_offset = dir_offset[curDirLever].cur_page_first_offset;
+        TERN_(HAS_MEDIA, file_count = search_file());
+        arq_show(file_count);
+      }
+      else {
+        sel_id = i;
+        lv_clear_print_file();
+        lv_draw_dialog(DIALOG_TYPE_PRINT_FILE);
+      }
+    } break;
+  }
+}
+
+#endif // ARQUIS_UI
+
 void lv_draw_print_file() {
   //uint8_t i;
   uint8_t file_count;
@@ -233,6 +332,7 @@ void lv_draw_print_file() {
   }
   */
 }
+#if DISABLED(ARQUIS_UI)
 static char test_public_buf_l[40];
 void disp_gcode_icon(uint8_t file_num) {
   uint8_t i;
@@ -345,6 +445,20 @@ void disp_gcode_icon(uint8_t file_num) {
     }
   #endif
 }
+
+#else   // ---- explorador ARQUIS ----
+
+void disp_gcode_icon(uint8_t file_num) {
+  scr = lv_screen_create(PRINT_FILE_UI, "");
+  arq_screen_apply(scr);
+  arq_files_build(scr, event_handler);
+  arq_show(file_num);
+  #if HAS_ROTARY_ENCODER
+    if (gCfgItems.encoder_enable) arq_group_add_clickables(g, scr);
+  #endif
+}
+
+#endif // ARQUIS_UI
 
 uint32_t lv_open_gcode_file(char *path) {
   #if HAS_MEDIA
@@ -521,11 +635,24 @@ void cutFileName(char *path, int len, int bytePerLine, char *outStr) {
   #endif
 }
 
+#if DISABLED(ARQUIS_UI)
 void lv_clear_print_file() {
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif
   lv_obj_del(scr);
 }
+
+#else
+
+void lv_clear_print_file() {
+  #if HAS_ROTARY_ENCODER
+    if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
+  #endif
+  arq_files_forget();
+  lv_obj_del(scr);
+}
+
+#endif // ARQUIS_UI
 
 #endif // HAS_TFT_LVGL_UI

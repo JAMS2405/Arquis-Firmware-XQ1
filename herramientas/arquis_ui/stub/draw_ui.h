@@ -2,7 +2,7 @@
 #pragma once
 #include <lvgl.h>
 #include "../../../inc/MarlinConfigPre.h"
-typedef enum { MAIN_UI, PRINT_READY_UI, PRINTING_UI, CANCEL_OBJECT_UI, PREHEAT_UI, FAN_UI, MOVE_MOTOR_UI, EXTRUSION_UI, OPERATE_UI } DISP_STATE;
+typedef enum { MAIN_UI, PRINT_READY_UI, PRINTING_UI, PRINT_FILE_UI, CANCEL_OBJECT_UI, PREHEAT_UI, FAN_UI, MOVE_MOTOR_UI, EXTRUSION_UI, OPERATE_UI } DISP_STATE;
 typedef struct { DISP_STATE _disp_state[100]; int _disp_index; } DISP_STATE_STACK;
 extern DISP_STATE_STACK disp_state_stack;
 extern DISP_STATE disp_state;
@@ -42,3 +42,4 @@ lv_obj_t* lv_btn_create(lv_obj_t *par, lv_coord_t x, lv_coord_t y, lv_coord_t w,
 
 extern char public_buf_l[30];
 void lv_draw_preHeat(); void lv_draw_extrusion(); void lv_draw_filament_change(); void lv_draw_change_speed(); void lv_draw_baby_stepping(); void update_spi_flash();
+enum { DIALOG_TYPE_PRINT_FILE = 1 }; void lv_draw_dialog(uint8_t type); void lv_draw_media_select(); void lv_clear_print_file(); typedef struct { uint8_t dummy; } disp_stub_t;

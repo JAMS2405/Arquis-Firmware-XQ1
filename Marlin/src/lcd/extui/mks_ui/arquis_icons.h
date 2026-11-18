@@ -43,6 +43,9 @@ extern const lv_img_dsc_t arq_icon_filament;
 // Iconos pequenos (20 px): ventiladores
 extern const lv_img_dsc_t arq_icon_s_fan;
 extern const lv_img_dsc_t arq_icon_s_heatsink;
+extern const lv_img_dsc_t arq_icon_s_folder;
+extern const lv_img_dsc_t arq_icon_s_file;
+extern const lv_img_dsc_t arq_icon_s_chev;
 extern const lv_img_dsc_t arq_icon_s_aux;
 
 #ifdef __cplusplus

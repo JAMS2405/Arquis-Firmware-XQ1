@@ -55,6 +55,10 @@
   #include "draw_touch_calibration.h"
 #endif
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_files.h"
+#endif
+
 extern lv_group_t *g;
 static lv_obj_t *scr, *tempText1, *filament_bar;
 
@@ -213,6 +217,11 @@ void lv_draw_dialog(uint8_t type) {
   lv_obj_t *btnOk = nullptr, *btnCancel = nullptr;
   uiCfg.dialogType = type;
   scr = lv_screen_create(DIALOG_UI);
+
+  #if ENABLED(ARQUIS_UI)
+    // Arquis: la confirmacion de "Imprimir archivo" usa el estilo ARQUIS, pero sus botones llaman a los mismos manejadores de abajo.
+    if (DIALOG_IS(TYPE_PRINT_FILE)) { arq_print_confirm_draw(scr, list_file.long_name[sel_id], btn_ok_event_cb, btn_cancel_event_cb); return; }
+  #endif
 
   lv_obj_t *labelDialog = lv_label_create(scr, "");
 

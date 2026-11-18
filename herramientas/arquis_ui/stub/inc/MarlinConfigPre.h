@@ -52,3 +52,5 @@
 #define TERN_(O,A) A
 #define TERN0(O,A) A
 char *dtostrf(double, signed char, unsigned char, char *);
+#define DISABLED(O) (!ENABLED(O))
+#define strcpy_P strcpy
