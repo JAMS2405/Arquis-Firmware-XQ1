@@ -325,6 +325,7 @@ void arq_card_set_bar_tint(lv_obj_t *c, arq_tint_t t)             { NN(c) upd<ui
 void arq_card_set_logo(lv_obj_t *c, bool s)                       { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = s ? (e->flags | F_LOGO) : (e->flags & ~F_LOGO); upd<uint8_t>(c, e->flags, f); }
 void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->fans = rows; upd<uint8_t>(c, e->nfans, n); lv_obj_invalidate(c); }
 void arq_card_set_rows(lv_obj_t *c, arq_list_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->rows = rows; e->nrows = n; lv_obj_invalidate(c); }
+void arq_card_set_kind(lv_obj_t *c, arq_btn_kind_t k)             { NN(c) upd<uint8_t>(c, ext(c)->kind, (uint8_t)k); }
 void arq_card_refresh(lv_obj_t *c)                                { NN(c) lv_obj_invalidate(c); }
 void arq_card_set_disabled(lv_obj_t *c, bool d) {
   NN(c)

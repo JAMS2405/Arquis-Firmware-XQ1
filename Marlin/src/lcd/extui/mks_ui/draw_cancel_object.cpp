@@ -2,9 +2,13 @@
  * Arquis XQ1 — Pantalla "Cancelar objeto" (LVGL)
  *
  *  Izquierda : mapa de la cama. Cada objeto ya iniciado aparece como un rectangulo en su posicion real
- *              (la posicion se aprende mientras imprime). Verde = imprimiendo, gris = otro, rojo + X = cancelado.
- *  Derecha   : fichas numeradas de todos los objetos (tambien los que aun no empiezan), info del seleccionado
- *              y boton [Cancelar] (pide confirmacion) / [Restaurar] si ya estaba cancelado.
+ *              (la posicion se aprende mientras imprime). Verde = imprimiendo, gris = en espera, rojo + X = cancelado.
+ *  Derecha   : fichas numeradas de todos los objetos (tambien los que aun no empiezan), estado del seleccionado
+ *              y boton [Cancelar objeto] (pide confirmacion) / [Restaurar objeto] si ya estaba cancelado.
+ *
+ * La version anterior creaba ~70 objetos LVGL y agotaba el heap de 16 KB (la placa se reiniciaba al entrar). Ahora son 6 objetos
+ * fijos (arquis_objects_view.cpp) sin importar cuantos objetos tenga el G-code. Aqui solo esta la union con Marlin.
+ * Las llamadas que actuan sobre la maquina son las mismas de siempre: cancelable.cancel_object() / uncancel_object().
  */
 #include "../../../inc/MarlinConfigPre.h"
 
@@ -15,142 +19,100 @@
 #include "../../../inc/MarlinConfig.h"
 #include "../../../feature/cancel_object.h"
 
-#define CO_MAX      16
-#define MAP_X        6
-#define MAP_Y       40
-#define MAP_SZ     266
-#define MAP_PAD      3
+#include "arquis_objects_view.h"
 
-enum { ID_CO_CHIP0 = 1, ID_CO_RECT0 = 101, ID_CO_CANCEL = 200, ID_CO_BACK = 201 };
+#include <stdio.h>
+#include <string.h>
 
-static lv_obj_t *scr, *mapPanel, *lblInfo, *btnCancel, *lblCancel;
-static lv_obj_t *chip[CO_MAX], *chipLbl[CO_MAX], *rectB[CO_MAX], *rectLbl[CO_MAX];
-static int8_t sel = -1;
-static bool armed = false;
-static millis_t armedAt = 0;
+enum { DLG_OBJ_OK = 301, DLG_OBJ_NO };
 
-// estilos: [estado 0=pendiente 1=activo 2=cancelado][0=normal 1=seleccionado]
-static lv_style_t st[3][2], stPanel, stOpBtn, stBtnRed, stBtnArm, stBtnGreen, stBtnGray, stBtnOff;
+static lv_obj_t *scr;
+static int8_t    sel = -1;
+static int8_t    pending = -1;          // objeto cuyo cancelado espera confirmacion
+static char      dlg_title[24], dlg_msg[96];
 
-static void mk(lv_style_t &s, uint32_t fill, uint32_t border, uint8_t bw, uint8_t radius) {
-  lv_style_copy(&s, &lv_style_plain);
-  s.body.main_color = s.body.grad_color = lv_color_hex(fill);
-  s.body.border.color = lv_color_hex(border);
-  s.body.border.width = bw;
-  s.body.border.opa   = LV_OPA_COVER;
-  s.body.radius       = radius;
-  s.body.shadow.width = 0;
-  s.text.color        = LV_COLOR_WHITE;
-}
-
-static void init_styles() {
-  static bool done = false;
-  if (done) return;
-  done = true;
-  mk(st[0][0], 0x1E2A44, 0x3E5C86, 1, 4);  mk(st[0][1], 0x1E2A44, 0xFFFFFF, 3, 4);  // pendiente
-  mk(st[1][0], 0x16A34A, 0x86EFAC, 1, 4);  mk(st[1][1], 0x16A34A, 0xFFFFFF, 3, 4);  // imprimiendo
-  mk(st[2][0], 0x991B1B, 0xF87171, 1, 4);  mk(st[2][1], 0x991B1B, 0xFFFFFF, 3, 4);  // cancelado
-  mk(stPanel,    0x0F1A2E, 0x2B4A73, 2, 6);
-  mk(stOpBtn,    0x2A1218, 0xEF4444, 2, 8);   // boton del menu Opciones
-  mk(stBtnRed,   0xDC2626, 0xFCA5A5, 1, 6);
-  mk(stBtnArm,   0xEA580C, 0xFFEDD5, 3, 6);
-  mk(stBtnGreen, 0x16A34A, 0x86EFAC, 1, 6);
-  mk(stBtnGray,  0x1E2A44, 0x5C7FA8, 1, 6);
-  mk(stBtnOff,   0x141C2E, 0x2B3A57, 1, 6);
-}
-
-static uint8_t state_of(const int8_t i) {
-  if (cancelable.is_canceled(i)) return 2;
-  return (i == cancelable.active_object) ? 1 : 0;
-}
-
-static void set_lbl(lv_obj_t *lbl, lv_obj_t *par, const char *txt) {
-  lv_obj_set_style(lbl, &tft_style_label_rel);
-  lv_label_set_text(lbl, txt);
-  lv_obj_align(lbl, par, LV_ALIGN_CENTER, 0, 0);
+static void build_model(arq_obj_model_t *m) {
+  memset(m, 0, sizeof(*m));
+  const int total = cancelable.object_count > 0 ? cancelable.object_count : 0;
+  const int n = total > ARQ_OBJ_MAX ? ARQ_OBJ_MAX : total;
+  m->n = (uint8_t)n; m->total = (uint8_t)total;
+  m->active = (cancelable.active_object >= 0 && cancelable.active_object < n) ? cancelable.active_object : -1;
+  m->sel = (sel >= 0 && sel < n) ? sel : -1;
+  m->bed_x = (int16_t)X_BED_SIZE; m->bed_y = (int16_t)Y_BED_SIZE;
+  for (int i = 0; i < n; ++i) {
+    if (cancelable.is_canceled(i)) m->canceled |= (1UL << i);
+    if (cancelable.has_bbox(i)) {
+      m->has_box |= (1UL << i);
+      m->x0[i] = cancelable.bbox_x0[i]; m->y0[i] = cancelable.bbox_y0[i]; m->x1[i] = cancelable.bbox_x1[i]; m->y1[i] = cancelable.bbox_y1[i];
+    }
+  }
 }
 
 void lv_refresh_cancel_object() {
   if (!scr) return;
-  const int n = cancelable.object_count > CO_MAX ? CO_MAX : cancelable.object_count;
-  const float scale = (float)(MAP_SZ - 2 * MAP_PAD) / (float)((int)X_BED_SIZE > (int)Y_BED_SIZE ? (int)X_BED_SIZE : (int)Y_BED_SIZE);
-  char buf[24];
+  arq_obj_model_t m;
+  build_model(&m);
+  arq_objects_update(&m);
+}
 
-  if (armed && ELAPSED(millis(), armedAt + 4000UL)) armed = false;   // la confirmacion caduca a los 4 s
-
-  for (int i = 0; i < CO_MAX; i++) {
-    if (i >= n) {
-      lv_obj_set_hidden(chip[i], true);
-      lv_obj_set_hidden(rectB[i], true);
-      continue;
-    }
-    const uint8_t s = state_of(i);
-    const uint8_t isel = (i == sel) ? 1 : 0;
-
-    lv_obj_set_hidden(chip[i], false);
-    lv_btn_set_style_both(chip[i], &st[s][isel]);
-    if (s == 2) strcpy(buf, "X"); else sprintf(buf, "%d", i + 1);
-    set_lbl(chipLbl[i], chip[i], buf);
-
-    if (cancelable.has_bbox(i)) {
-      const int16_t x0 = cancelable.bbox_x0[i], x1 = cancelable.bbox_x1[i];
-      const int16_t y0 = cancelable.bbox_y0[i], y1 = cancelable.bbox_y1[i];
-      int16_t w = (int16_t)((x1 - x0) * scale), h = (int16_t)((y1 - y0) * scale);
-      const int16_t px = MAP_PAD + (int16_t)(x0 * scale), py = MAP_PAD + (int16_t)((Y_BED_SIZE - y1) * scale);
-      int16_t ox = 0, oy = 0;
-      if (w < 22) { ox = (22 - w) / 2; w = 22; }      // objetos chicos: tamano minimo tocable, centrado
-      if (h < 22) { oy = (22 - h) / 2; h = 22; }
-      lv_obj_set_pos(rectB[i], px - ox, py - oy);
-      lv_obj_set_size(rectB[i], w, h);
-      lv_obj_set_hidden(rectB[i], false);
-      lv_btn_set_style_both(rectB[i], &st[s][isel]);
-      set_lbl(rectLbl[i], rectB[i], buf);
-    }
-    else
-      lv_obj_set_hidden(rectB[i], true);
-  }
-
-  // info + boton
-  if (n == 0) {
-    lv_label_set_text(lblInfo, "Sin objetos");
-    lv_btn_set_style_both(btnCancel, &stBtnOff);
-    set_lbl(lblCancel, btnCancel, "Cancelar");
-  }
-  else if (sel < 0 || sel >= n) {
-    lv_label_set_text(lblInfo, "Toca un objeto");
-    lv_btn_set_style_both(btnCancel, &stBtnOff);
-    set_lbl(lblCancel, btnCancel, "Cancelar");
-  }
-  else {
-    const uint8_t s = state_of(sel);
-    sprintf(buf, "#%d %s", sel + 1, s == 2 ? "CANC." : s == 1 ? "ACTIVO" : "espera");
-    lv_label_set_text(lblInfo, buf);
-    if (s == 2) { lv_btn_set_style_both(btnCancel, &stBtnGreen); set_lbl(lblCancel, btnCancel, "Restaurar"); }
-    else if (armed) { lv_btn_set_style_both(btnCancel, &stBtnArm); set_lbl(lblCancel, btnCancel, "Seguro?"); }
-    else { lv_btn_set_style_both(btnCancel, &stBtnRed); set_lbl(lblCancel, btnCancel, "Cancelar"); }
-  }
+static void dialog_cb(lv_obj_t *obj, lv_event_t event) {
+  if (event != LV_EVENT_RELEASED) return;
+  const int id = obj->mks_obj_id;
+  arq_dialog_close();
+  if (id == DLG_OBJ_OK && pending >= 0 && pending < cancelable.object_count && !cancelable.is_canceled(pending))
+    cancelable.cancel_object(pending);
+  pending = -1;
+  lv_refresh_cancel_object();
 }
 
 static void event_handler(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
-  const int id = obj->mks_obj_id;
+  if (arq_dialog_is_open()) return;
 
-  if (id >= ID_CO_CHIP0 && id < ID_CO_CHIP0 + CO_MAX) { sel = id - ID_CO_CHIP0; armed = false; }
-  else if (id >= ID_CO_RECT0 && id < ID_CO_RECT0 + CO_MAX) { sel = id - ID_CO_RECT0; armed = false; }
-  else if (id == ID_CO_CANCEL) {
-    if (sel >= 0 && sel < cancelable.object_count) {
-      if (cancelable.is_canceled(sel)) { cancelable.uncancel_object(sel); armed = false; }
-      else if (!armed) { armed = true; armedAt = millis(); }
-      else { cancelable.cancel_object(sel); armed = false; }
-    }
+  switch (obj->mks_obj_id) {
+    case ARQ_OID_BACK: goto_previous_ui(); return;
+
+    case ARQ_OID_MAP:
+    case ARQ_OID_GRID: {
+      lv_indev_t *in = lv_indev_get_act();
+      if (!in) return;
+      lv_point_t p;
+      lv_indev_get_point(in, &p);
+      const int8_t k = arq_objects_pick(obj, &p);
+      if (k >= 0) sel = k;
+    } break;
+
+    case ARQ_OID_ACTION:
+      if (sel >= 0 && sel < cancelable.object_count && sel < ARQ_OBJ_MAX) {
+        if (cancelable.is_canceled(sel)) cancelable.uncancel_object(sel);      // restaurar: no destruye nada, sin confirmacion
+        else {                                                                  // cancelar: SIEMPRE pide confirmacion
+          pending = sel;
+          snprintf(dlg_title, sizeof(dlg_title), "Cancelar objeto %d", sel + 1);
+          snprintf(dlg_msg, sizeof(dlg_msg), "Se dejar\xC3\xA1 de imprimir el objeto %d. Los dem\xC3\xA1s objetos siguen imprimi\xC3\xA9ndose.", sel + 1);
+          if (!arq_dialog_open(dlg_title, dlg_msg, "Cancelar objeto", "Volver", true, dialog_cb, DLG_OBJ_OK, DLG_OBJ_NO)) pending = -1;   // sin memoria: no se cancela nada
+        }
+      }
+      break;
   }
-  else if (id == ID_CO_BACK) { goto_previous_ui(); return; }
-
   lv_refresh_cancel_object();
 }
 
+// Boton del menu Opciones (pantalla original de MKS, hasta que se rediseñe en la etapa 4)
+static lv_style_t stOpBtn;
+
 lv_obj_t* lv_cancel_object_button_create(lv_obj_t *par, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id) {
-  init_styles();
+  static bool done = false;
+  if (!done) {
+    done = true;
+    lv_style_copy(&stOpBtn, &lv_style_plain);
+    stOpBtn.body.main_color = stOpBtn.body.grad_color = lv_color_hex(0x2A1218);
+    stOpBtn.body.border.color = lv_color_hex(0xEF4444);
+    stOpBtn.body.border.width = 2;
+    stOpBtn.body.border.opa   = LV_OPA_COVER;
+    stOpBtn.body.radius       = 8;
+    stOpBtn.body.shadow.width = 0;
+    stOpBtn.text.color        = LV_COLOR_WHITE;
+  }
   lv_obj_t *b = lv_btn_create(par, x, y, BTN_X_PIXEL, BTN_Y_PIXEL, cb, id, &stOpBtn);
   lv_obj_t *l = lv_label_create_empty(b);
   lv_obj_set_style(l, &tft_style_label_rel);
@@ -160,46 +122,19 @@ lv_obj_t* lv_cancel_object_button_create(lv_obj_t *par, lv_coord_t x, lv_coord_t
 }
 
 void lv_draw_cancel_object() {
-  init_styles();
-  scr = lv_screen_create(CANCEL_OBJECT_UI);
-  armed = false;
+  scr = lv_screen_create(CANCEL_OBJECT_UI, "");
+  arq_screen_apply(scr);
+  pending = -1;
   if (sel >= cancelable.object_count) sel = -1;
   if (sel < 0 && cancelable.active_object >= 0) sel = cancelable.active_object;   // preseleccionar el que se imprime
-
-  // mapa de cama
-  mapPanel = lv_obj_create(scr, nullptr);
-  lv_obj_set_style(mapPanel, &stPanel);
-  lv_obj_set_pos(mapPanel, MAP_X, MAP_Y);
-  lv_obj_set_size(mapPanel, MAP_SZ, MAP_SZ);
-  for (int i = 0; i < CO_MAX; i++) {
-    rectB[i] = lv_btn_create(mapPanel, 0, 0, 22, 22, event_handler, ID_CO_RECT0 + i, &st[0][0]);
-    rectLbl[i] = lv_label_create_empty(rectB[i]);
-    lv_obj_set_hidden(rectB[i], true);
-  }
-
-  // fichas 4 x 4
-  for (int i = 0; i < CO_MAX; i++) {
-    const lv_coord_t cx = 280 + (i % 4) * 50, cy = 40 + (i / 4) * 48;
-    chip[i] = lv_btn_create(scr, cx, cy, 46, 44, event_handler, ID_CO_CHIP0 + i, &st[0][0]);
-    chipLbl[i] = lv_label_create_empty(chip[i]);
-    lv_obj_set_hidden(chip[i], true);
-  }
-
-  lblInfo = lv_label_create(scr, 280, 236, "");
-
-  btnCancel = lv_btn_create(scr, 280, 270, 134, 46, event_handler, ID_CO_CANCEL, &stBtnOff);
-  lblCancel = lv_label_create_empty(btnCancel);
-  lv_obj_t *btnBack = lv_btn_create(scr, 418, 270, 58, 46, event_handler, ID_CO_BACK, &stBtnGray);
-  lv_obj_t *lblBack = lv_label_create_empty(btnBack);
-  lv_obj_set_style(lblBack, &tft_style_label_rel);
-  lv_label_set_text(lblBack, "<");
-  lv_obj_align(lblBack, btnBack, LV_ALIGN_CENTER, 0, 0);
-
+  arq_objects_build(scr, event_handler);
   lv_refresh_cancel_object();
 }
 
 void lv_clear_cancel_object() {
-  lv_obj_del(scr);
+  arq_dialog_close();                                // un dialogo en la capa superior sobreviviria al cambio de pantalla
+  arq_objects_forget();
+  if (scr) lv_obj_del(scr);
   scr = nullptr;
 }
 

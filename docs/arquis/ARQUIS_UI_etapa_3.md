@@ -84,3 +84,17 @@ ni se encola G-code propio. Inicio, Objetos y Opciones solo navegan.
 - Se quitaron de la supervisión los accesos directos a temperatura/ventilador/Z de la pantalla original: se llega a ellos desde
   Opciones (o Temp. del Dashboard).
 - La perilla funciona en esta pantalla solo si el encoder está habilitado en los ajustes (igual que el Dashboard).
+
+## Correcciones tras la primera prueba real (v12)
+Prueba en la impresora: supervisión, pausa, avance y cancelación correctos. Dos fallos, ya corregidos en el código (pendientes de validar en la pantalla real):
+
+1. **Miniatura sobre el diálogo.** `preview_fill_update()` pinta directo en la pantalla (fuera de LVGL) cada vez que cambia el porcentaje; con el diálogo abierto, sus filas aparecían encima. `setProBarRate()` ya no la llama mientras hay un diálogo (`arq_print_dialog_open()`); al cerrar con "Seguir imprimiendo" se repinta completa.
+2. **Objetos → pantalla negra y reinicio.** La pantalla original "Cancelar objeto" creaba ~70 objetos LVGL (≈26,6 KB medidos en el simulador con LVGL real; heap = 16 KB). Nueva implementación con 6 objetos fijos (`arquis_objects_view.cpp`): cabecera con Atrás (2), mapa de la cama (1), fichas + estado (1) y botón de acción (1).
+   - Pico de memoria 1,9 KB con 0, 3, 9 o 16 objetos; peor caso con diálogo abierto: 11 KB libres de 16 KB. 600 ciclos crear/destruir sin fugas.
+   - Cancelar un objeto: botón → diálogo de confirmación "Cancelar objeto N" (Volver / Cancelar objeto). Restaurar: directo.
+   - Mapa: verde = imprimiendo, gris = en espera, rojo con X = cancelado, anillo azul = seleccionado. Las posiciones se aprenden al imprimir cada objeto (antes de eso solo se elige con las fichas).
+   - Limitación heredada: la interfaz muestra hasta 16 objetos; si el G-code define más, lo indica ("Se muestran 16 de N").
+   - La perilla no recorre mapa y fichas (solo táctil). El botón "Quitar objeto" del menú Opciones sigue con el aspecto MKS hasta la Etapa 4.
+3. "Hizo un home al cancelar": es `EVENT_GCODE_SD_ABORT "G28XY"` de Configuration_adv.h, no de la interfaz.
+
+Capturas: `docs/arquis/ui/obj_*_x2.png`.

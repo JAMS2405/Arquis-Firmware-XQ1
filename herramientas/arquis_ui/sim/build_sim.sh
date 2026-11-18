@@ -15,7 +15,7 @@ if [ ! -f "$LV/lvgl.h" ]; then mkdir -p "$LV"; (cd "$LV" && python3 "$OLDPWD/fet
 mkdir -p build capturas; rm -f build/*.o
 for f in $(find "$LV/src" -name '*.c'); do $CC -Os -w -c -I"$LV" "$f" -o build/$(echo "$f" | md5sum | cut -c1-10).o; done
 $CC -Os -w -c -I"$LV" -I"$MKS" $MKS/arquis_icons.c $MKS/arquis_logo.c $MKS/arq_font_*.c 2>&1 | head; mv *.o build/
-$CXX $STATIC -Os -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=gnu++17 -I"$LV" -I"$MKS" arquis_sim.cpp "$MKS/arquis_theme.cpp" "$MKS/arquis_widgets.cpp" "$MKS/arquis_logic.cpp" "$MKS/arquis_dashboard_view.cpp" "$MKS/arquis_print_view.cpp" build/*.o -o build/arquis_sim
+$CXX $STATIC -Os -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=gnu++17 -I"$LV" -I"$MKS" arquis_sim.cpp "$MKS/arquis_theme.cpp" "$MKS/arquis_widgets.cpp" "$MKS/arquis_logic.cpp" "$MKS/arquis_dashboard_view.cpp" "$MKS/arquis_print_view.cpp" "$MKS/arquis_objects_view.cpp" build/*.o -o build/arquis_sim
 $RUN ./build/arquis_sim capturas
 python3 - <<'PY'
 from PIL import Image; import glob

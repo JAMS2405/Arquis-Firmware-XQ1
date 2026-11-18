@@ -35,3 +35,4 @@ void arq_print_draw();      // sustituye a lv_draw_printing()
 void arq_print_clear();     // sustituye a lv_clear_printing()
 void arq_print_refresh();   // refresco (1 vez por segundo desde GUI_RefreshPage)
 void arq_print_poll();      // fin de impresion: se llama en cada pasada de GUI_RefreshPage, desde cualquier pantalla
+bool arq_print_dialog_open();   // hay un dialogo ARQUIS abierto: la miniatura (pintada fuera de LVGL) no debe repintarse

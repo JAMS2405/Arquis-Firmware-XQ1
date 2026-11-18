@@ -358,7 +358,13 @@ void setProBarRate() {
   if (rate > 100) rate = 100;
 
   #if HAS_GCODE_PREVIEW
-    if (disp_state == PRINTING_UI && !flash_preview_begin && !default_preview_flg) preview_fill_update((uint8_t)rate);
+    // Arquis: la miniatura se pinta directo en la pantalla (fuera de LVGL). Con un dialogo abierto NO se debe tocar: se veria encima de el.
+    // Al cerrarlo, arquis_print.cpp pide el repintado completo (restore_preview) y el relleno se reaplica.
+    if (disp_state == PRINTING_UI && !flash_preview_begin && !default_preview_flg
+        #if ENABLED(ARQUIS_UI)
+          && !arq_print_dialog_open()
+        #endif
+    ) preview_fill_update((uint8_t)rate);
   #endif
 
   #if ENABLED(ARQUIS_UI)

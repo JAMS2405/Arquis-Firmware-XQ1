@@ -201,6 +201,8 @@ static void show_finish() {
   #endif
 }
 
+bool arq_print_dialog_open() { return arq_dialog_is_open(); }
+
 void arq_print_poll() {
   #if HAS_MEDIA
     if (card.isFileOpen()) {                          // recordar el nombre: al terminar el archivo ya esta cerrado

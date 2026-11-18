@@ -25,3 +25,9 @@
 #define ENA_CANCEL_OBJECTS 1
 #define ENA_POWER_LOSS_RECOVERY 1
 #define HAS_SUICIDE 1
+#define ALL(A,B) 1          // solo para '#if ALL(HAS_TFT_LVGL_UI, CANCEL_OBJECTS)' de draw_cancel_object.cpp
+#define CANCEL_OBJECTS 1
+#define X_BED_SIZE 220
+#define Y_BED_SIZE 220
+#define TEST(n,b) !!((n)&_BV32(b))    // macros.h real: TEST(n,b)
+#define _BV32(b) (1UL << (b))
