@@ -31,6 +31,10 @@
 
 #include "draw_ui.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_params_view.h"
+#endif
+
 extern lv_group_t *g;
 static lv_obj_t *scr, *wifi_name_text, *wifi_key_text, *wifi_state_text, *wifi_ip_text;
 
@@ -61,6 +65,16 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
 }
 
 void lv_draw_wifi() {
+  #if ENABLED(ARQUIS_UI)
+    // Arquis: mismo manejador e ids (1 = volver, 2 = nube, 3 = reconectar); el texto lo compone disp_wifi_state()
+    scr = lv_screen_create(WIFI_UI, "");
+    arq_wifi_build(scr, event_handler, gCfgItems.wifi_mode_sel == STA_MODEL, gCfgItems.cloud_enable);
+    #if HAS_ROTARY_ENCODER
+      if (gCfgItems.encoder_enable) arq_group_add_clickables(g, scr);
+    #endif
+    disp_wifi_state();
+    return;
+  #endif
   scr = lv_screen_create(WIFI_UI);
 
   lv_obj_t *buttonReconnect = nullptr, *label_Reconnect = nullptr;
@@ -115,6 +129,16 @@ void lv_draw_wifi() {
 }
 
 void disp_wifi_state() {
+  #if ENABLED(ARQUIS_UI)
+    char b[256];
+    const char *st = wifi_link_state == WIFI_CONNECTED ? "Conectado" : wifi_link_state == WIFI_NOT_CONFIG ? "Sin configurar" : "Excepci\xC3\xB3n";
+    if (wifiPara.mode == AP_MODEL)
+      snprintf(b, sizeof(b), "Modo punto de acceso\nIP: %s\nRed: %s\nClave: %s\nEstado: %s", ipPara.ip_addr, wifiPara.ap_name, wifiPara.keyCode, st);
+    else
+      snprintf(b, sizeof(b), "IP: %s\nRed: %s\nEstado: %s", ipPara.ip_addr, wifiPara.ap_name, st);
+    arq_wifi_set(b);
+    return;
+  #endif
   strcpy(public_buf_m, wifi_menu.ip);
   strcat(public_buf_m, ipPara.ip_addr);
   lv_label_set_text(wifi_ip_text, public_buf_m);

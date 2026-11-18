@@ -42,6 +42,10 @@ typedef struct {
   bool        can_up, can_down;      // hay pagina anterior / siguiente
   bool        no_card;               // sin tarjeta SD
   const char *title;                 // titulo de la cabecera (el llamador lo conserva)
+  // Opcionales (a cero = explorador de archivos): lista de redes Wi-Fi
+  uint8_t     hl_mask;               // bit i = nombre de la fila i en verde (p. ej. la red conectada)
+  bool        plain;                 // filas sin icono de archivo
+  const char *empty_title, *empty_sub; // mensaje cuando n == 0 (nullptr = el de la tarjeta SD)
 } arq_files_model_t;
 
 void   arq_files_build(lv_obj_t *scr, lv_event_cb_t cb);

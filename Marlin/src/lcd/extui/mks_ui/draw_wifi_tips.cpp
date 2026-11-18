@@ -31,6 +31,10 @@
 
 #include "draw_ui.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_params_view.h"
+#endif
+
 static lv_obj_t *scr;
 
 TIPS_TYPE wifi_tips_type;
@@ -38,6 +42,16 @@ TIPS_DISP tips_disp;
 tips_menu_def tips_menu;
 
 void lv_draw_wifi_tips() {
+  #if ENABLED(ARQUIS_UI)
+    scr = lv_screen_create(WIFI_TIPS_UI, "");
+    char msg[96];
+    const char *t = wifi_tips_type == TIPS_TYPE_JOINING ? "Conectando a la red..." : wifi_tips_type == TIPS_TYPE_TAILED_JOIN ? "No se pudo conectar" : "Conectado";
+    snprintf(msg, sizeof(msg), "%s\n%s", (const char *)wifi_list.wifiName[wifi_list.nameIndex], t);
+    arq_msg_build(scr, nullptr, "Wi-Fi", msg, nullptr, nullptr, false);
+    tips_disp.timer = TIPS_TIMER_START;
+    tips_disp.timer_count = 0;
+    return;
+  #endif
   static lv_obj_t *text_tips, *wifi_name;
 
   scr = lv_screen_create(WIFI_TIPS_UI, "");

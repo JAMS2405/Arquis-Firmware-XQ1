@@ -256,6 +256,14 @@ static void msg_screen(const char *title, const char *msg, const char *ok, const
 static void filchg_screen(int cur, int tgt, bool multi, const char *shot) { lv_obj_t *s = new_screen(); arq_filchg_build(s, ccb, multi); arq_filchg_update(cur, tgt, 0, multi); if (shot) dump(shot); }
 static char gc_buf[200];
 static void gcode_screen(const char *res, const char *shot) { lv_obj_t *s = new_screen(); strncpy(gc_buf, res, sizeof(gc_buf) - 1); arq_gcode_build(s, ccb, gc_buf); if (shot) dump(shot); }
+static void wifi_screen(bool sta, bool cloud, const char *txt, const char *shot) { lv_obj_t *s = new_screen(); arq_wifi_build(s, ccb, sta, cloud); arq_wifi_set(txt); if (shot) dump(shot); }
+static const char *const ssids[5] = { "Casa_Arquis_5G", "Casa_Arquis", "TP-Link_A1B2", "Vecino_WiFi_con_nombre_muy_largo_para_recorte", "Invitados" };
+static void wifilist_screen(int n, bool down, int hl, const char *shot) {
+  lv_obj_t *s = new_screen(); arq_files_build(s, ccb);
+  arq_files_model_t m; memset(&m, 0, sizeof(m)); m.n = n; m.plain = true; m.can_down = down; if (hl >= 0) m.hl_mask = 1 << hl; m.title = "Redes Wi-Fi  1/2";
+  m.empty_title = "Sin redes"; m.empty_sub = "Pulsa Volver y entra de nuevo para buscar";
+  for (int i = 0; i < 5; ++i) m.name[i] = ssids[i];
+  arq_files_update(&m); if (shot) dump(shot); }
 static void numpad_screen(const char *title, const char *val, bool ok, const char *shot) { lv_obj_t *s = new_screen(); arq_numpad_build(s, ccb, title); arq_numpad_set(val, ok); if (shot) dump(shot); }
 static int dlg_ok = 0, dlg_cancel = 0;
 static void dlg_cb(lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; if (o->mks_obj_id == 901) ++dlg_ok; else ++dlg_cancel; arq_dialog_close(); }
@@ -713,6 +721,25 @@ static void tests() {
         c_count = 0; tap(240, 250); CHECK(c_count == 0, "consola de G-code: el resultado no es pulsable");
         new_screen(); arq_msg_build(lv_scr_act(), ccb, "Aviso", "Calentando la boquilla.\nEspera...", nullptr, "Cancelar", false, true); run();
         c_count = 0; tap(240, 285); CHECK(c_count == 1 && c_last == ARQ_MSG_CANCEL, "dialogo compacto: Cancelar abajo -> id %d", c_last); }
+      // Wi-Fi: estado y lista de redes
+      { new_screen(); run(); const uint32_t b1 = used(); wifi_screen(true, true, "IP: 192.168.1.50\nRed: Casa_Arquis_5G\nEstado: Conectado", nullptr); const uint32_t u = used() - b1; printf("[mem] Wi-Fi estado: %u B\n", (unsigned)u);
+        CHECK(u < 3500, "Wi-Fi (estado): %u B de heap (< 3500 B)", (unsigned)u);
+        for (int i = 0; i < 300; ++i) wifi_screen(i & 1, i & 2, "IP: 1.2.3.4\nRed: x\nEstado: Conectado", nullptr);
+        new_screen(); run(); const uint32_t u3 = used(); for (int i = 0; i < 300; ++i) wifi_screen(i & 1, i & 2, "IP: 1.2.3.4", nullptr);
+        new_screen(); run(); CHECK(used() <= u3, "Wi-Fi (estado): 600 ciclos sin fugas (%u B -> %u B)", (unsigned)u3, (unsigned)used());
+        wifi_screen(true, true, "x", nullptr); run();
+        c_count = 0; tap(120, 285); CHECK(c_count == 1 && c_last == ARQ_WF_RECONNECT, "Wi-Fi: Buscar redes -> id %d", c_last);
+        c_count = 0; tap(360, 285); CHECK(c_count == 1 && c_last == ARQ_WF_CLOUD, "Wi-Fi: Nube -> id %d", c_last);
+        c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_WF_BACK, "Wi-Fi: Volver -> id %d", c_last);
+        wifi_screen(false, false, "x", nullptr); run(); c_count = 0; tap(240, 285); CHECK(c_count == 0, "Wi-Fi (modo punto de acceso): sin botones de busqueda");
+        static int wl_pick; static lv_obj_t *wl_obj; (void)wl_obj;
+        auto wcb = [](lv_obj_t *o, lv_event_t ev) { if (ev != LV_EVENT_RELEASED) return; c_last = o->mks_obj_id;
+          if (o->mks_obj_id == ARQ_FLID_LIST) { lv_indev_t *in = lv_indev_get_act(); lv_point_t p; lv_indev_get_point(in, &p); wl_pick = arq_files_pick(o, &p); } };
+        { lv_obj_t *sc = new_screen(); arq_files_build(sc, wcb); arq_files_model_t m; memset(&m, 0, sizeof(m)); m.n = 5; m.plain = true; m.can_down = true; m.hl_mask = 1; m.title = "Redes Wi-Fi  1/2";
+          for (int i = 0; i < 5; ++i) m.name[i] = ssids[i]; arq_files_update(&m); run();
+          for (int i = 0; i < 5; ++i) { wl_pick = -9; tap(200, 52 + i * 42 + 19); CHECK(wl_pick == i, "lista de redes: tocar la red %d devuelve %d", i + 1, wl_pick); }
+          wl_pick = -9; tap(200, 52 + 5 * 42 + 19); CHECK(wl_pick == -1, "lista de redes: la fila vacia no se puede tocar");
+          c_last = -1; tap(444, 250); CHECK(c_last == ARQ_FLID_DOWN, "lista de redes: pagina siguiente"); } }
       new_screen(); run(); }
 
 
@@ -790,6 +817,8 @@ int main(int argc, char **argv) {
     msg_screen("Aviso", "Pulsa el bot\xC3\xB3n para calentar la boquilla", nullptr, nullptr, false, "st5b_10_dialogo_espera");
     filchg_screen(187, 210, false, "st5b_11_filamento");
     gcode_screen("ok\nX:10.00 Y:20.00 Z:0.20 E:0.00\nCount X:1600 Y:3200 Z:160", "st5b_12_gcode");
+    wifi_screen(true, true, "IP: 192.168.1.50\nRed: Casa_Arquis_5G\nEstado: Conectado", "st5b_16_wifi_estado");
+    wifilist_screen(5, true, 0, "st5b_17_wifi_redes"); wifilist_screen(0, false, -1, "st5b_18_wifi_sin_redes");
     { lv_obj_t *sc = new_screen(); arq_msg_build(sc, ccb, "Aviso", "Calentando la boquilla.\nEspera...", nullptr, "Cancelar", false, true);
       lv_obj_t *l = lv_label_create(sc, nullptr); lv_label_set_text(l, "Extrusion1: 187 / 210"); lv_obj_set_style(l, (lv_style_t *)arq_style_text(ARQ_TEXT_ACCENT)); lv_obj_align(l, nullptr, LV_ALIGN_CENTER, 0, -50);
       lv_obj_t *bar = lv_bar_create(sc, nullptr); lv_obj_set_pos(bar, 40, 122); lv_obj_set_size(bar, 400, 25); lv_bar_set_style(bar, LV_BAR_STYLE_BG, (lv_style_t *)arq_style_bar_bg()); lv_bar_set_style(bar, LV_BAR_STYLE_INDIC, (lv_style_t *)arq_style_bar_indic()); lv_bar_set_value(bar, 40, LV_ANIM_OFF);

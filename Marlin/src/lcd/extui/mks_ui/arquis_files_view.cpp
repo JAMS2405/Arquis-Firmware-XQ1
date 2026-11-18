@@ -78,19 +78,20 @@ static bool list_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t 
 
   if (M.n == 0) {
     const lv_coord_t cx = a.x1 + LW / 2, cy = a.y1 + 86;
-    draw_text_cx(mask, cx, cy,      M.no_card ? "Sin tarjeta SD" : "Carpeta vac\xC3\xAD" "a", arq_style_text(ARQ_TEXT_BODY));
-    draw_text_cx(mask, cx, cy + 28, M.no_card ? "Inserta una tarjeta con archivos G-code" : "No hay archivos G-code aqu\xC3\xAD", arq_style_text(ARQ_TEXT_MUTED));
+    draw_text_cx(mask, cx, cy,      M.empty_title ? M.empty_title : M.no_card ? "Sin tarjeta SD" : "Carpeta vac\xC3\xAD" "a", arq_style_text(ARQ_TEXT_BODY));
+    draw_text_cx(mask, cx, cy + 28, M.empty_sub ? M.empty_sub : M.no_card ? "Inserta una tarjeta con archivos G-code" : "No hay archivos G-code aqu\xC3\xAD", arq_style_text(ARQ_TEXT_MUTED));
     return true;
   }
   for (uint8_t i = 0; i < M.n && i < ARQ_FILE_ROWS; ++i) {
     const bool dir = (M.dir_mask >> i) & 1;
     const lv_area_t r = { a.x1, (lv_coord_t)(a.y1 + i * ROW_DY), (lv_coord_t)(a.x1 + LW - 1), (lv_coord_t)(a.y1 + i * ROW_DY + ROW_H - 1) };
     lv_draw_rect(&r, mask, arq_style_panel(), LV_OPA_COVER);
-    draw_icon(mask, r.x1 + 12, r.y1 + (ROW_H - ARQ_ICON_SMALL) / 2, dir ? &arq_icon_s_folder : &arq_icon_s_file, arq_style_icon(dir ? ARQ_TINT_ACCENT : ARQ_TINT_TEXT));
+    if (!M.plain) draw_icon(mask, r.x1 + 12, r.y1 + (ROW_H - ARQ_ICON_SMALL) / 2, dir ? &arq_icon_s_folder : &arq_icon_s_file, arq_style_icon(dir ? ARQ_TINT_ACCENT : ARQ_TINT_TEXT));
     lv_point_t ts;
-    const lv_style_t *st = arq_style_text(ARQ_TEXT_BODY);
+    const lv_style_t *st = arq_style_text(((M.hl_mask >> i) & 1) ? ARQ_TEXT_OK : ARQ_TEXT_BODY);
     lv_txt_get_size(&ts, "A", st->text.font, st->text.letter_space, st->text.line_space, LV_COORD_MAX, LV_TXT_FLAG_NONE);
-    draw_text_fit(mask, r.x1 + 44, r.y1 + (ROW_H - ts.y) / 2, LW - 44 - (dir ? 40 : 14), M.name[i] ? M.name[i] : "", st);
+    const lv_coord_t tx = M.plain ? 16 : 44;
+    draw_text_fit(mask, r.x1 + tx, r.y1 + (ROW_H - ts.y) / 2, LW - tx - (dir ? 40 : 14), M.name[i] ? M.name[i] : "", st);
     if (dir) draw_icon(mask, r.x2 - 12 - ARQ_ICON_SMALL, r.y1 + (ROW_H - ARQ_ICON_SMALL) / 2, &arq_icon_s_chev, arq_style_icon(ARQ_TINT_MUTED));
   }
   return true;

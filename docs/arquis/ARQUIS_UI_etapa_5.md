@@ -62,9 +62,29 @@ Comprobado: dibujo y toques en el simulador con LVGL real; memoria y fugas; firm
 
 **La Etapa 5 queda cerrada** salvo lo anterior y las limitaciones ya indicadas: las listas, los teclados y los diálogos nuevos no responden a la perilla (los botones de cabecera sí), y las pantallas con texto de tablas de MKS dependen de mi tabla de traducción (134 textos).
 
-## 6. Prueba segura
+### 5B-4. Wi-Fi: estado, lista de redes y avisos (hecho, sin probar en la impresora)
+Tu placa lleva el módulo Wi-Fi MKS, así que se rediseñaron las tres pantallas que usas para conectarlo (Ajustes → Wi-Fi):
+- **Estado** (`draw_wifi.cpp`): panel con IP, red y estado (en modo punto de acceso también la clave) y el botón **Buscar redes**; **Nube MKS** solo si la nube está activada. Mismo manejador e ids; `disp_wifi_state()` (que llama el módulo al cambiar el estado) compone el texto.
+- **Lista de redes** (`draw_wifi_list.cpp`): reutiliza el explorador ARQUIS (5 objetos); la red conectada se ve en **verde**; el botón ↓ pasa de página (como la original, vuelve a la primera al llegar al final). Mismo flujo: red conocida → estado; red nueva → teclado para la clave.
+- **Avisos** ("Conectando a la red...", "No se pudo conectar", "Conectado"): pantalla de mensaje ARQUIS.
+- **No se tocan:** *Parámetros Wi-Fi* (modo AP/STA, nombre y clave guardados; está en Ajustes avanzados) y *Nube MKS* (código QR de la nube de MKS). Siguen con el aspecto original y funcionan igual.
+- **Hallazgo:** el firmware ya mete en la cola de Marlin todo el G-code que llega por el módulo Wi-Fi (`get_wifi_commands`, igual que por USB: `M524` cancelar, `M25` pausar, `M112` parada). Qué ofrece la aplicación del módulo para enviarlo no se ha comprobado.
+
+## 6. Cierre de la Etapa 5
+**Hecho (todo con el aspecto ARQUIS, la lógica y los manejadores de MKS intactos):** Herramientas, Home, Ajustes, Sistema y diagnóstico, Babystep, Velocidad, Nivelar cama, ~15 pantallas de Parámetros + Memoria, teclado numérico, diálogos de Marlin (incluidos los de carga/descarga con barra), Cambio de filamento, Más, G-code, Idioma, teclado de texto (colores), Wi-Fi (estado, lista, avisos) y el aviso "IMPRESORA DETENIDA".
+**Probado en tu impresora:** 5A y 5B-1 y 5B-2 (todo funcionó). 5B-3 y 5B-4 **compilan** (5B-3: Flash 91,8 %) pero **no se han probado todavía en la impresora**.
+**Se deja como está a propósito:** calibración táctil (ajuste de hardware que dibuja en el TFT), asistente de offset Z (no existe sin sonda), *Parámetros Wi-Fi* y *Nube MKS*.
+**Limitaciones conocidas:** las listas, teclados y diálogos nuevos no responden a la perilla (los botones de cabecera sí); los textos de MKS dependen de mi tabla de traducción (134 textos); en chino o ruso los textos no se ven con la tipografía ARQUIS.
+**Cambio de comportamiento:** el interruptor *Autoapagado* ya no se muestra si la placa no tiene control de alimentación (`MKS_PWC` desactivado): no hacía nada.
+**Pasa a la Etapa 6:** margen de flash (quedan unos 39 KB), logo de arranque, estado *Reposo* frente a *Lista* y umbral de *Enfriando*, la cama que marcaba 45 ° apagada (necesita tu prueba en frío), la perilla en listas y teclados, y el apagado automático con relé (según lo que decidas).
+
+## 7. Prueba segura
 1. Dashboard → Herram.: comprueba cada acceso y que **Atrás** vuelve al Dashboard.
-2. **Sistema:** deben verse tus datos reales; mueve un final de carrera con la mano y comprueba que cambia (y que Z "Activado" = el sensor activo).
-3. **Velocidad / Babystep:** solo desde una impresión en marcha (Opciones) o con el hotend frío; el offset Z debe coincidir con `M851`.
+2. **Sistema:** deben verse tus datos reales; mueve un final de carrera con la mano y comprueba que cambia.
+3. **Velocidad / Babystep:** solo desde una impresión en marcha (Opciones) o con el hotend frío.
 4. **Nivelar cama (con la cama despejada):** el primer punto hace Home; después cada punto sube, se desplaza y baja a Z0.
-5. **Ajustes → Apagar:** debe pedir confirmación; pulsa Volver.
+5. **Ajustes → Parámetros:** abre Pasos por mm; el teclado debe tener Cancelar y Aceptar deshabilitado con un valor inválido.
+6. **Ajustes → Memoria:** Restaurar valores de fábrica debe pedir confirmación; pulsa Cancelar.
+7. **Ajustes → Wi-Fi:** debe abrir el estado (o la lista de redes si no estás conectado); la red conectada sale en verde.
+8. **Herramientas → Más → G-code:** envía `M115` y comprueba el resultado.
+9. **Herramientas → Filamento → Cargar:** observa el diálogo y la barra; cancela antes de extruir.

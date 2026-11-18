@@ -481,3 +481,45 @@ void arq_gcode_build(lv_obj_t *scr, lv_event_cb_t cb, const char *result) {
     lv_obj_set_click(r, false);
   }
 }
+
+// ---- Estado del Wi-Fi ---------------------------------------------------------------------------------------------------
+static lv_obj_t *wf_panel;
+static char      wf_txt[256];
+
+static bool wf_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t mode) {
+  if (mode == LV_DESIGN_COVER_CHK) return false;
+  if (mode != LV_DESIGN_DRAW_MAIN) return true;
+  lv_area_t a, clip;
+  lv_obj_get_coords(o, &a);
+  if (!lv_area_intersect(&clip, mask_in, &a)) return true;
+  lv_draw_rect(&a, &clip, arq_style_panel(), LV_OPA_COVER);
+  const lv_area_t ta = { (lv_coord_t)(a.x1 + PADX), (lv_coord_t)(a.y1 + 12), (lv_coord_t)(a.x2 - PADX), (lv_coord_t)(a.y2 - 8) };
+  lv_draw_label(&ta, &clip, arq_style_text(ARQ_TEXT_BODY), LV_OPA_COVER, wf_txt, LV_TXT_FLAG_NONE, nullptr, nullptr, nullptr, LV_BIDI_DIR_LTR);
+  return true;
+}
+
+void arq_wifi_set(const char *text) {
+  strncpy(wf_txt, text ? text : "", sizeof(wf_txt) - 1); wf_txt[sizeof(wf_txt) - 1] = '\0';
+  if (wf_panel) lv_obj_invalidate(wf_panel);
+}
+
+void arq_wifi_build(lv_obj_t *scr, lv_event_cb_t cb, bool sta_mode, bool cloud) {
+  arq_theme_init();
+  arq_screen_apply(scr);
+  wf_panel = nullptr; wf_txt[0] = '\0';
+  arq_header_t h;
+  arq_header_create(&h, scr, "Wi-Fi", false, cb, ARQ_WF_BACK);
+  const lv_coord_t py = ARQ_HEADER_H + 10, bh = 60, by = ARQ_H - ARQ_MARGIN - bh, ph = by - ARQ_GAP - py;
+  wf_panel = lv_obj_create(scr, nullptr);
+  if (wf_panel) {
+    lv_obj_set_pos(wf_panel, ARQ_MARGIN, py);
+    lv_obj_set_size(wf_panel, ARQ_W - 2 * ARQ_MARGIN, ph);
+    lv_obj_set_design_cb(wf_panel, wf_design);
+    lv_obj_set_click(wf_panel, false);
+  }
+  if (sta_mode) {
+    const lv_coord_t w = cloud ? (ARQ_W - 2 * ARQ_MARGIN - ARQ_GAP) / 2 : ARQ_W - 2 * ARQ_MARGIN;
+    arq_button_create(scr, ARQ_MARGIN, by, w, bh, &arq_icon_wifi, "Buscar redes", ARQ_BTN_SECONDARY, cb, ARQ_WF_RECONNECT);
+    if (cloud) arq_button_create(scr, ARQ_MARGIN + w + ARQ_GAP, by, ARQ_W - 2 * ARQ_MARGIN - w - ARQ_GAP, bh, nullptr, "Nube MKS", ARQ_BTN_SECONDARY, cb, ARQ_WF_CLOUD);
+  }
+}

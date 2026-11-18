@@ -31,6 +31,10 @@
 
 #include "draw_ui.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_files_view.h"
+#endif
+
 #define NAME_BTN_X 330
 #define NAME_BTN_Y 48
 
@@ -89,7 +93,65 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
   }
 }
 
+#if ENABLED(ARQUIS_UI)
+
+// Arquis: la lista de redes reutiliza el explorador ARQUIS (5 objetos). Misma logica que el manejador original de arriba.
+static char arq_wl_title[28];
+
+static void arq_wl_event(lv_obj_t *obj, lv_event_t event) {
+  if (event != LV_EVENT_RELEASED) return;
+  if (obj->mks_obj_id == ARQ_FLID_BACK) {
+    clear_cur_ui();
+    lv_draw_set();
+  }
+  else if (obj->mks_obj_id == ARQ_FLID_DOWN) {
+    if (wifi_list.getNameNum > 0) {
+      if ((wifi_list.nameIndex + NUMBER_OF_PAGE) >= wifi_list.getNameNum) {
+        wifi_list.nameIndex = 0;
+        wifi_list.currentWifipage = 1;
+      }
+      else {
+        wifi_list.nameIndex += NUMBER_OF_PAGE;
+        wifi_list.currentWifipage++;
+      }
+      disp_wifi_list();
+    }
+  }
+  else if (obj->mks_obj_id == ARQ_FLID_LIST) {
+    lv_point_t p;
+    lv_indev_t *in = lv_indev_get_act();
+    if (!in) return;
+    lv_indev_get_point(in, &p);
+    const int8_t i = arq_files_pick(obj, &p);
+    if (i < 0 || i >= NUMBER_OF_PAGE || wifi_list.getNameNum == 0) return;
+    const bool do_wifi = wifi_link_state == WIFI_CONNECTED && strcmp((const char *)wifi_list.wifiConnectedName, (const char *)wifi_list.wifiName[wifi_list.nameIndex + i]) == 0;
+    wifi_list.nameIndex += i;
+    last_disp_state = WIFI_LIST_UI;
+    lv_clear_wifi_list();
+    if (do_wifi)
+      lv_draw_wifi();
+    else {
+      keyboard_value = wifiConfig;
+      lv_draw_keyboard();
+    }
+  }
+}
+
+#endif // ARQUIS_UI
+
 void lv_draw_wifi_list() {
+  #if ENABLED(ARQUIS_UI)
+    scr = lv_screen_create(WIFI_LIST_UI, "");
+    arq_files_build(scr, arq_wl_event);
+    wifi_list.nameIndex = 0;
+    wifi_list.currentWifipage = 1;
+    if (wifi_link_state == WIFI_CONNECTED && wifiPara.mode == STA_MODEL) {
+      ZERO(wifi_list.wifiConnectedName);
+      memcpy(wifi_list.wifiConnectedName, wifiPara.ap_name, sizeof(wifi_list.wifiConnectedName));
+    }
+    disp_wifi_list();
+    return;
+  #endif
   scr = lv_screen_create(WIFI_LIST_UI);
 
   lv_obj_t *buttonDown = lv_imgbtn_create(scr, "F:/bmp_pageDown.bin", OTHER_BTN_XPIEL * 3 + INTERVAL_V * 4, titleHeight + OTHER_BTN_YPIEL + INTERVAL_H, event_handler, ID_WL_DOWN);
@@ -132,6 +194,26 @@ void lv_draw_wifi_list() {
 }
 
 void disp_wifi_list() {
+  #if ENABLED(ARQUIS_UI)
+    arq_files_model_t m;
+    memset(&m, 0, sizeof(m));
+    const int left = (int)wifi_list.getNameNum - (int)wifi_list.nameIndex;
+    m.n = left <= 0 ? 0 : (left > NUMBER_OF_PAGE ? NUMBER_OF_PAGE : left);
+    for (uint8_t k = 0; k < m.n; ++k) {
+      const uint8_t j = wifi_list.nameIndex + k;
+      m.name[k] = (const char *)wifi_list.wifiName[j];
+      if (wifi_link_state == WIFI_CONNECTED && strcmp((const char *)wifi_list.wifiConnectedName, (const char *)wifi_list.wifiName[j]) == 0) m.hl_mask |= (1 << k);   // conectada: en verde
+    }
+    m.plain      = true;
+    m.can_down   = wifi_list.getNameNum > NUMBER_OF_PAGE;
+    m.empty_title = "Sin redes";
+    m.empty_sub   = "Pulsa Volver y entra de nuevo para buscar";
+    if (wifi_list.getPage > 0) snprintf(arq_wl_title, sizeof(arq_wl_title), "Redes Wi-Fi  %d/%d", (int)wifi_list.currentWifipage, (int)wifi_list.getPage);
+    else strcpy_P(arq_wl_title, PSTR("Redes Wi-Fi"));
+    m.title = arq_wl_title;
+    arq_files_update(&m);
+    return;
+  #endif
   int8_t tmpStr[WIFI_NAME_BUFFER_SIZE] = { 0 };
   uint8_t i, j;
 
@@ -168,6 +250,9 @@ void wifi_scan_handle() {
 }
 
 void lv_clear_wifi_list() {
+  #if ENABLED(ARQUIS_UI)
+    arq_files_forget();
+  #endif
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif

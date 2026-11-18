@@ -80,3 +80,9 @@ void arq_filchg_forget();
 // Ids = los del manejador original: 1 = volver, 2 = escribir. 'result' es un buffer del llamador (se lee al dibujar).
 enum { ARQ_GC_BACK = 1, ARQ_GC_WRITE };
 void arq_gcode_build(lv_obj_t *scr, lv_event_cb_t cb, const char *result);   // 4 objetos
+
+// ---- Estado del Wi-Fi (draw_wifi.cpp): panel de texto + Reconectar / Nube ----------------------------------------------
+// Ids = los del manejador original: 1 = volver, 2 = nube, 3 = reconectar.
+enum { ARQ_WF_BACK = 1, ARQ_WF_CLOUD, ARQ_WF_RECONNECT };
+void arq_wifi_build(lv_obj_t *scr, lv_event_cb_t cb, bool sta_mode, bool cloud);   // 3-5 objetos
+void arq_wifi_set(const char *text);                                              // texto del panel (lineas separadas por '\n'); se copia

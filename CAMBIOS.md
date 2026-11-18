@@ -124,3 +124,9 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v15 — Etapa 5B-3: Más, G-code, Idioma, teclado, diálogos de progreso
 - Rejilla ARQUIS para Más e Idioma (`arquis_tools.cpp`), consola de G-code, colores ARQUIS en el teclado de texto, diálogos de carga/descarga de filamento con el estilo ARQUIS (conservan sus objetos originales) y "IMPRESORA DETENIDA / Reinicia la impresora" en español.
 - Sin cambios: calibración táctil, asistente de offset Z, Wi-Fi. Estado: simulador y firmas OK; compilación completa y pantalla real pendientes de validar.
+
+## v16 — Cierre de la Etapa 5 (5B-4: Wi-Fi) y ocultar el Autoapagado sin control de alimentación
+- Wi-Fi con aspecto ARQUIS: estado (`arq_wifi_build`), lista de redes (reutiliza el explorador; modelo ampliado con `hl_mask`, `plain` y mensaje de vacío) y avisos (pantalla de mensaje). Se dejan *Parámetros Wi-Fi* y *Nube MKS*.
+- `arquis_controls.cpp`: el interruptor *Autoapagado* solo se muestra con `HAS_SUICIDE` (necesita `MKS_PWC`).
+- Compilación previa (5B-3, PC del usuario): RAM 61,4 % (80 472 B), Flash 91,8 % (435 956 B, quedan 39 180 B).
+- Documento de cierre y prueba segura: `docs/arquis/ARQUIS_UI_etapa_5.md`. Estado: simulador y firmas OK; compilación completa de 5B-4 y pantalla real pendientes de validar.
