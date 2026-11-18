@@ -48,7 +48,7 @@ Con una impresión en marcha el Dashboard sigue bloqueando Mover y Ajustes, y no
 | Vistas con LVGL real en ARM-32, heap de 16 KB: dibujo, toques (cada control envía su id), botones deshabilitados, memoria, fugas | **Compilación completa de Marlin** (nunca se ha compilado esta etapa) |
 | Firmas de Marlin usadas (contra cabeceras de prueba y las cabeceras reales de `cancel_object.h`, `draw_print_file.h`) | Pantalla TS35 real: colores, tamaños táctiles, legibilidad |
 | Código original intacto con `ARQUIS_UI` desactivado (el diff no borra líneas) | Comportamiento real: temperaturas, movimientos, extrusión, paginación con tu SD, carpetas anidadas, iniciar una impresión desde el explorador |
-Flash estimada: +≈ 22 KB de código e iconos nuevos, −≈ 15 KB del código original que ya no se compila (queda ≈ 60 KB libres de 464 KB). Hay que medirlo con `auditar_flash.py` tras compilar.
+Flash: las vistas nuevas miden unos 11 KB de código (Thumb, `-Os`) y los iconos nuevos unos 7 KB; el código de glue añade algunos KB más. El código original de las pantallas sustituidas deja de compilarse con `ARQUIS_UI` activo, pero **no lo medí**: la cifra real solo sale de compilar y ejecutar `auditar_flash.py`. Antes de la etapa quedaban unos 65 KB libres.
 
 ## 5. Prueba segura en la impresora (sin calentar ni mover mucho)
 1. **Archivos:** Imprimir → debe listar tu SD; entra en una carpeta, sube página/baja página, Atrás (sube de carpeta y, en la raíz, vuelve al Dashboard). Toca un archivo → "¿Imprimir este archivo?" → Cancelar vuelve a la lista. (No pulses Imprimir si no quieres imprimir.)
