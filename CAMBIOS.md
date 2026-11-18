@@ -140,3 +140,8 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 ## v18 — Compilación de la Etapa 6 (PC del usuario)
 - `pio run`: SUCCESS (incluye las pantallas de Wi-Fi de 5B-4). **Flash 85,5 % (406 276 B, quedan 68 860 B)**; antes 91,8 % (435 956 B): **−29 680 B** al dejar solo español e inglés. RAM 61,6 % (80 708 B).
 - `auditar_flash.py` debe apuntar a `Robin_nano_v3.elf` (el script de compilación renombra el `.elf`).
+
+## v19 — Etapa 6: auditoría de Flash y robustez
+- Auditoría real: ARQUIS UI = 45 107 B (11 % de la Flash); margen 68 336 B (14,4 %). LVGL 68 KB, HAL/USB 36 KB, G-code 20 KB, planificador 20 KB, Wi-Fi 10 KB, idiomas 5 KB.
+- Robustez en el simulador: 213 comprobaciones sin fallos; peor caso (pantalla + diálogo + perilla) con ≥ 9,2 KB de heap libres.
+- LTO descartado (riesgo para las rutinas de movimiento sin beneficio necesario).

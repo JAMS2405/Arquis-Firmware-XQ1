@@ -52,12 +52,48 @@ Seis recursos no los referencia nada (`arq_icon_check/folder/stop/warn`, `arq_lo
 - Nuevo estado `ARQ_PS_STANDBY` ("Reposo", punto gris) en `arquis_logic.cpp`: solo cambia el estado "todo apagado" y **sin** tarjeta SD (`!card.isMounted()`). Calentando, imprimiendo, pausada, enfriando y error se muestran igual con o sin tarjeta.
 - Pruebas: 52 de 52 de lógica (9 nuevas) y captura `dash_8_reposo_x2.png`.
 
-## 5. Plan de trabajo (en este orden)
-1. **Medir** el reparto real de Flash con `auditar_flash.py` sobre tu ELF (pendiente: tu salida).
-2. ~~Aplicar las decisiones de idiomas y Reposo/Lista~~ (**hecho**, falta tu compilación para ver el ahorro real); evaluar los puntos 4–5 de la tabla de §2.
-3. Experimento LTO (opcional) en una copia del entorno; solo se adopta si compila, arranca y las pantallas se ven igual.
-4. Revisión de robustez: margen de heap y pruebas de estrés de todas las pantallas nuevas en el simulador (reabrir/cerrar cientos de veces) y repaso de los nombres estáticos frente a las cabeceras de Marlin.
-5. Informe final de Flash/RAM y cierre de la etapa; preparación del paquete de la Etapa 7 (entrega).
+## 5. Resultado de la auditoría de Flash (`auditar_flash.py` sobre tu `Robin_nano_v3.elf`)
+Flash usada **406 800 B (85,6 %)**, margen **68 336 B**; RAM 82 372 B (62,8 %, con el heap y la pila reservados). Secciones: `.text` 298 312 B, `.rodata` 104 480 B, `.data` 3 484 B.
+| Módulo (por nombre de símbolo) | Flash |
+|---|---|
+| LVGL (núcleo y widgets) | 68 394 B |
+| **ARQUIS UI** (todo lo que queda tras `--gc-sections`) | **45 107 B** (11 % del total) |
+| HAL / USB / FatFs / STM32 | 35 774 B |
+| G-code | 19 802 B |
+| Planificador / movimiento | 19 727 B |
+| Wi-Fi MKS | 10 324 B |
+| Temperatura | 5 894 B |
+| Idiomas MKS (ya solo español e inglés) | 5 301 B |
+| Resto (Marlin, librerías, fuentes) | ≈ 250 KB |
+**Lectura:** los iconos y recursos que no usa nada ya los descarta el enlazador (el código ARQUIS real, 45 KB, es la mitad de mi cota superior de 85 KB). Lo más grande que queda son bloques de MKS/LVGL que se necesitan: tipografías por defecto de LVGL (≈ 19 + 9 KB, las usan el teclado y las pantallas que quedan de MKS), el heap de LVGL (16 KB de RAM), el búfer de imágenes (14 KB de RAM) y la fuente del aviso de error. No hay nada grande evidentemente sobrante.
 
-## 6. Criterio de cierre
-Compila sin errores ni avisos propios; Flash < 90 % con margen para futuras funciones; todas las pantallas probadas en tu impresora sin reinicios; documentación y paquete de la SD (`sd_assets`) listos para la Etapa 7.
+## 6. Robustez (simulador con LVGL 6.1.1 real, ARM de 32 bits, heap de 16 KB)
+**213 comprobaciones, 0 fallos**; 52 pruebas de lógica. Heap usado por pantalla (el heap total es de 16 384 B y LVGL no tolera quedarse sin él):
+| Pantalla | Heap |
+|---|---|
+| Dashboard (7 estados + Reposo) | 3,5–3,9 KB |
+| Supervisión de impresión (pico) | 3,5 KB |
+| Temperatura / Mover / Babystep | 5,1 KB |
+| Ventiladores, Velocidad, Extrusión, Opciones, Nivelar cama | 3,5–3,9 KB |
+| Explorador de archivos | 1,9 KB |
+| Cancelar objeto (0 a 16 objetos) | 1,9 KB |
+| Parámetros (4 variantes) | 1,1–1,5 KB |
+| Teclado numérico, diálogos, consola G-code | 1,5 KB |
+| Cambio de filamento, Wi-Fi (estado) | 1,9–2,0 KB |
+| Sistema y diagnóstico | 1,6 KB |
+**Peor caso medido** (pantalla + diálogo + perilla): ≈ 7,0 KB usados, **≥ 9,2 KB libres**. Todas las pantallas se abren y cierran cientos de veces sin fugas (heap final = heap inicial). La pantalla anterior de Cancelar objeto necesitaba unos 26 KB: por eso se reinició; ya no.
+
+## 7. Experimento LTO: no se hace
+El margen ya es del 14 % (68 KB) y el objetivo de la etapa (Flash < 90 % con margen) está cumplido. LTO recompila **todo Marlin** (incluidas las rutinas de interrupción del planificador y los motores) con otra generación de código: es un riesgo sin beneficio necesario, y esta etapa no puede tocar movimiento ni protecciones. Se podría reconsiderar si en el futuro faltara espacio.
+
+## 8. Estado de la etapa
+| Objetivo | Estado |
+|---|---|
+| Flash < 90 % con margen | **Cumplido** (85,6 %, 68 KB libres) |
+| Compila sin errores ni avisos propios | **Cumplido** (solo queda el aviso de Marlin sobre los jumpers DIAG) |
+| Todas las pantallas sin fugas ni reinicios en el simulador | **Cumplido** |
+| Solo español e inglés | **Hecho** |
+| Reposo / Lista | **Hecho** en código y simulador; **falta comprobarlo en la impresora** (con y sin tarjeta SD) |
+| Pantallas 5B-3 y 5B-4 en la impresora (G-code, Idioma, diálogos de carga, Wi-Fi) | **Pendiente** de tu prueba |
+| Cama marcando 45 ° con todo apagado | **Pospuesto** (hardware: tocar la cama, multímetro, tipo de termistor) |
+| Apagado automático / remoto, perilla | **Descartados** |
