@@ -27,8 +27,6 @@ Nota: Marlin renombro DEFAULT_Kp/Ki/Kd -> DEFAULT_KP/KI/KD (ya adaptado).
 4. Copia la carpeta assets (SD_assets_LVGL.zip) a la RAIZ de la SD. Debe estar la primera vez que arranca.
 5. Tras flashear: M502, M500 (valores de fabrica nuevos) y recalibrar tactil; reajustar PID (M303) y K de LIN_ADVANCE.
 
-## No verificado
-No se pudo compilar en el entorno de trabajo (PlatformIO sin acceso a su registro). Si falla el build, pega el error.
 
 ## Pantallas nuevas (codigo en Marlin/src/lcd/extui/mks_ui)
 - Miniatura que se llena: preview_fill_update() en draw_printing.cpp. Lo impreso a todo color, lo pendiente atenuado, linea azul = altura. Se basa en el % de avance del archivo.
@@ -43,3 +41,20 @@ No se pudo compilar en el entorno de trabajo (PlatformIO sin acceso a su registr
 - Para cambiar la paleta: editar herramientas/tema_arquis.py (+ LV_COLOR_BACKGROUND en draw_ui.h) y regenerar:
     python tema_arquis.py <assets_originales> <assets_salida>
 - IMPORTANTE: firmware y assets deben ser del mismo tema (si no, se ven cuadros de otro color alrededor de los iconos).
+
+## Pruebas realizadas (17-nov-2026)
+- COMPILA: env mks_robin_nano_v3_1_usb_flash_drive_msc, Marlin 2.1.2.10, PlatformIO + ststm32 12.1.1, arm-none-eabi-gcc 13.2.
+  Resultado: Robin_nano_v3.bin = 382 KB. Flash 80.4 % (381864 de 475136 bytes), RAM 57.4 % (75232 de 131072 bytes).
+  Nota: se compilo con GCC 13 del sistema; PlatformIO usa GCC 9.2 oficial en tu PC. Compila alli de nuevo antes de flashear.
+- La compilacion detecto y se corrigieron 4 incompatibilidades de la config con LVGL:
+  * LCD_BED_LEVELING -> DESACTIVADO (LVGL no lo soporta; LVGL trae sus propias pantallas de nivelacion).
+  * ADVANCED_PAUSE_FEATURE exige EMERGENCY_PARSER, HOST_ACTION_COMMANDS y HOST_PROMPT_SUPPORT -> ACTIVADOS.
+  * PARK_HEAD_ON_PAUSE -> ACTIVADO (estacionar el cabezal al pausar / cambiar filamento).
+- Las funciones nuevas (pantalla cancelar objeto, relleno de miniatura, boton Quitar objeto, aprendizaje de posiciones) estan dentro del binario.
+- Pruebas de logica en PC con el codigo real: herramientas/pruebas/run_tests.sh
+  * Relleno de miniatura: 11 actualizaciones (incluye retroceso y repintado total) -> 0 pixeles incorrectos.
+  * Cancelar objeto: cajas XY, entrelazado por capas, cancelar/restaurar, limites (0..31), reset -> OK.
+- La SD trae todos los iconos que el firmware exige al arrancar (120 de 120; el unico "faltante" es una diferencia de mayusculas del propio MKS).
+
+## NO probado (necesita la impresora)
+Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impresion real. Primera prueba sugerida: archivo corto con 2-3 objetos (M486) y la boquilla sin filamento / cama fria.

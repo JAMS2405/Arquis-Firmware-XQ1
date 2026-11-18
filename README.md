@@ -8,7 +8,7 @@ Firmware de la impresora 3D **Arquis XQ1** (Arquis Soluciones Tecnologicas). Bas
 - Herramientas (logo y tema): [`herramientas/`](herramientas/)
 - Ver exactamente lo que cambia Arquis respecto a Marlin: `git diff <commit-base> HEAD`
 
-> Estado: compilacion y pruebas en la impresora pendientes.
+> Estado: **compila** (Flash 80 %, RAM 57 %) y pasa las pruebas de logica en PC (`herramientas/pruebas/run_tests.sh`). Pendiente: probar en la impresora.
 
 ---
 
