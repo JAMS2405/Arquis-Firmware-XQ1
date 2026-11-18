@@ -30,6 +30,14 @@ extern const lv_img_dsc_t arq_icon_file;
 extern const lv_img_dsc_t arq_icon_speed;
 extern const lv_img_dsc_t arq_icon_objects;
 extern const lv_img_dsc_t arq_icon_sliders;
+extern const lv_img_dsc_t arq_icon_plus;
+extern const lv_img_dsc_t arq_icon_minus;
+extern const lv_img_dsc_t arq_icon_up;
+extern const lv_img_dsc_t arq_icon_down;
+extern const lv_img_dsc_t arq_icon_left;
+extern const lv_img_dsc_t arq_icon_right;
+extern const lv_img_dsc_t arq_icon_power;
+extern const lv_img_dsc_t arq_icon_filament;
 
 #define ARQ_ICON_SMALL 20
 // Iconos pequenos (20 px): ventiladores

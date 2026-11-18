@@ -49,7 +49,9 @@ typedef enum {
   ARQ_LAYOUT_PRINT,    // tarjeta de impresion: archivo, barra, porcentaje, estado, tiempos
   ARQ_LAYOUT_DIALOG,   // cuadro de dialogo: titulo y mensaje con ajuste de linea
   ARQ_LAYOUT_JOB,      // supervision: archivo, barra, porcentaje grande y dos lineas de tiempo (title, value, value2, sub, pct)
-  ARQ_LAYOUT_LIST      // lista de datos: punto de estado, nombre y valor (+ objetivo) alineados a la derecha
+  ARQ_LAYOUT_LIST,     // lista de datos: punto de estado, nombre y valor (+ objetivo) alineados a la derecha
+  ARQ_LAYOUT_PICK,     // tarjeta seleccionable compacta (82 px): icono, nombre, valor y objetivo; anillo azul si esta seleccionada
+  ARQ_LAYOUT_BIG       // valor grande centrado: titulo arriba, cifra, texto de estado abajo (o barra)
 } arq_layout_t;
 
 // Todas las funciones aceptan nullptr (si el heap de LVGL se agota, arq_card_create devuelve nullptr y nada falla).
@@ -65,6 +67,8 @@ void arq_card_set_percent(lv_obj_t *c, uint8_t percent);      // barra / tarjeta
 void arq_card_set_bar_tint(lv_obj_t *c, arq_tint_t tint);     // color de relleno de la barra (ARQ_TINT_AUTO = azul del tema)
 void arq_card_set_logo(lv_obj_t *c, bool show);               // solo cabecera: muestra la marca ARQUIS
 void arq_card_set_kind(lv_obj_t *c, arq_btn_kind_t kind);     // cambia el tipo de boton (p. ej. Cancelar -> Restaurar)
+void arq_card_set_selected(lv_obj_t *c, bool selected);       // anillo azul de seleccion (azul = seleccion)
+void arq_card_set_show_bar(lv_obj_t *c, bool show);           // ARQ_LAYOUT_BIG: barra de porcentaje abajo (en lugar del texto de estado)
 void arq_card_set_disabled(lv_obj_t *c, bool disabled);       // deshabilitado: aspecto gris y no recibe toques ni foco
 void arq_card_refresh(lv_obj_t *c);                           // redibuja (si el contenido de un buffer cambio)
 

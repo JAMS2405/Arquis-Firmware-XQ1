@@ -31,3 +31,24 @@
 #define Y_BED_SIZE 220
 #define TEST(n,b) !!((n)&_BV32(b))    // macros.h real: TEST(n,b)
 #define _BV32(b) (1UL << (b))
+// --- anadidos para arquis_controls.cpp (valores de la configuracion del XQ1; solo verifican que el codigo compila) ---
+#include <stdio.h>
+#define ENA_HAS_HOTEND 1
+#define ENA_HAS_HEATED_BED 1
+#define ENA_HAS_MULTI_EXTRUDER 0
+#define HAS_FAN 1
+#define HEATER_0_MAXTEMP 275
+#define WATCH_TEMP_INCREASE 2
+#define BED_MAXTEMP 150
+#define WATCH_BED_TEMP_INCREASE 2
+#define PREHEAT_1_LABEL "PLA"
+#define PREHEAT_2_LABEL "ABS"
+#define PREHEAT_1_TEMP_HOTEND 210
+#define PREHEAT_2_TEMP_HOTEND 240
+#define PREHEAT_1_TEMP_BED 60
+#define PREHEAT_2_TEMP_BED 90
+#define PSTR(s) s
+#define sprintf_P sprintf
+#define TERN_(O,A) A
+#define TERN0(O,A) A
+char *dtostrf(double, signed char, unsigned char, char *);

@@ -8,6 +8,7 @@
 #include "arquis_dashboard_view.h"
 #include "arquis_print_view.h"
 #include "arquis_objects_view.h"
+#include "arquis_ctrl_view.h"
 
 extern "C" {   // ganchos que el firmware real define en draw_print_file.cpp (miniatura de G-code) y la libreria: no se usan aqui
   uint32_t lv_open_gcode_file(char *) { return 0; }
@@ -128,6 +129,31 @@ static void objects_screen(const arq_obj_model_t &m, const char *shot) {
   lv_obj_t *scr = new_screen();
   arq_objects_build(scr, ocb);
   arq_objects_update(&m);
+  if (shot) dump(shot);
+}
+
+// ---- Pantallas de control (Etapa 4) ---------------------------------------------------------------------------------------------
+static int c_last = -1, c_count = 0;
+static void ccb(lv_obj_t *o, lv_event_t ev) { if (ev == LV_EVENT_RELEASED) { ++c_count; c_last = o->mks_obj_id; } }
+static arq_temps_model_t tmodel(int sel, int hc, int ht, int bc, int bt, int step = 5) { arq_temps_model_t m; memset(&m, 0, sizeof(m)); m.hot_cur = hc; m.hot_tgt = ht; m.hot_tol = 3; m.bed_cur = bc; m.bed_tgt = bt; m.bed_tol = 3; m.sel = sel; m.step = step; m.p1 = sel ? 60 : 200; m.p2 = sel ? 100 : 240; return m; }
+static void temps_screen(const arq_temps_model_t &m, const char *shot, bool hot = true, bool bed = true) { lv_obj_t *s = new_screen(); arq_temps_build(s, ccb, hot, bed, "PLA", "ABS"); arq_temps_update(&m); if (shot) dump(shot); }
+static const char *const fan_names[2] = { "Capa", "Aux 1" };
+static void fans_screen(uint8_t n, uint8_t sel, uint8_t p0, uint8_t p1, const char *shot) { lv_obj_t *s = new_screen(); arq_fanctl_build(s, ccb, n, fan_names); arq_fanctl_model_t m; memset(&m, 0, sizeof(m)); m.n = n; m.sel = sel; m.pct[0] = p0; m.pct[1] = p1; arq_fanctl_update(&m); if (shot) dump(shot); }
+static arq_move_model_t mmodel(int step, int homed) { arq_move_model_t m; memset(&m, 0, sizeof(m)); m.pos_cmm[0] = 12550; m.pos_cmm[1] = -340; m.pos_cmm[2] = 1205; m.homed = homed; m.step = step; return m; }
+static void move_screen(const arq_move_model_t &m, const char *shot) { lv_obj_t *s = new_screen(); arq_move_build(s, ccb); arq_move_update(&m); if (shot) dump(shot); }
+static arq_extrude_model_t emodel(int cur, int tgt, bool ok, int amount) { arq_extrude_model_t m; memset(&m, 0, sizeof(m)); m.cur = cur; m.tgt = tgt; m.tol = 3; m.min_temp = 170; m.hot_enough = ok; m.amount = amount; m.step_mm = 5; m.speed = 1; return m; }
+static void extrude_screen(const arq_extrude_model_t &m, const char *shot, bool multi = false) { lv_obj_t *s = new_screen(); arq_extrude_build(s, ccb, multi); arq_extrude_update(&m); if (shot) dump(shot); }
+static void opts_screen(bool working, bool objs, bool autooff, const char *shot) {
+  lv_obj_t *s = new_screen();
+  arq_opt_item_t it[ARQ_OPT_MAX]; uint8_t n = 0;
+  it[n++] = { &arq_icon_temp, "Temperatura", nullptr, ARQ_BTN_SECONDARY };
+  it[n++] = { &arq_icon_filament, "Filamento", nullptr, ARQ_BTN_SECONDARY };
+  it[n++] = { &arq_icon_fan, "Ventiladores", nullptr, ARQ_BTN_SECONDARY };
+  it[n++] = { &arq_icon_power, "Autoapagado", autooff ? "Activado" : "Desactivado", (uint8_t)(autooff ? ARQ_BTN_SUCCESS : ARQ_BTN_SECONDARY) };
+  if (working) { it[n++] = { &arq_icon_speed, "Velocidad", nullptr, ARQ_BTN_SECONDARY }; it[n++] = { &arq_icon_level, "Babystep", nullptr, ARQ_BTN_SECONDARY }; }
+  else { it[n++] = { &arq_icon_down, "Extruir", nullptr, ARQ_BTN_SECONDARY }; it[n++] = { &arq_icon_move, "Mover", nullptr, ARQ_BTN_SECONDARY }; }
+  if (objs) it[n++] = { &arq_icon_objects, "Objetos", nullptr, ARQ_BTN_SECONDARY };
+  arq_opts_build(s, ccb, "Opciones", it, n);
   if (shot) dump(shot);
 }
 
@@ -453,6 +479,59 @@ static void tests() {
       lv_disp_t *d = lv_disp_get_default(); run(); arq_objects_update(&m); CHECK(d->inv_p == 0, "modelo sin cambios: nada que redibujar");
       m.sel = 3; arq_objects_update(&m); CHECK(d->inv_p > 0 && d->inv_p <= 4, "cambio de seleccion: pocas zonas invalidadas (%u)", (unsigned)d->inv_p);
       new_screen(); run(); }
+
+    // 10) Pantallas de control (Etapa 4) --------------------------------------------------------------------------------------
+    { new_screen(); run(); const uint32_t b = used(); uint32_t pk = 0;
+      auto peak = [&](const char *n, int count) { printf("[mem] %s: pico %u B (%d objetos)\n", n, (unsigned)pk, count); pk = 0; };
+      (void)peak;
+      struct S { const char *name; void (*mk)(); } scr[] = {
+        { "Temperatura", [] { temps_screen(tmodel(0, 187, 210, 44, 60), nullptr); } },
+        { "Ventiladores", [] { fans_screen(2, 0, 50, 0, nullptr); } },
+        { "Mover", [] { move_screen(mmodel(1, 7), nullptr); } },
+        { "Extrusion", [] { extrude_screen(emodel(210, 210, true, 35), nullptr); } },
+        { "Opciones", [] { opts_screen(true, true, true, nullptr); } } };
+      for (auto &c : scr) { new_screen(); const uint32_t b1 = used(); c.mk(); const uint32_t u = used() - b1; printf("[mem] %s: %u B\n", c.name, (unsigned)u); CHECK(u < 5200, "%s: %u B de heap (< 5200 B)", c.name, (unsigned)u); if (u > pk) pk = u; }
+      // peor caso: la pantalla mas grande con un dialogo abierto
+      arq_dialog_open("Cambiar filamento", "Se pausara la impresion y el cabezal se movera a la posicion de pausa.", "Pausar y cambiar", "Volver", false, dlg_cb, 901, 902); run();
+      lv_mem_monitor_t mm; lv_mem_monitor(&mm); printf("[mem] peor caso (Opciones + dialogo): usado %u B, libre %u B\n", (unsigned)(mm.total_size - mm.free_size), (unsigned)mm.free_size);
+      CHECK(mm.free_size >= 8192, "margen de heap en control + dialogo: %u B libres", (unsigned)mm.free_size); arq_dialog_close();
+      for (int i = 0; i < 100; ++i) for (auto &c : scr) c.mk();
+      new_screen(); run(); const uint32_t u1 = used();
+      for (int i = 0; i < 100; ++i) for (auto &c : scr) c.mk();
+      new_screen(); run(); const uint32_t u2 = used();
+      CHECK(u2 <= u1 && u1 <= b + 16, "500 + 500 ciclos de las 5 pantallas: sin fugas (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b); }
+
+    { // toques: cada control envia su identificador (y el boton Atras)
+      temps_screen(tmodel(0, 187, 210, 44, 60), nullptr);
+      struct T { int x, y, id; const char *n; } tt[] = { { 20, 22, ARQ_TID_BACK, "Atras" }, { 100, 90, ARQ_TID_HOT, "tarjeta Hotend" }, { 100, 180, ARQ_TID_BED, "tarjeta Cama" },
+        { 50, 290, ARQ_TID_S1, "paso 1" }, { 110, 290, ARQ_TID_S5, "paso 5" }, { 170, 290, ARQ_TID_S10, "paso 10" }, { 300, 170, ARQ_TID_DEC, "menos" }, { 410, 170, ARQ_TID_INC, "mas" },
+        { 270, 280, ARQ_TID_P1, "preajuste 1" }, { 345, 280, ARQ_TID_P2, "preajuste 2" }, { 430, 280, ARQ_TID_OFF, "apagar" } };
+      for (auto &t : tt) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Temperatura: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
+      fans_screen(2, 0, 50, 0, nullptr);
+      struct T2 { int x, y, id; const char *n; } t2[] = { { 100, 90, ARQ_FID_F0, "Capa" }, { 100, 180, ARQ_FID_F1, "Aux 1" }, { 300, 180, ARQ_FID_DEC, "menos" }, { 410, 180, ARQ_FID_INC, "mas" },
+        { 270, 280, ARQ_FID_OFF, "apagar" }, { 345, 280, ARQ_FID_HALF, "50%" }, { 430, 280, ARQ_FID_FULL, "100%" } };
+      for (auto &t : t2) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Ventiladores: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
+      fans_screen(1, 0, 10, 0, nullptr); c_count = 0; tap(100, 90); CHECK(c_count == 0, "un solo ventilador: la tarjeta no es un boton");
+      move_screen(mmodel(1, 7), nullptr);
+      struct T3 { int x, y, id; const char *n; } t3[] = { { 120, 90, ARQ_MID_YP, "Y+" }, { 50, 160, ARQ_MID_XN, "X-" }, { 190, 160, ARQ_MID_XP, "X+" }, { 120, 235, ARQ_MID_YN, "Y-" },
+        { 285, 100, ARQ_MID_ZP, "Z+" }, { 285, 220, ARQ_MID_ZN, "Z-" }, { 400, 175, ARQ_MID_S01, "0,1 mm" }, { 400, 230, ARQ_MID_S1, "1 mm" }, { 400, 290, ARQ_MID_S10, "10 mm" } };
+      for (auto &t : t3) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Mover: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
+      extrude_screen(emodel(210, 210, true, 0), nullptr);
+      c_count = 0; tap(360, 90); CHECK(c_count == 1 && c_last == ARQ_EID_IN, "Extrusion: con el hotend caliente 'Extruir' responde");
+      c_count = 0; tap(360, 180); CHECK(c_count == 1 && c_last == ARQ_EID_OUT, "Extrusion: con el hotend caliente 'Retraer' responde");
+      extrude_screen(emodel(28, 0, false, 0), nullptr);
+      c_count = 0; tap(360, 90); CHECK(c_count == 0, "SEGURIDAD: con el hotend frio 'Extruir' no recibe toques");
+      c_count = 0; tap(360, 180); CHECK(c_count == 0, "SEGURIDAD: con el hotend frio 'Retraer' no recibe toques");
+      c_count = 0; tap(120, 290); CHECK(c_count == 1 && c_last == ARQ_EID_TEMP, "Extrusion en frio: el acceso a Temperatura sigue disponible");
+      opts_screen(true, true, false, nullptr);
+      c_count = 0; tap(60, 120); CHECK(c_count == 1 && c_last == ARQ_XID_ITEM0, "Opciones: primer acceso -> id %d", c_last);
+      c_count = 0; tap(420, 120); CHECK(c_count == 1 && c_last == ARQ_XID_ITEM0 + 3, "Opciones: cuarto acceso (autoapagado) -> id %d", c_last);
+      c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_XID_BACK, "Opciones: Atras");
+      // un cambio de dato no redibuja de mas
+      lv_disp_t *d = lv_disp_get_default(); temps_screen(tmodel(0, 187, 210, 44, 60), nullptr); run();
+      arq_temps_model_t same = tmodel(0, 187, 210, 44, 60); arq_temps_update(&same); CHECK(d->inv_p == 0, "Temperatura: modelo sin cambios, nada que redibujar");
+      arq_temps_model_t chg = tmodel(0, 188, 210, 44, 60); arq_temps_update(&chg); CHECK(d->inv_p > 0 && d->inv_p <= 6, "Temperatura: un grado de cambio invalida pocas zonas (%u)", (unsigned)d->inv_p);
+      new_screen(); run(); }
   }
 
   printf("[test] %s\n", fails ? "HAY FALLOS" : "TODAS LAS PRUEBAS DEL SIMULADOR PASARON");
@@ -497,6 +576,16 @@ int main(int argc, char **argv) {
     objects_screen(omodel(9, 4, 4, 4, 0), nullptr);
     arq_dialog_open("Cancelar objeto 5", "Se dejar\xC3\xA1 de imprimir el objeto 5. Los dem\xC3\xA1s objetos siguen imprimi\xC3\xA9ndose.", "Cancelar objeto", "Volver", true, dlg_cb, 901, 902); dump("obj_7_dialogo"); arq_dialog_close();
     objects_screen(omodel(16, 15, 3, -1, 0, 24), "obj_8_mas_de_16"); }
+  { temps_screen(tmodel(0, 187, 210, 44, 60), "ctl_1_temp_hotend");
+    temps_screen(tmodel(1, 25, 0, 60, 60, 10), "ctl_2_temp_cama");
+    fans_screen(2, 0, 50, 0, "ctl_3_ventiladores");
+    fans_screen(1, 0, 100, 0, "ctl_4_ventilador_unico");
+    move_screen(mmodel(1, 7), "ctl_5_mover");
+    move_screen(mmodel(0, 3), "ctl_6_mover_sin_home");
+    extrude_screen(emodel(210, 210, true, 35), "ctl_7_extruir");
+    extrude_screen(emodel(28, 0, false, 0), "ctl_8_extruir_frio");
+    opts_screen(true, true, true, "ctl_9_opciones_imprimiendo");
+    opts_screen(false, false, false, "ctl_10_opciones_pausa"); }
   tests();
   return fails ? 1 : 0;
 }

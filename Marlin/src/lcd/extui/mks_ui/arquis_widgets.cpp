@@ -37,6 +37,8 @@ typedef struct {
 #define F_PRESSED  0x01
 #define F_LOGO     0x02
 #define F_DISABLED 0x04
+#define F_SELECTED 0x08
+#define F_BAR      0x10
 
 static bool focus_ring_visible;   // el anillo de foco solo se ve cuando la perilla mueve el foco (con uso tactil no debe verse)
 
@@ -198,6 +200,42 @@ static void draw_list(const lv_area_t *mask, const arq_card_ext_t *e, const lv_a
   }
 }
 
+// Tarjeta seleccionable compacta: [icono] nombre / valor grande ... objetivo
+static void draw_pick(const lv_area_t *mask, const arq_card_ext_t *e, const lv_area_t &a, const lv_style_t *icon_st, bool pressed) {
+  const lv_coord_t w = lv_area_get_width(&a), h = lv_area_get_height(&a), x0 = a.x1, y0 = a.y1;
+  lv_point_t ts;
+  lv_draw_rect(&a, mask, pressed ? arq_style_panel_pressed() : arq_style_panel(), LV_OPA_COVER);
+  if (e->icon) draw_icon(mask, x0 + 10, y0 + (h - ARQ_ICON_SIZE) / 2, e->icon, icon_st);
+  if (e->title) draw_text(mask, x0 + 58, y0 + 8, e->title, arq_style_text((arq_text_t)e->title_role));
+  if (e->value) draw_text(mask, x0 + 58, y0 + 28, e->value, arq_style_text((arq_text_t)e->value_role));
+  if (e->value2 && e->value2[0]) {
+    const lv_style_t *s2 = arq_style_text(ARQ_TEXT_BODY);
+    text_size(&ts, e->value2, s2);
+    draw_text(mask, x0 + w - 12 - ts.x, y0 + h - ts.y - 10, e->value2, s2);
+  }
+  if (e->dot_tint != ARQ_TINT_AUTO) draw_dot(mask, x0 + w - 17, y0 + 17, 5, (arq_tint_t)e->dot_tint);
+}
+
+// Valor grande centrado: titulo, cifra y estado (o barra de porcentaje)
+static void draw_big(const lv_area_t *mask, const arq_card_ext_t *e, const lv_area_t &a) {
+  const lv_coord_t w = lv_area_get_width(&a), h = lv_area_get_height(&a), x0 = a.x1, y0 = a.y1;
+  lv_point_t ts, vs = { 0, 0 };
+  lv_draw_rect(&a, mask, arq_style_panel(), LV_OPA_COVER);
+  if (e->title) draw_text_fit(mask, x0 + 12, y0 + 9, w - 40, e->title, arq_style_text((arq_text_t)e->title_role));
+  if (e->value) {
+    const lv_style_t *st = arq_style_text((arq_text_t)e->value_role);
+    text_size(&vs, e->value, st);
+    draw_text(mask, x0 + (w - vs.x) / 2, y0 + 30 + (h - 30 - 30 - vs.y) / 2, e->value, st);
+  }
+  if (e->flags & F_BAR) draw_bar(mask, x0 + 12, y0 + h - 16, w - 24, 6, e->pct, (arq_tint_t)e->bar_tint);
+  else if (e->sub && e->sub[0]) {
+    const lv_style_t *st = arq_style_text((arq_text_t)e->sub_role);
+    text_size(&ts, e->sub, st);
+    draw_text_fit(mask, x0 + (w - ts.x) / 2 < x0 + 4 ? x0 + 4 : x0 + (w - ts.x) / 2, y0 + h - ts.y - 9, w - 8, e->sub, st);
+  }
+  if (e->dot_tint != ARQ_TINT_AUTO) draw_dot(mask, x0 + w - 17, y0 + 17, 5, (arq_tint_t)e->dot_tint);
+}
+
 static bool card_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t mode) {
   if (mode == LV_DESIGN_COVER_CHK) return false;        // esquinas redondeadas: no cubre todo el area
   if (mode != LV_DESIGN_DRAW_MAIN) return true;
@@ -218,9 +256,13 @@ static bool card_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t 
     case ARQ_LAYOUT_TILE: {
       lv_draw_rect(&a, mask, btn, LV_OPA_COVER);
       if (e->title) text_size(&ts, e->title, btn);
-      const lv_coord_t gap = 4, total = (e->icon ? ARQ_ICON_SIZE + gap : 0) + ts.y, top = y0 + (h - total) / 2;
+      const bool has_sub = e->sub && e->sub[0];
+      lv_point_t ss = { 0, 0 };
+      if (has_sub) text_size(&ss, e->sub, arq_style_text((arq_text_t)e->sub_role));
+      const lv_coord_t gap = 4, total = (e->icon ? ARQ_ICON_SIZE + gap : 0) + ts.y + (has_sub ? ss.y + 2 : 0), top = y0 + (h - total) / 2;
       if (e->icon) draw_icon(mask, x0 + (w - ARQ_ICON_SIZE) / 2, top, e->icon, icon_st);
       if (e->title) draw_text_fit(mask, x0 + (w - ts.x) / 2 < x0 + 2 ? x0 + 2 : x0 + (w - ts.x) / 2, top + (e->icon ? ARQ_ICON_SIZE + gap : 0), w - 4, e->title, btn);
+      if (has_sub) draw_text_fit(mask, x0 + (w - ss.x) / 2 < x0 + 2 ? x0 + 2 : x0 + (w - ss.x) / 2, top + (e->icon ? ARQ_ICON_SIZE + gap : 0) + ts.y + 2, w - 4, e->sub, arq_style_text((arq_text_t)e->sub_role));
     } break;
 
     case ARQ_LAYOUT_BUTTON: {
@@ -236,6 +278,8 @@ static bool card_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t 
     case ARQ_LAYOUT_PRINT: draw_print(mask, e, a, btn); break;
     case ARQ_LAYOUT_JOB: draw_job(mask, e, a); break;
     case ARQ_LAYOUT_LIST: draw_list(mask, e, a); break;
+    case ARQ_LAYOUT_PICK: draw_pick(mask, e, a, icon_st, pressed); break;
+    case ARQ_LAYOUT_BIG: draw_big(mask, e, a); break;
 
     case ARQ_LAYOUT_CHIP: {
       lv_draw_rect(&a, mask, arq_style_chip(), LV_OPA_COVER);
@@ -274,6 +318,7 @@ static bool card_design(lv_obj_t *o, const lv_area_t *mask_in, lv_design_mode_t 
       }
     } break;
   }
+  if (e->flags & F_SELECTED) lv_draw_rect(&a, mask, arq_style_focus(), LV_OPA_COVER);   // seleccion: anillo azul
   // Foco de la perilla (encoder): anillo azul sobre las tarjetas clicables
   lv_group_t *grp = (lv_group_t *)lv_obj_get_group(o);
   if (focus_ring_visible && grp && e->user_cb && lv_group_get_focused(grp) == o) lv_draw_rect(&a, mask, arq_style_focus(), LV_OPA_COVER);
@@ -325,6 +370,8 @@ void arq_card_set_bar_tint(lv_obj_t *c, arq_tint_t t)             { NN(c) upd<ui
 void arq_card_set_logo(lv_obj_t *c, bool s)                       { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = s ? (e->flags | F_LOGO) : (e->flags & ~F_LOGO); upd<uint8_t>(c, e->flags, f); }
 void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->fans = rows; upd<uint8_t>(c, e->nfans, n); lv_obj_invalidate(c); }
 void arq_card_set_rows(lv_obj_t *c, arq_list_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->rows = rows; e->nrows = n; lv_obj_invalidate(c); }
+void arq_card_set_selected(lv_obj_t *c, bool v)                   { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = v ? (e->flags | F_SELECTED) : (e->flags & ~F_SELECTED); upd<uint8_t>(c, e->flags, f); }
+void arq_card_set_show_bar(lv_obj_t *c, bool v)                   { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = v ? (e->flags | F_BAR) : (e->flags & ~F_BAR); upd<uint8_t>(c, e->flags, f); }
 void arq_card_set_kind(lv_obj_t *c, arq_btn_kind_t k)             { NN(c) upd<uint8_t>(c, ext(c)->kind, (uint8_t)k); }
 void arq_card_refresh(lv_obj_t *c)                                { NN(c) lv_obj_invalidate(c); }
 void arq_card_set_disabled(lv_obj_t *c, bool d) {
