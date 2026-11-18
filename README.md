@@ -1,164 +1,138 @@
-# Arquis Firmware XQ1
-
-Firmware de la impresora 3D **Arquis XQ1** (Arquis Soluciones Tecnologicas). Basado en Marlin 2.1.2.10 para MKS Robin Nano V3.1 con pantalla MKS TS35 (LVGL tactil).
-
-**ARQUIS UI 1.0.0**: interfaz táctil propia (Dashboard, impresión, control, ajustes) que sustituye el aspecto de Makerbase **sin quitar ninguna función de Marlin**.
-
-| Quiero… | Documento |
-|---|---|
-| Ver qué incluye, las cifras y las limitaciones | [`docs/arquis/ENTREGA_v1.0.0.md`](docs/arquis/ENTREGA_v1.0.0.md) |
-| Compilar, empaquetar e instalar en la impresora | [`docs/arquis/GUIA_INSTALACION.md`](docs/arquis/GUIA_INSTALACION.md) |
-| Usar la pantalla (con capturas) | [`docs/arquis/GUIA_USUARIO.md`](docs/arquis/GUIA_USUARIO.md) |
-| Probar una instalación nueva | [`docs/arquis/LISTA_VERIFICACION.md`](docs/arquis/LISTA_VERIFICACION.md) |
-| Historial de cambios por etapa | [`CAMBIOS.md`](CAMBIOS.md) y `docs/arquis/ARQUIS_UI_etapa_*.md` |
-
-- Carpeta `assets` para la SD: [`sd_assets/`](sd_assets/) (iconos, fuente y logo de arranque de ARQUIS). **Usa esta, no la que descarga PlatformIO.**
-- Paquete de entrega (firmware + assets + instrucciones + sumas de verificación): `python herramientas/arquis_ui/empaquetar_entrega.py RUTA/Robin_nano_v3.bin`
-- Simulador y pruebas de la interfaz: [`herramientas/arquis_ui/sim/`](herramientas/arquis_ui/sim/)
-- Ver exactamente lo que cambia Arquis respecto a Marlin: `git diff origin/main...HEAD` (fuera de la carpeta de la interfaz solo cambia `Marlin/Configuration.h`).
-
-> Estado (v1.0.0): **compila** (Flash ≈ 85,5 %, RAM ≈ 61,6 %), simulador con 213 comprobaciones sin fallos, y **probada en la impresora** etapa a etapa. Pendiente conocido: la cama marca ≈ 45 °C al encender con todo apagado (verificar el termistor; ver las notas de la versión).
-
----
-
-<p align="center"><img src="buildroot/share/pixmaps/logo/marlin-outrun-nf-500.png" height="250" alt="MarlinFirmware's logo" /></p>
-
-<h1 align="center">Marlin 3D Printer Firmware</h1>
-
 <p align="center">
-    <a href="/LICENSE"><img alt="GPL-V3.0 License" src="https://img.shields.io/github/license/marlinfirmware/marlin.svg"></a>
-    <a href="https://github.com/MarlinFirmware/Marlin/graphs/contributors"><img alt="Contributors" src="https://img.shields.io/github/contributors/marlinfirmware/marlin.svg"></a>
-    <a href="https://github.com/MarlinFirmware/Marlin/releases"><img alt="Last Release Date" src="https://img.shields.io/github/release-date/MarlinFirmware/Marlin"></a>
-    <a href="https://github.com/MarlinFirmware/Marlin/actions/workflows/ci-build-tests.yml"><img alt="CI Status" src="https://github.com/MarlinFirmware/Marlin/actions/workflows/ci-build-tests.yml/badge.svg"></a>
-    <a href="https://github.com/sponsors/thinkyhead"><img alt="GitHub Sponsors" src="https://img.shields.io/github/sponsors/thinkyhead?color=db61a2"></a>
-    <br />
-    <a href="https://fosstodon.org/@marlinfirmware"><img alt="Follow MarlinFirmware on Mastodon" src="https://img.shields.io/mastodon/follow/109450200866020466?domain=https%3A%2F%2Ffosstodon.org&logoColor=%2300B&style=social"></a>
+  <img src="herramientas/logo_arquis.png" height="130" alt="ARQUIS">
 </p>
 
-Additional documentation can be found at the [Marlin Home Page](//marlinfw.org/).
-Please test this firmware and let us know if it misbehaves in any way. Volunteers are standing by!
+<h1 align="center">Arquis Firmware XQ1</h1>
 
-## Marlin 2.1
+<p align="center">
+  <b>ARQUIS UI 1.0.0</b> — interfaz táctil propia para la impresora 3D <b>Arquis XQ1</b><br>
+  Marlin 2.1.2.10 · MKS Robin Nano V3.1 · pantalla MKS TS35 480×320
+</p>
 
-Marlin 2.1 continues to support both 32-bit ARM and 8-bit AVR boards while adding support for up to 9 coordinated axes and to up to 8 extruders.
+<p align="center">
+  <img alt="Marlin" src="https://img.shields.io/badge/Marlin-2.1.2.10-blue">
+  <img alt="LVGL" src="https://img.shields.io/badge/LVGL-6.1.1--MKS-informational">
+  <img alt="Placa" src="https://img.shields.io/badge/placa-MKS%20Robin%20Nano%20V3.1-lightgrey">
+  <img alt="Licencia" src="https://img.shields.io/badge/licencia-GPL--3.0-green">
+</p>
 
-Download earlier versions of Marlin on the [Releases page](//github.com/MarlinFirmware/Marlin/releases).
+<table>
+  <tr>
+    <td><img src="docs/arquis/ui/dash_1_lista_x2.png" alt="Dashboard"></td>
+    <td><img src="docs/arquis/ui/print_1_imprimiendo_x2.png" alt="Supervisión de la impresión"></td>
+    <td><img src="docs/arquis/ui/obj_1_normal_x2.png" alt="Cancelar objeto"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Dashboard</sub></td>
+    <td align="center"><sub>Imprimiendo</sub></td>
+    <td align="center"><sub>Cancelar un objeto</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/arquis/ui/st5_6_ajustes_x2.png" alt="Ajustes"></td>
+    <td><img src="docs/arquis/ui/st5b_1_parametros_x2.png" alt="Parámetros de máquina"></td>
+    <td><img src="docs/arquis/ui/st5_3_sistema_x2.png" alt="Sistema y diagnóstico"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Ajustes</sub></td>
+    <td align="center"><sub>Parámetros</sub></td>
+    <td align="center"><sub>Sistema y diagnóstico</sub></td>
+  </tr>
+</table>
 
-## Example Configurations
+## ¿Qué es?
+Un firmware **Marlin 2.1.2.10** para la Arquis XQ1 con una interfaz propia que sustituye el aspecto de Makerbase **sin quitar ninguna función de Marlin**: paleta, tipografía (Inter), iconos y logo de ARQUIS, pensados para una pantalla pequeña y táctil. Las acciones que mueven la máquina, calientan o guardan datos son las llamadas originales de MKS/Marlin; solo cambia cómo se ven y se añaden confirmaciones donde una pulsación puede estropear una pieza.
 
-Before you can build Marlin for your machine you'll need a configuration for your specific hardware. Upon request, your vendor will be happy to provide you with the complete source code and configurations for your machine, but you'll need to get updated configuration files if you want to install a newer version of Marlin. Fortunately, Marlin users have contributed dozens of tested configurations to get you started. Visit the [MarlinFirmware/Configurations](//github.com/MarlinFirmware/Configurations) repository to find the right configuration for your hardware.
+## Características
+- **Dashboard** con temperaturas, ventiladores y estado de la máquina (*Reposo, Lista, Calentando, Temp. alcanzada, Enfriando, Imprimiendo, Pausada, Error*).
+- **Imprimir** con explorador de la SD y **miniatura del G-code** antes de empezar; **supervisión** con progreso, tiempos y control de pausa; **cancelar un objeto** sin parar el resto de la impresión.
+- **Control** de temperatura, ventiladores, movimiento, extrusión, velocidad, *babystep*, *home*, nivelación de cama y **cambio de filamento**.
+- **Ajustes**: ~15 pantallas de parámetros de máquina con teclado numérico propio, memoria (EEPROM), **sistema y diagnóstico en vivo** (sensores y finales de carrera), Wi-Fi, idioma (español / inglés) y consola de G-code.
+- **Seguridad**: confirmación para cancelar, cambiar filamento en plena impresión, nivelación automática, apagar y restaurar valores de fábrica; durante una impresión *Mover* y *Ajustes* se bloquean.
+- **Ligera**: ≈ 45 KB de Flash (11 %) y el peor caso usa ≈ 7 KB de los 16 KB del heap de LVGL.
 
-## Building Marlin 2.1
+Recorrido completo con capturas: [`docs/arquis/GUIA_USUARIO.md`](docs/arquis/GUIA_USUARIO.md).
 
-To build and upload Marlin you will use one of these tools:
+## Base
+| | |
+|---|---|
+| Firmware | Marlin **2.1.2.10** |
+| Placa | MKS Robin Nano V3.1 (STM32F407VET6) · TMC2209 |
+| Pantalla | MKS TS35 480×320 SPI · táctil XPT2046 · memoria W25Q SPI |
+| Interfaz | `TFT_LVGL_UI` · LVGL **6.1.1-MKS** (sin actualizar la librería ni cambiar los controladores) |
+| Entorno de PlatformIO | `mks_robin_nano_v3_1_usb_flash_drive_msc` |
 
-- The free [Visual Studio Code](//code.visualstudio.com/download) using the [Auto Build Marlin](//marlinfw.org/docs/basics/auto_build_marlin.html) extension.
-- The free [Arduino IDE](//www.arduino.cc/en/main/software) : See [Building Marlin with Arduino](//marlinfw.org/docs/basics/install_arduino.html)
-- You can also use VSCode with devcontainer : See [Installing Marlin (VSCode devcontainer)](http://marlinfw.org/docs/basics/install_devcontainer_vscode.html).
+## Inicio rápido
+Requisitos: PlatformIO, Python 3 y una tarjeta SD en FAT32.
+```bash
+# 1) Compilar
+pio run -e mks_robin_nano_v3_1_usb_flash_drive_msc
 
-Marlin is optimized to build with the **PlatformIO IDE** extension for **Visual Studio Code**. You can still build Marlin with **Arduino IDE**, and we hope to improve the Arduino build experience, but at this time PlatformIO is the better choice.
+# 2) Armar el paquete para la SD (firmware + assets + instrucciones + sumas SHA-256)
+python herramientas/arquis_ui/empaquetar_entrega.py RUTA/Robin_nano_v3.bin --salida entrega
+```
+3. Copia a la **raíz de la SD** el `Robin_nano_v3.bin` y la carpeta `assets` del paquete, con la impresora apagada y fría, y enciende.
+4. Comprueba que *Ajustes → Sistema* dice **Interfaz ARQUIS 1.0.0** y recorre la [lista de verificación](docs/arquis/LISTA_VERIFICACION.md).
 
-## 8-Bit AVR Boards
+> ⚠️ Usa la carpeta [`sd_assets/`](sd_assets/) de este repositorio (renombrada a `assets`), **no** la que descarga PlatformIO: esa trae el logo y los iconos originales de Makerbase.
+> Los pasos completos, la solución a problemas frecuentes (p. ej. `TMCStepper.h` en una unidad externa) y cómo volver atrás están en [`GUIA_INSTALACION.md`](docs/arquis/GUIA_INSTALACION.md).
 
-We intend to continue supporting 8-bit AVR boards in perpetuity, maintaining a single codebase that can apply to all machines. We want casual hobbyists and tinkerers and owners of older machines to benefit from the community's innovations just as much as those with fancier machines. Plus, those old AVR-based machines are often the best for your testing and feedback!
+## Lo que cambia respecto a Marlin
+Fuera de la carpeta de la interfaz (`Marlin/src/lcd/extui/mks_ui/`), de la documentación y de las herramientas, **el único archivo de Marlin modificado es `Marlin/Configuration.h`**:
+- `#define ARQUIS_UI` activa la interfaz (comentarlo devuelve la pantalla original de MKS);
+- `ARQUIS_TFT_BYTE_SWAP` desactivado (con él activo los colores salían rotos).
 
-## Hardware Abstraction Layer (HAL)
+**No se modificó** movimiento, planificador, temperatura ni protecciones térmicas, drivers TMC, finales de carrera ni ajustes de la máquina. Los archivos originales de MKS conservan su código dentro de bloques `#if ENABLED(ARQUIS_UI)` / `#else`. Compruébalo con:
+```bash
+git diff 0060ade HEAD --stat -- . ':!Marlin/src/lcd/extui/mks_ui' ':!docs' ':!herramientas' ':!sd_assets' ':!README.md' ':!CAMBIOS.md'   # 0060ade = main antes de ARQUIS UI
+```
 
-Marlin includes an abstraction layer to provide a common API for all the platforms it targets. This allows Marlin code to address the details of motion and user interface tasks at the lowest and highest levels with no system overhead, tying all events directly to the hardware clock.
+## Cifras (compilación real, Robin Nano V3.1)
+| | |
+|---|---|
+| Flash | **≈ 85,6 %** (406 800 B de 475 136 B útiles; quedan ≈ 68 KB) |
+| RAM | ≈ 61,6 % |
+| Código de ARQUIS UI | ≈ 45 KB (11 % de la Flash) |
+| Heap de LVGL, peor caso | ≈ 7 KB usados, ≥ 9,2 KB libres de 16 KB |
+Desglose por módulo en [`ARQUIS_UI_etapa_6.md`](docs/arquis/ARQUIS_UI_etapa_6.md); medir de nuevo con `python herramientas/arquis_ui/auditar_flash.py RUTA/Robin_nano_v3.elf`.
 
-Every new HAL opens up a world of hardware. At this time we need HALs for RP2040 and the Duet3D family of boards. A HAL that wraps an RTOS is an interesting concept that could be explored. Did you know that Marlin includes a Simulator that can run on Windows, macOS, and Linux? Join the Discord to help move these sub-projects forward!
+## Documentación
+| Quiero… | Documento |
+|---|---|
+| Ver qué incluye, las cifras y las limitaciones | [`ENTREGA_v1.0.0.md`](docs/arquis/ENTREGA_v1.0.0.md) |
+| Compilar, empaquetar e instalar | [`GUIA_INSTALACION.md`](docs/arquis/GUIA_INSTALACION.md) |
+| Usar la pantalla (con capturas) | [`GUIA_USUARIO.md`](docs/arquis/GUIA_USUARIO.md) |
+| Aceptar una instalación nueva | [`LISTA_VERIFICACION.md`](docs/arquis/LISTA_VERIFICACION.md) |
+| Historial de cambios por etapa | [`CAMBIOS.md`](CAMBIOS.md) y [`docs/arquis/`](docs/arquis/) (`ARQUIS_UI_etapa_*.md`) |
+| El README original de Marlin | [`docs/README_MARLIN.md`](docs/README_MARLIN.md) |
 
-### Supported Platforms
+## Estructura del repositorio
+| Ruta | Qué es |
+|---|---|
+| `Marlin/src/lcd/extui/mks_ui/arquis_*` | Interfaz ARQUIS: vistas puras de LVGL (`*_view.cpp`) y pegamento con Marlin |
+| `Marlin/src/lcd/extui/mks_ui/draw_*.cpp` | Pantallas originales de MKS, con bloques `ARQUIS_UI` |
+| `sd_assets/` | Carpeta `assets` de la SD: logo de arranque, iconos y fuente |
+| `herramientas/arquis_ui/` | Simulador y pruebas (`sim/`), generadores de iconos, logo y fuentes, `auditar_flash.py`, `empaquetar_entrega.py` |
+| `docs/arquis/` | Guías, notas de versión, documentación por etapa y capturas |
 
-  Platform|MCU|Example Boards
-  --------|---|-------
-  [Arduino AVR](//www.arduino.cc/)|ATmega|RAMPS, Melzi, RAMBo
-  [Teensy++ 2.0](//www.microchip.com/en-us/product/AT90USB1286)|AT90USB1286|Printrboard
-  [Arduino Due](//www.arduino.cc/en/Guide/ArduinoDue)|SAM3X8E|RAMPS-FD, RADDS, RAMPS4DUE
-  [ESP32](//github.com/espressif/arduino-esp32)|ESP32|FYSETC E4, E4d@BOX, MRR
-  [LPC1768](//www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc1700-cortex-m3/512-kb-flash-64-kb-sram-ethernet-usb-lqfp100-package:LPC1768FBD100)|ARM® Cortex-M3|MKS SBASE, Re-ARM, Selena Compact
-  [LPC1769](//www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc1700-cortex-m3/512-kb-flash-64-kb-sram-ethernet-usb-lqfp100-package:LPC1769FBD100)|ARM® Cortex-M3|Smoothieboard, Azteeg X5 mini, TH3D EZBoard
-  [STM32F103](//www.st.com/en/microcontrollers-microprocessors/stm32f103.html)|ARM® Cortex-M3|Malyan M200, GTM32 Pro, MKS Robin, BTT SKR Mini
-  [STM32F401](//www.st.com/en/microcontrollers-microprocessors/stm32f401.html)|ARM® Cortex-M4|ARMED, Rumba32, SKR Pro, Lerdge, FYSETC S6, Artillery Ruby
-  [STM32F7x6](//www.st.com/en/microcontrollers-microprocessors/stm32f7x6.html)|ARM® Cortex-M7|The Borg, RemRam V1
-  [STM32G0B1RET6](//www.st.com/en/microcontrollers-microprocessors/stm32g0x1.html)|ARM® Cortex-M0+|BigTreeTech SKR mini E3 V3.0
-  [STM32H743xIT6](//www.st.com/en/microcontrollers-microprocessors/stm32h743-753.html)|ARM® Cortex-M7|BigTreeTech SKR V3.0, SKR EZ V3.0, SKR SE BX V2.0/V3.0
-  [SAMD21P20A](//www.adafruit.com/product/4064)|ARM® Cortex-M0+|Adafruit Grand Central M4
-  [SAMD51P20A](//www.adafruit.com/product/4064)|ARM® Cortex-M4|Adafruit Grand Central M4
-  [Teensy 3.2/3.1](//www.pjrc.com/teensy/teensy31.html)|MK20DX256VLH7 ARM® Cortex-M4|
-  [Teensy 3.5](//www.pjrc.com/store/teensy35.html)|MK64FX512-VMD12 ARM® Cortex-M4|
-  [Teensy 3.6](//www.pjrc.com/store/teensy36.html)|MK66FX1MB-VMD18 ARM® Cortex-M4|
-  [Teensy 4.0](//www.pjrc.com/store/teensy40.html)|MIMXRT1062-DVL6B ARM® Cortex-M7|
-  [Teensy 4.1](//www.pjrc.com/store/teensy41.html)|MIMXRT1062-DVJ6B ARM® Cortex-M7|
-  Linux Native|x86 / ARM / RISC-V|Raspberry Pi GPIO
-  Simulator|Windows, macOS, Linux|Desktop OS
-  [All supported boards](//marlinfw.org/docs/hardware/boards.html#boards-list)|All platforms|All boards
+## Probar la interfaz sin la impresora
+El simulador dibuja las pantallas con **LVGL 6.1.1 real** (compilado para ARM de 32 bits, con el heap de 16 KB de la placa), simula toques y mide memoria y fugas:
+```bash
+herramientas/arquis_ui/sim/build_sim.sh          # genera las capturas y ejecuta 213 comprobaciones + 52 de lógica
+herramientas/arquis_ui/sim/check_marlin_api.sh   # compila los archivos nuevos contra las firmas de Marlin
+```
+> El simulador y las firmas **no sustituyen** a la compilación completa con PlatformIO ni a la prueba en la impresora.
 
-## Marlin Support
+## Estado y limitaciones conocidas
+Validada en la impresora **etapa a etapa** (Dashboard, impresión, control, ajustes y Wi-Fi).
+- **Pendiente:** la cama marca ≈ 45 °C al encender con todo apagado. La interfaz muestra tal cual la lectura de Marlin; hay que comprobar el termistor (ver las notas de la versión). No se modificó la configuración térmica.
+- La **perilla** (encoder) no opera las listas, teclados ni diálogos nuevos.
+- Se conservan solo los idiomas **español e inglés** (con la interfaz de ARQUIS activa).
+- Siguen con el aspecto original de MKS: calibración táctil, *Parámetros Wi-Fi* y *Nube MKS*.
 
-The Issue Queue is reserved for Bug Reports and Feature Requests. Please use the following resources for help with configuration and troubleshooting:
+## Créditos y licencias
+- **[Marlin](https://marlinfw.org)** — GPL-3.0 (ver [`LICENSE`](LICENSE)); este repositorio es una variante de Marlin 2.1.2.10.
+- **MKS / Makerbase**: soporte `TFT_LVGL_UI` y librería **LVGL 6.1.1-MKS** (LVGL: MIT), descargadas por PlatformIO. Las demás librerías descargadas conservan sus licencias.
+- **Tipografía Inter** (Rasmus Andersson) — [SIL Open Font License 1.1](https://rsms.me/inter/); las fuentes de la interfaz se generan con `herramientas/arquis_ui/arquis_fuentes.sh`.
+- **Iconos y logo de ARQUIS**: propios de Arquis Soluciones Tecnológicas.
 
-- [Marlin Documentation](//marlinfw.org) - Official Marlin documentation
-- [Marlin Discord](//discord.com/servers/marlin-firmware-461605380783472640) - Discuss issues with Marlin users and developers
-- Facebook Group ["Marlin Firmware"](//www.facebook.com/groups/1049718498464482/)
-- RepRap.org [Marlin Forum](//forums.reprap.org/list.php?415)
-- Facebook Group ["Marlin Firmware for 3D Printers"](//www.facebook.com/groups/3Dtechtalk/)
-- [Marlin Configuration](//www.youtube.com/results?search_query=marlin+configuration) on YouTube
-
-## Contributing Patches
-
-You can contribute patches by submitting a Pull Request to the ([bugfix-2.1.x](//github.com/MarlinFirmware/Marlin/tree/bugfix-2.1.x)) branch.
-
-- We use branches named with a "bugfix" or "dev" prefix to fix bugs and integrate new features.
-- Follow the [Coding Standards](//marlinfw.org/docs/development/coding_standards.html) to gain points with the maintainers.
-- Please submit Feature Requests and Bug Reports to the [Issue Queue](//github.com/MarlinFirmware/Marlin/issues/new/choose). See above for user support.
-- Whenever you add new features, be sure to add one or more build tests to `buildroot/tests`. Any tests added to a PR will be run within that PR on GitHub servers as soon as they are pushed. To minimize iteration be sure to run your new tests locally, if possible.
-  - Local build tests:
-    - All: `make tests-config-all-local`
-    - Single: `make tests-config-single-local TEST_TARGET=...`
-  - Local build tests in Docker:
-    - All: `make tests-config-all-local-docker`
-    - Single: `make tests-config-all-local-docker TEST_TARGET=...`
-  - To run all unit test suites:
-    - Using PIO: `platformio run -t test-marlin`
-    - Using Make: `make unit-test-all-local`
-    - Using Docker + make: `maker unit-test-all-local-docker`
-  - To run a single unit test suite:
-    - Using PIO: `platformio run -t marlin_<test-suite-name>`
-    - Using make: `make unit-test-single-local TEST_TARGET=<test-suite-name>`
-    - Using Docker + make: `maker unit-test-single-local-docker TEST_TARGET=<test-suite-name>`
-- If your feature can be unit tested, add one or more unit tests. For more information see our documentation on [Unit Tests](test).
-
-## Contributors
-
-Marlin is constantly improving thanks to a huge number of contributors from all over the world bringing their specialties and talents. Huge thanks are due to [all the contributors](//github.com/MarlinFirmware/Marlin/graphs/contributors) who regularly patch up bugs, help direct traffic, and basically keep Marlin from falling apart. Marlin's continued existence would not be possible without them.
-
-Marlin Firmware original logo design by Ahmet Cem TURAN [@ahmetcemturan](//github.com/ahmetcemturan).
-
-## Project Leadership
-
-Name|Role|Link|Donate
-----|----|----|----
-🇺🇸 Scott Lahteine|Project Lead|[[@thinkyhead](//github.com/thinkyhead)]|[💸 Donate](//marlinfw.org/docs/development/contributing.html#donate)
-🇺🇸 Roxanne Neufeld|Admin|[[@Roxy-3D](//github.com/Roxy-3D)]|
-🇺🇸 Keith Bennett|Admin|[[@thisiskeithb](//github.com/thisiskeithb)]|[💸 Donate](//github.com/sponsors/thisiskeithb)
-🇺🇸 Jason Smith|Admin|[[@sjasonsmith](//github.com/sjasonsmith)]|
-🇧🇷 Victor Oliveira|Admin|[[@rhapsodyv](//github.com/rhapsodyv)]|
-🇬🇧 Chris Pepper|Admin|[[@p3p](//github.com/p3p)]|
-🇳🇿 Peter Ellens|Admin|[[@ellensp](//github.com/ellensp)]|[💸 Donate](//ko-fi.com/ellensp)
-🇺🇸 Bob Kuhn|Admin|[[@Bob-the-Kuhn](//github.com/Bob-the-Kuhn)]|
-🇳🇱 Erik van der Zalm|Founder|[[@ErikZalm](//github.com/ErikZalm)]|
-
-## Star History
-
-<a id="starchart" href="https://star-history.com/#MarlinFirmware/Marlin&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MarlinFirmware/Marlin&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=MarlinFirmware/Marlin&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=MarlinFirmware/Marlin&type=Date" />
-  </picture>
-</a>
-
-## License
-
-Marlin is published under the [GPL license](/LICENSE) because we believe in open development. The GPL comes with both rights and obligations. Whether you use Marlin firmware as the driver for your open or closed-source product, you must keep Marlin open, and you must provide your compatible Marlin source code to end users upon request. The most straightforward way to comply with the Marlin license is to make a fork of Marlin on Github, perform your modifications, and direct users to your modified fork.
+Para el README original de Marlin (placas soportadas, comunidad, contribuir) consulta [`docs/README_MARLIN.md`](docs/README_MARLIN.md).
