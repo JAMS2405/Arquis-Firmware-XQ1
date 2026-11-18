@@ -110,6 +110,13 @@ def main():
     if faltan:
         print(f'AVISO: el firmware pide {len(faltan)} recursos que no estan en sd_assets: {faltan}')
     ver = version()
+    # El .bin debe ser de una compilacion con ESTA version: ARQUIS UI la escribe en Ajustes > Sistema ("ARQUIS <version>"),
+    # asi que el texto tiene que estar dentro del firmware. Si no esta, el .bin es de una compilacion anterior (p. ej. se hizo
+    # git pull pero no se recompilo) y el paquete saldria con la version equivocada.
+    with open(a.bin, 'rb') as f:
+        if f'ARQUIS {ver}'.encode() not in f.read():
+            sys.exit(f'El .bin NO contiene "ARQUIS {ver}": es de una compilacion anterior a esta version.\n'
+                     f'Recompila (git pull y pio run) y vuelve a empaquetar.')
 
     # ---- armado ----
     nombre = f'Arquis-XQ1_UI_v{ver}'
