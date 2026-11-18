@@ -183,8 +183,11 @@ bool arq_params_state(int s) {
   switch ((DISP_STATE)s) {
     case MACHINE_PARA_UI: case MACHINE_SETTINGS_UI: case MOTOR_SETTINGS_UI: case STEPS_UI: case ACCELERATION_UI: case JERK_UI:
     case MAXFEEDRATE_UI: case TMC_CURRENT_UI: case TMC_MODE_UI: case HOMING_SENSITIVITY_UI: case ADVANCED_UI: case LEVELING_PARA_UI:
-    case MANUAL_LEVELING_POSITION_UI: case NOZZLE_PROBE_OFFSET_UI: case FILAMENT_SETTINGS_UI: case ENCODER_SETTINGS_UI: case PAUSE_POS_UI:
+    case MANUAL_LEVELING_POSITION_UI: case FILAMENT_SETTINGS_UI: case ENCODER_SETTINGS_UI: case PAUSE_POS_UI:
     case EEPROM_SETTINGS_UI:
+    #if HAS_BED_PROBE
+      case NOZZLE_PROBE_OFFSET_UI:     // (el enum de MKS solo lo define con sonda)
+    #endif
       return true;
     default: return false;
   }
