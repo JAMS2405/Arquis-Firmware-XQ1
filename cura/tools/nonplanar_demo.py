@@ -24,6 +24,7 @@ import arquis_bootstrap  # noqa: E402
 arquis_bootstrap.load_engines()
 import arquis_engines.nonplanar_engine as npe  # noqa: E402
 import arquis_engines.nonplanar_surface as nps  # noqa: E402
+import arquis_engines.nonplanar_sheet as nsh  # noqa: E402
 
 
 def template() -> dict:
@@ -45,6 +46,9 @@ def main(argv=None) -> int:
     ap.add_argument("--accept", metavar="CODIGO", help="codigo de la vista previa revisada")
     ap.add_argument("--analyze-stl", metavar="MODELO.stl", help="SOLO analiza la superficie de un STL (pendiente, relieve, agujeros); no genera G-code")
     ap.add_argument("--adapt-gcode", metavar="ARCHIVO.gcode", help="adapta un G-code de FullControl a esta impresora (conserva la trayectoria); con --preview y --export/--accept")
+    ap.add_argument("--sheet-stl", metavar="MODELO.stl", help="LAMINA EN ESPIRAL: imprime la cara superior de tu STL como una lamina de una capa (tecnica de la flor); con --preview y --export/--accept")
+    ap.add_argument("--sheet-demo", action="store_true", help="lamina en espiral de una flor parametrica de prueba (sin STL)")
+    ap.add_argument("--center", metavar="X,Y", help="punto de arranque de la espiral en coordenadas del STL (por defecto, el punto mas bajo)")
     ap.add_argument("--cell", type=float, default=1.0, help="tamano de celda del analisis (mm)")
     ap.add_argument("--check-gcode", metavar="ARCHIVO.gcode", help="SOLO mide un G-code externo (p. ej. FullControl) contra tu firmware y tu cabezal; no lo modifica")
     a = ap.parse_args(argv)
@@ -62,13 +66,21 @@ def main(argv=None) -> int:
             d = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
     d["enabled"] = True
     cfg = npe.config_from_dict(d)
-    if a.adapt_gcode:
-        with open(a.adapt_gcode, encoding="utf-8", errors="replace") as f:
-            try:
-                adp = npe.adapt_external_gcode(f.read(), cfg, os.path.basename(a.adapt_gcode))
-            except npe.AdaptRefused as e:
-                print("ADAPTACION RECHAZADA: %s" % e)
-                return 3
+    if a.adapt_gcode or a.sheet_stl or a.sheet_demo:
+        try:
+            if a.adapt_gcode:
+                with open(a.adapt_gcode, encoding="utf-8", errors="replace") as f:
+                    adp = npe.adapt_external_gcode(f.read(), cfg, os.path.basename(a.adapt_gcode))
+            elif a.sheet_demo:
+                adp = nsh.generate_sheet(nsh.flower_field(), cfg)
+            else:
+                with open(a.sheet_stl, "rb") as f:
+                    surf = nps.rasterize(nps.read_stl(f.read()), a.cell if a.cell != 1.0 else 0.5)
+                ctr = tuple(float(v) for v in a.center.split(",")) if a.center else None
+                adp = nsh.generate_sheet(nsh.field_from_surface(surf, ctr, os.path.basename(a.sheet_stl)), cfg)
+        except npe.AdaptRefused as e:
+            print("RECHAZADO: %s" % e)
+            return 3
         for fd in adp.findings:
             print("  [%s] %s: %s" % (fd.level, fd.code, fd.msg))
         print("CODIGO DE VISTA PREVIA: %s" % adp.digest)

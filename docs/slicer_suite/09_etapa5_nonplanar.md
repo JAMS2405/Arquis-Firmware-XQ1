@@ -34,7 +34,7 @@ Un solo módulo, `cura/plugins/ARQUISPlugin/engines/nonplanar_engine.py` (Python
 | 9 | Vista previa | `render_preview` | SVG: vista superior por pendiente, perfil lateral por capas, resumen y hallazgos |
 | 10 | Exportación | `export_gcode` + `verify_gcode` | Solo con todas las barreras (§3); el texto resultante se vuelve a verificar |
 
-Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34) y `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9).
+Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34), `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9) y `cura/tests/test_nonplanar_sheet.py` (12, lámina en espiral; ver §13).
 
 ## 3. Barreras de seguridad (todas obligatorias)
 
@@ -239,4 +239,36 @@ python3 cura/tools/nonplanar_demo.py --enable-experimental --config nonplanar.js
 5. **Primera ejecución en seco** (sin filamento, hotend caliente, mano en el paro): observa que Z sigue la onda sin ruidos ni pérdida de pasos y que la boquilla no roza nada; solo después, una impresión.
 
 **Limitaciones:** solo entiende G-code de FullControl con esos marcadores; no cambia la geometría (si la flor no cabe o es demasiado empinada, lo dice, no la modifica); la seguridad frente a colisiones es del **modelo** del cabezal, no de tu hotend; todo sin prueba física.
+
+## 13. Generador propio: lámina en espiral desde tus STL (autorizado 2026-11-19)
+
+Nuevo módulo `engines/nonplanar_sheet.py` y opciones `--sheet-stl` / `--sheet-demo`. Aplica **la técnica de la flor** a un modelo tuyo: una lámina de una sola capa que crece desde un punto de arranque hacia afuera en espiral, con cada vuelta apoyada en la anterior.
+
+**Qué imprime y qué no:** imprime la **cara superior** del STL como una lámina; **no imprime el volumen** del modelo (ni paredes, ni relleno, ni la cara inferior). Es para superficies tipo hoja, cúpula, flor, pétalo.
+
+**Qué formas admite:** las que se recorren como una espiral desde un punto: el punto de arranque debe estar dentro del material y desde él cada dirección debe cruzar el material **una sola vez** (forma «estrellada», sin agujeros entre el centro y el borde). Un hueco de hasta 1 mm se toma como ruido del borde del STL. **Un anillo con agujero NO se admite**: se rechaza con un mensaje que explica por qué. La estrategia para anillos está pendiente y necesita el G-code de referencia del anillo.
+
+**Qué hace, paso a paso:**
+1. Lee el STL (§9), proyecta la cara superior sobre una rejilla de 0,5 mm y toma como **arranque el punto más bajo** (se puede cambiar con `--center X,Y`, en coordenadas del STL).
+2. Mide el radio del borde en 720 direcciones y calcula la espiral (`r = ρ·R(θ)`, con tantas vueltas como haga falta para el ancho de línea).
+3. Baja la superficie para que su punto más bajo quede a la altura de la primera vuelta (0,3 mm) y la coloca con el centro en la cama (`place_x`, `place_y`; por defecto 150, 150).
+4. Calcula velocidad (límite de Z al 90 %), extrusión (según el espaciado local entre vueltas) y comprueba límites, colisiones con tu cabezal y aceleración de Z.
+5. Escribe el G-code con el mismo envoltorio y **las mismas barreras de exportación** que el adaptador (§12): vista previa con código, cabezal confirmado, temperaturas y ventilador explícitos, cero errores, y verificación independiente del texto.
+
+**Qué rechaza o marca como ERROR** (probado): anillo o forma no estrellada; arranque fuera del material; **arranque en el aire** (el punto de arranque queda más de 0,3 mm sobre la cama, p. ej. una cúpula cuyo centro es lo más alto); **pendiente entre vueltas** mayor que el límite (la vuelta nueva no se apoya, o el cono roza); **espaciado** inferior al 60 % del ancho de línea (forma muy alargada: sobreextrusión); superficie demasiado pequeña; fuera de la cama; colisión con el bloque o el ducto; velocidad o aceleración de Z fuera del firmware.
+
+**Dos fallos míos encontrados al probar, ya corregidos:** el radio del borde salía cuantizado a 0,25 mm y metía saltos de ±0,04 mm en Z (aceleración de Z falsa de 80 mm/s²; ahora ~32); y el borde dentado de un STL rasterizado se confundía con un agujero (tolerancia de 1 mm).
+
+**Cómo usarlo con tu STL:**
+```bash
+python3 cura/tools/nonplanar_demo.py --enable-experimental --config nonplanar.json --sheet-stl mi_pieza.stl --preview vista.svg
+python3 cura/tools/nonplanar_demo.py --enable-experimental --config nonplanar.json --sheet-stl mi_pieza.stl --export mi_pieza_arquis.gcode --accept CODIGO
+```
+Sin STL, para ver el flujo: `--sheet-demo` (flor paramétrica de 13 mm de radio y 1,4 mm de relieve, **solo de prueba**). Parámetros en el JSON: `sheet_w` (ancho de línea, 0,8 mm), `sheet_t` (espesor y altura de la primera vuelta, 0,3 mm), `place_x`/`place_y`, `max_slope_deg` y los de §7. Requisitos del STL: milímetros, eje Z hacia arriba, forma estrellada desde el punto más bajo.
+
+**Antes de imprimir** (los mismos del adaptador, §12): purga habitual y orden de nivelación en `custom_start_lines`, `head.confirmed`, `bed_temp`, `nozzle_temp`, `fan_speed`, vista previa revisada y primera ejecución en seco.
+
+**Limitaciones:** solo la superficie superior (2,5D); formas estrelladas; sin soportes ni borde; ancho de línea y espesor únicos; el espaciado entre vueltas varía con el radio del borde (se compensa en la extrusión, no en el ancho real); la unión entre vueltas **no está validada físicamente**; todo sin prueba en la impresora. La pendiente que admite depende de la estimación del cono (`head.nozzle_clearance_deg`).
+
+Vista previa de ejemplo: `img/nonplanar_lamina_flor_parametrica.png`.
 

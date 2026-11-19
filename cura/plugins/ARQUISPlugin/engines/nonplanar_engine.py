@@ -100,7 +100,11 @@ class NPConfig:
     # temperaturas: None obliga al usuario a elegirlas (no se asume el material)
     bed_temp: Optional[float] = None
     nozzle_temp: Optional[float] = None
-    fan_speed: Optional[int] = None          # 0-255; tampoco se asume (solo para adaptar G-code externo)
+    fan_speed: Optional[int] = None          # 0-255; tampoco se asume (G-code externo y laminas)
+    sheet_w: float = 0.8                     # ancho de linea de la lamina en espiral (mm)
+    sheet_t: float = 0.3                     # espesor de la lamina (mm); tambien la altura de la primera vuelta sobre la cama
+    place_x: float = 150.0                   # donde cae el centro de la lamina en la cama
+    place_y: float = 150.0
     custom_start_lines: Tuple[str, ...] = ()  # p. ej. ("M420 S1",) si el usuario usa malla guardada; se validan contra ALLOWED_CMDS
     head: HeadModel = field(default_factory=HeadModel)
     machine: MachineMotion = field(default_factory=MachineMotion)
@@ -1002,7 +1006,7 @@ def render_adapted_preview(ap: AdaptedPlan) -> str:
     sc = min(560.0 / max(x1 - x0, 1e-6), 300.0 / max(y1 - y0, 1e-6))
     W, H = 1020, 620
     out = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" font-family="sans-serif" font-size="12">' % (W, H), '<rect width="100%" height="100%" fill="#0f1620"/>',
-           '<text x="16" y="24" fill="#ffb020" font-size="15" font-weight="bold">ARQUIS Non-Planar EXPERIMENTAL - G-code externo adaptado (vista previa; NO probado en la impresora)</text>',
+           '<text x="16" y="24" fill="#ffb020" font-size="15" font-weight="bold">ARQUIS Non-Planar EXPERIMENTAL - trayectoria adaptada o generada (vista previa; NO probado en la impresora)</text>',
            '<text x="16" y="44" fill="#cfd8e3">Origen: %s   Codigo de vista previa: %s</text>' % (_esc(ap.source_name), ap.digest)]
     ox, oy = 16, 70
     out.append('<text x="%d" y="%d" fill="#9fb3c8">Vista superior (X derecha, Y arriba), color = Z</text>' % (ox, oy - 4))
