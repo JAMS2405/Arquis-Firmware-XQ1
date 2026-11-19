@@ -7,6 +7,8 @@ Todo lo marcado **[VERIFICADO]** se comprobó leyendo o ejecutando el código re
 > **ENMIENDA 1 (decisiones del propietario, posteriores a este informe).** (1) **No habrá un repositorio `ARQUIS-Cura`**: el módulo de Cura vive en este mismo repositorio, en `cura/`, separado del firmware (ver `01_arquitectura_repositorio.md`). Donde este informe dice "ARQUIS-Cura", léase `cura/`. (2) **La capacidad objetivo es 64 objetos, no 256** (el uso habitual es ≈ 40 piezas). Donde dice `CAP=256` o "256", léase 64; el estudio de viabilidad está en `02_capacidad_64.md`. Las decisiones 1 (manifiesto al final + marcador en cabecera) y 3 (licencia) siguen pendientes; el resto del informe sigue vigente.
 
 
+> **ENMIENDA 2.** La capacidad de diseño definitiva es **30 objetos (IDs 0–29)**, no 64 (ver `02_capacidad_30.md`, que sustituye al estudio de 64). Además, con G-code real de Cura 5.11 se comprobó que **Cura renombra las copias en la escena** (`pinon.stl`, `pinon.stl(1)`, `(2)`…; `ObjectsModel._renameNodes`), por lo que lo que §3.1 afirma sobre copias con el mismo nombre es solo un caso límite (nombres no renombrados todavía); la verificación geométrica se mantiene como defensa. Detalle en `04_cambio_capacidad_30.md`.
+
 ## 0. Resumen ejecutivo
 
 | Pregunta | Respuesta corta |
