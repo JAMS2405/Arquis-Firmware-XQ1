@@ -12,7 +12,9 @@
 #include "arquis_files_view.h"
 #include "arquis_tools_view.h"
 #include "arquis_params_view.h"
+#include <initializer_list>
 
+extern "C" { extern lv_font_t arq_font_text16; lv_font_t lv_font_roboto_22 = arq_font_text16; }   // el simulador no trae la fuente por defecto del fabricante (LV_FONT_DEFAULT)
 extern "C" {   // ganchos que el firmware real define en draw_print_file.cpp (miniatura de G-code) y la libreria: no se usan aqui
   uint32_t lv_open_gcode_file(char *) { return 0; }
   void lv_gcode_file_read(uint8_t *) {}
@@ -109,25 +111,46 @@ static void print_screen(const arq_snapshot_t &s, arq_pmode_t m, const char *sho
   g_thumb_pct = -1;
 }
 
-// ---- Cancelar objeto ------------------------------------------------------------------------------------------------------------
-static int8_t o_sel = -1; static int o_act_ev = 0, o_back_ev = 0;
-static void ocb(lv_obj_t *o, lv_event_t ev) {                    // mismo recorrido que draw_cancel_object.cpp
+// ---- Cancelar objeto (vista de 30 objetos: mapa + lista paginada) -----------------------------------------------------------------------
+// El modelo es ESTATICO (como en draw_cancel_object.cpp): la vista guarda su puntero, no lo copia.
+static int8_t o_sel = -1; static uint8_t o_page = 0, o_zoom = 1; static int o_act_ev = 0, o_back_ev = 0;
+static void ocb(lv_obj_t *o, lv_event_t ev) {                    // mismo recorrido que el controlador (draw_cancel_object.cpp)
   if (ev != LV_EVENT_RELEASED) return;
   switch (o->mks_obj_id) {
     case ARQ_OID_BACK: ++o_back_ev; break;
-    case ARQ_OID_MAP: case ARQ_OID_GRID: { lv_indev_t *in = lv_indev_get_act(); if (!in) break; lv_point_t p; lv_indev_get_point(in, &p); const int8_t k = arq_objects_pick(o, &p); if (k >= 0) o_sel = k; } break;
+    case ARQ_OID_MAP: case ARQ_OID_GRID: {
+      lv_indev_t *in = lv_indev_get_act(); if (!in) break; lv_point_t p; lv_indev_get_point(in, &p);
+      const int8_t k = arq_objects_pick(o, &p);
+      if (k >= 0) { o_sel = k; o_page = (uint8_t)(k / ARQ_OBJ_ROWS); }
+      else if (k == ARQ_PICK_PAGE_PREV && o_page > 0) --o_page;
+      else if (k == ARQ_PICK_PAGE_NEXT) ++o_page;
+      else if (k == ARQ_PICK_ZOOM1) o_zoom = 1; else if (k == ARQ_PICK_ZOOM2) o_zoom = 2; else if (k == ARQ_PICK_ZOOM4) o_zoom = 4;
+    } break;
     case ARQ_OID_ACTION: ++o_act_ev; break;
   }
 }
-// n objetos en una cama de 220x220 mm; los de indice <= learned ya tienen posicion; el objeto 5 es muy pequeno (6 mm); `canceled` = mascara
-static arq_obj_model_t omodel(int n, int learned, int active, int sel, uint32_t canceled, int total = -1) {
-  arq_obj_model_t m; memset(&m, 0, sizeof(m));
-  m.n = n; m.total = total < 0 ? n : total; m.active = active; m.sel = sel; m.canceled = canceled; m.bed_x = m.bed_y = 220;
-  for (int i = 0; i < n && i <= learned; ++i) {
-    const int col = i % 4, row = i / 4, sz = (i == 5) ? 6 : 40;
-    m.x0[i] = 10 + col * 52; m.y0[i] = 10 + row * 52; m.x1[i] = m.x0[i] + sz; m.y1[i] = m.y0[i] + sz; m.has_box |= 1UL << i;
+static struct { int32_t cx[ARQ_OBJ_MAX], cy[ARQ_OBJ_MAX], w[ARQ_OBJ_MAX], d[ARQ_OBJ_MAX]; bool has[ARQ_OBJ_MAX]; char shape[ARQ_OBJ_MAX]; } g_ob;
+static int g_names = 1;                                          // 1 = nombres de manifiesto ("Llavero 3"), 0 = "Objeto N"
+static bool sim_box(uint8_t i, int32_t *cx, int32_t *cy, int32_t *w, int32_t *d, char *shape) { if (i >= ARQ_OBJ_MAX || !g_ob.has[i]) return false; *cx = g_ob.cx[i]; *cy = g_ob.cy[i]; *w = g_ob.w[i]; *d = g_ob.d[i]; *shape = g_ob.shape[i]; return true; }
+static uint8_t sim_label(uint8_t i, char *out, uint8_t n) {
+  static const char *const nm[4] = { "Llavero", "Soporte", "Tapa", "Pieza con un nombre muy largo" };
+  if (!g_names) return (uint8_t)snprintf(out, n, "Objeto %d", i + 1);
+  return (uint8_t)snprintf(out, n, "%.18s %d", nm[i % 4], i / 4 + 1);
+}
+static const arq_obj_src_t SIM_SRC = { sim_box, sim_label };
+static arq_obj_model_t g_om;
+// n objetos en una cama de 300x300 mm; los de indice <= learned ya tienen posicion; el objeto 5 es muy pequeno (6 mm); `canceled` = mascara
+static arq_obj_model_t &omodel(int n, int learned, int active, int sel, uint32_t canceled, int total = -1) {
+  memset(&g_om, 0, sizeof(g_om)); memset(&g_ob, 0, sizeof(g_ob));
+  g_om.src = &SIM_SRC; g_om.n = n; g_om.total = total < 0 ? n : total; g_om.active = active; g_om.sel = sel; g_om.zoom = 1; g_om.page = sel >= 0 ? sel / ARQ_OBJ_ROWS : 0;
+  g_om.action = sel < 0 ? ARQ_ACT_NONE : ((canceled >> sel) & 1 ? ARQ_ACT_RESTORE : ARQ_ACT_CANCEL); g_om.source = ARQ_SRC_MANIFEST;
+  g_om.bed = { 0, 0, 3000, 3000 };
+  for (int i = 0; i < n && i < ARQ_OBJ_MAX; ++i) {
+    const int col = i % 6, row = i / 6, sz = (i == 5) ? 6 : 30;
+    if (i <= learned) { g_ob.has[i] = true; g_ob.cx[i] = (20 + col * 47 + sz / 2) * 10; g_ob.cy[i] = (20 + row * 47 + sz / 2) * 10; g_ob.w[i] = sz * 10; g_ob.d[i] = sz * 10; g_ob.shape[i] = "CSR"[i % 3]; }
+    g_om.state[i] = (canceled >> i) & 1 ? ARQ_ST_CANCELED : (i == active ? ARQ_ST_PRINTING : (i < active ? ARQ_ST_DONE : ARQ_ST_PENDING));
   }
-  return m;
+  return g_om;
 }
 static void objects_screen(const arq_obj_model_t &m, const char *shot) {
   lv_obj_t *scr = new_screen();
@@ -492,54 +515,66 @@ static void tests() {
       CHECK(est > 16384, "causa confirmada: la pantalla anterior NO cabia en el heap de LVGL (%u B > 16384 B)", (unsigned)est);
       new_screen(); run(); }
 
-    // 9b) la nueva: 6 objetos fijos, con 0, 9 o 16 objetos del G-code
+    // 9b) la nueva: 6 objetos fijos, con 0, 9, 16 o 30 objetos del G-code (30 = capacidad de diseno)
     { new_screen(); run(); const uint32_t b = used(); uint32_t pko = 0;
-      const int ns[] = { 0, 3, 9, 16 };
+      const int ns[] = { 0, 3, 9, 16, 30 };
       for (int n : ns) { new_screen(); const uint32_t b1 = used(); objects_screen(omodel(n, n - 1, n ? 0 : -1, n ? 0 : -1, 0), nullptr); if (used() - b1 > pko) pko = used() - b1; }
-      printf("[mem] cancelar objeto: pico %u B (con 0, 3, 9 y 16 objetos)\n", (unsigned)pko);
-      CHECK(pko < 3500, "pico de la pantalla de objetos %u B (< 3500 B), igual con 16 objetos", (unsigned)pko);
+      printf("[mem] cancelar objeto: pico %u B (con 0, 3, 9, 16 y 30 objetos)\n", (unsigned)pko);
+      CHECK(pko < 3500, "pico de la pantalla de objetos %u B (< 3500 B), igual con 30 objetos", (unsigned)pko);
       // el asignador de LVGL deja 4-12 B de relleno segun el historial: se exige que NO CREZCA entre 300 y 600 ciclos
-      for (int i = 0; i < 300; ++i) objects_screen(omodel(1 + i % 16, i % 16, i % 5, i % 7 - 1, i & 0x5, i % 3 ? -1 : 30), nullptr);
+      for (int i = 0; i < 300; ++i) objects_screen(omodel(1 + i % 30, i % 30, i % 5, i % 7 - 1, i & 0x5, i % 3 ? -1 : 40), nullptr);
       new_screen(); run(); const uint32_t u1 = used();
-      for (int i = 0; i < 300; ++i) objects_screen(omodel(1 + i % 16, i % 16, i % 5, i % 7 - 1, i & 0x5, i % 3 ? -1 : 30), nullptr);
+      for (int i = 0; i < 300; ++i) objects_screen(omodel(1 + i % 30, i % 30, i % 5, i % 7 - 1, i & 0x5, i % 3 ? -1 : 40), nullptr);
       new_screen(); run(); const uint32_t u2 = used();
       CHECK(u2 <= u1 && u1 <= b + 16, "300 y 600 ciclos crear/destruir: sin fugas ni fragmentacion progresiva (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b); }
 
-    // 9c) peor caso: 16 objetos + dialogo de confirmacion abierto
-    { objects_screen(omodel(16, 15, 15, 15, 0), nullptr);
-      arq_dialog_open("Cancelar objeto 16", "Se dejara de imprimir el objeto 16. Los demas objetos siguen imprimiendose.", "Cancelar objeto", "Volver", true, dlg_cb, 901, 902); run();
+    // 9c) peor caso: 30 objetos con zoom x4 y pagina 5 + dialogo de confirmacion abierto
+    { arq_obj_model_t &wm = omodel(30, 29, 29, 29, 0); wm.zoom = 4; wm.page = 5; objects_screen(wm, nullptr);
+      arq_dialog_open("Cancelar objeto 30", "Se dejara de imprimir \"Pieza con un nombre muy largo 8\" (objeto 30). Los demas objetos siguen imprimiendose.", "Cancelar objeto", "Volver", true, dlg_cb, 901, 902); run();
       lv_mem_monitor_t m; lv_mem_monitor(&m);
-      printf("[mem] peor caso (16 objetos + dialogo): usado %u B, libre %u B\n", (unsigned)(m.total_size - m.free_size), (unsigned)m.free_size);
+      printf("[mem] peor caso (30 objetos + dialogo): usado %u B, libre %u B\n", (unsigned)(m.total_size - m.free_size), (unsigned)m.free_size);
       CHECK(m.free_size >= 8192, "margen de heap: %u B libres (>= 8192 B)", (unsigned)m.free_size);
       arq_dialog_close(); new_screen(); run(); }
 
-    // 9d) toques: mapa, fichas y boton de accion
-    { arq_obj_model_t m = omodel(9, 8, 3, -1, 0);
-      auto refresh = [&]() { m.sel = o_sel; arq_objects_update(&m); run(); };
-      o_sel = -1; o_act_ev = o_back_ev = 0; objects_screen(m, nullptr);
-      tap(404 + 0, 22); CHECK(o_back_ev == 0, "(el boton Atras esta a la izquierda, no aqui)");
+    // 9d) toques: lista paginada, paginacion, zoom, mapa y boton de accion. Las posiciones esperadas se calculan AQUI con formulas independientes
+    //     (X a la derecha, Y hacia arriba; cama 300 mm en 250 px a x1) y no con las funciones de la vista.
+    { auto refresh = [&](arq_obj_model_t &m) { m.sel = o_sel; m.page = o_page; m.zoom = o_zoom; m.action = o_sel < 0 ? ARQ_ACT_NONE : ARQ_ACT_CANCEL; arq_objects_update(&m); run(); };
+      auto mapx = [&](int i) { const int col = i % 6, sz = (i == 5) ? 6 : 30; return 6 + 133 + ((20 + col * 47 + sz / 2) * 250 - 150 * 250) / 300; };       // x en pantalla del centro (zoom x1)
+      auto mapy = [&](int i) { const int row = i / 6, sz = (i == 5) ? 6 : 30; return 48 + 133 - ((20 + row * 47 + sz / 2) * 250 - 150 * 250) / 300; };
+      arq_obj_model_t &m = omodel(30, 29, 3, -1, 0);
+      o_sel = -1; o_page = 0; o_zoom = 1; o_act_ev = o_back_ev = 0; objects_screen(m, nullptr);
       tap(20, 22); CHECK(o_back_ev == 1, "boton Atras");
       tap(380, 293); CHECK(o_act_ev == 0, "sin objeto seleccionado el boton de accion esta deshabilitado");
-      // ficha 7 (columna 3, fila 1)
-      tap(280 + 3 * 50 + 23, 48 + 1 * 48 + 22); refresh(); CHECK(o_sel == 7, "tocar la ficha 8 selecciona el objeto 8 (indice %d)", o_sel);
-      // hueco entre fichas y ficha sin objeto (n = 9: la ficha 10 no existe)
-      tap(280 + 46 + 2, 48 + 22); CHECK(o_sel == 7, "tocar el hueco entre fichas no cambia la seleccion");
-      tap(280 + 1 * 50 + 23, 48 + 2 * 48 + 22); CHECK(o_sel == 7, "tocar donde no hay ficha no cambia la seleccion");
-      // rectangulo del mapa: centro del objeto 2 (indice 1) y del pequeno (indice 5, 6 mm -> 22 px)
-      const int span = 250, dim = 220;
-      auto mapc = [&](int i, int *cx, int *cy) { *cx = 6 + 8 + (m.x0[i] * span) / dim + ((m.x1[i] - m.x0[i]) * span) / dim / 2; *cy = 48 + 8 + ((dim - m.y1[i]) * span) / dim + ((m.y1[i] - m.y0[i]) * span) / dim / 2; };
-      int cx, cy; mapc(1, &cx, &cy); tap(cx, cy); refresh(); CHECK(o_sel == 1, "tocar el rectangulo del objeto 2 en el mapa lo selecciona (indice %d)", o_sel);
-      mapc(5, &cx, &cy); tap(cx + 9, cy - 9); refresh(); CHECK(o_sel == 5, "objeto pequeno (6 mm): el area tocable minima es de 22 px (indice %d)", o_sel);
-      tap(10 + 262, 48 + 260); CHECK(o_sel == 5, "tocar un area vacia del mapa no cambia la seleccion");
+      tap(280 + 100, 48 + 2 * 30 + 12); refresh(m); CHECK(o_sel == 2, "tocar la fila 3 de la pagina 1 selecciona el objeto 3 (indice %d)", o_sel);
+      tap(280 + 19 + 0, 48 + 154 + 14); refresh(m); CHECK(o_page == 0, "'<' en la primera pagina no hace nada (pagina %d)", o_page);
+      tap(280 + 38 + 44 + 19, 48 + 154 + 14); refresh(m); CHECK(o_page == 1, "'>' pasa a la pagina 2 (pagina %d)", o_page);
+      tap(280 + 100, 48 + 4 * 30 + 12); refresh(m); CHECK(o_sel == 9 && o_page == 1, "fila 5 de la pagina 2 = objeto 10 (indice %d)", o_sel);
+      for (int i = 0; i < 8; ++i) { tap(280 + 38 + 44 + 19, 48 + 154 + 14); refresh(m); }
+      CHECK(o_page == 5 || m.page == 5, "la paginacion se detiene en la ultima pagina (6 de 6)");
+      o_page = 5; refresh(m); tap(280 + 100, 48 + 4 * 30 + 12); refresh(m); CHECK(o_sel == 29, "ultima fila de la ultima pagina = objeto 30 (indice %d)", o_sel);
+      tap(280 + 100, 48 + 4 * 30 + 12 + 40); CHECK(o_sel == 29, "tocar debajo de las filas (informacion) no cambia la seleccion");
+      // mapa: cada marcador se elige por su centro, y la lista salta a su pagina (sincronizacion mapa -> lista)
+      for (int i : { 0, 7, 17, 23, 29 }) { tap(mapx(i), mapy(i)); refresh(m); CHECK(o_sel == i && o_page == i / 5, "mapa: marcador %d seleccionado y lista en la pagina %d (sel %d, pag %d)", i + 1, i / 5 + 1, o_sel, o_page); }
+      tap(mapx(5) + 9, mapy(5) - 9); refresh(m); CHECK(o_sel == 5, "objeto pequeno (6 mm): el area tocable minima es de 22 px (indice %d)", o_sel);
+      tap(6 + 262, 48 + 262); CHECK(o_sel == 5, "tocar un area vacia del mapa no cambia la seleccion");
+      // zoom: x2 y x4 se centran en el elegido; el centro del mapa (139, 181) cae sobre ese objeto
+      o_sel = 17; o_page = 3; refresh(m);
+      tap(280 + 124 + 36, 48 + 154 + 14); refresh(m); CHECK(o_zoom == 2, "boton x2");
+      tap(6 + 133, 48 + 133); refresh(m); CHECK(o_sel == 17, "x2: el elegido queda en el centro del mapa");
+      tap(280 + 124 + 60, 48 + 154 + 14); refresh(m); CHECK(o_zoom == 4, "boton x4");
+      tap(6 + 133, 48 + 133); refresh(m); CHECK(o_sel == 17, "x4: el elegido queda en el centro del mapa");
+      tap(280 + 124 + 12, 48 + 154 + 14); refresh(m); CHECK(o_zoom == 1, "boton x1");
+      // accion
       tap(380, 293); CHECK(o_act_ev == 1, "con objeto seleccionado el boton de accion responde");
-      m.canceled = 1u << 5; refresh(); tap(380, 293); CHECK(o_act_ev == 2, "objeto cancelado: el boton (Restaurar) responde");
-      // un objeto sin posicion conocida solo se elige desde las fichas
-      m = omodel(9, 1, -1, -1, 0); o_sel = -1; objects_screen(m, nullptr); mapc(0, &cx, &cy);
-      tap(280 + 2 * 50 + 23, 48 + 22); refresh(); CHECK(o_sel == 2, "objeto sin posicion: se elige con su ficha (indice %d)", o_sel);
-      tap(cx, cy); refresh(); CHECK(o_sel == 0, "objeto con posicion: se elige tambien en el mapa");
+      m.action = ARQ_ACT_LOCKED; arq_objects_update(&m); run(); tap(380, 293); CHECK(o_act_ev == 1, "ACCION BLOQUEADA (cancelacion no validada): el boton esta deshabilitado y no responde");
+      m.action = ARQ_ACT_RESTORE; arq_objects_update(&m); run(); tap(380, 293); CHECK(o_act_ev == 2, "objeto cancelado: el boton (Restaurar) responde");
       // sin cambios no se redibuja; un cambio de seleccion invalida pocas zonas
       lv_disp_t *d = lv_disp_get_default(); run(); arq_objects_update(&m); CHECK(d->inv_p == 0, "modelo sin cambios: nada que redibujar");
       m.sel = 3; arq_objects_update(&m); CHECK(d->inv_p > 0 && d->inv_p <= 4, "cambio de seleccion: pocas zonas invalidadas (%u)", (unsigned)d->inv_p);
+      // objetos sin posicion conocida (G-code sin manifiesto, aun no impresos): solo se eligen desde la lista
+      arq_obj_model_t &m2 = omodel(12, 1, -1, -1, 0); m2.source = ARQ_SRC_LEARNED; o_sel = -1; o_page = 0; o_zoom = 1; objects_screen(m2, nullptr);
+      tap(280 + 100, 48 + 2 * 30 + 12); refresh(m2); CHECK(o_sel == 2, "objeto sin posicion: se elige con su fila (indice %d)", o_sel);
+      tap(mapx(0), mapy(0)); refresh(m2); CHECK(o_sel == 0, "objeto con posicion: se elige tambien en el mapa");
       new_screen(); run(); }
 
     // 10) Pantallas de control (Etapa 4) --------------------------------------------------------------------------------------
@@ -777,15 +812,21 @@ int main(int argc, char **argv) {
     arq_dialog_open("Cancelar impresi\xC3\xB3n", "Se detendr\xC3\xA1 la impresi\xC3\xB3n y se perder\xC3\xA1 el avance. Esta acci\xC3\xB3n no se puede deshacer.", "Cancelar impresi\xC3\xB3n", "Seguir imprimiendo", true, dlg_cb, 901, 902); dump("print_7_dialogo_cancelar"); arq_dialog_close();
     arq_dialog_open("Impresi\xC3\xB3n finalizada", "soporte_motor_nema17_v3_final.gcode\nTiempo total: 2:15", "Aceptar", nullptr, false, dlg_cb, 901, 0); dump("print_8_fin"); arq_dialog_close();
     g_thumb_pct = -1; }
-  { objects_screen(omodel(9, 4, 4, 4, 1u << 1), "obj_1_normal");
-    objects_screen(omodel(16, 15, 15, 15, (1u << 2) | (1u << 9)), "obj_2_16_objetos");
-    objects_screen(omodel(0, -1, -1, -1, 0), "obj_3_sin_objetos");
-    objects_screen(omodel(6, -1, 0, 0, 0), "obj_4_sin_posiciones");
-    objects_screen(omodel(9, 8, 3, 1, 1u << 1), "obj_5_restaurar");
-    objects_screen(omodel(9, 4, 4, -1, 0), "obj_6_sin_seleccion");
-    objects_screen(omodel(9, 4, 4, 4, 0), nullptr);
-    arq_dialog_open("Cancelar objeto 5", "Se dejar\xC3\xA1 de imprimir el objeto 5. Los dem\xC3\xA1s objetos siguen imprimi\xC3\xA9ndose.", "Cancelar objeto", "Volver", true, dlg_cb, 901, 902); dump("obj_7_dialogo"); arq_dialog_close();
-    objects_screen(omodel(16, 15, 3, -1, 0, 24), "obj_8_mas_de_16"); }
+  { g_names = 1;
+    { arq_obj_model_t &m = omodel(30, 29, 13, 13, (1u << 2) | (1u << 20) | (1u << 27)); objects_screen(m, "obj_1_30_objetos"); }
+    { arq_obj_model_t &m = omodel(30, 29, 13, 13, (1u << 2) | (1u << 20)); m.action = ARQ_ACT_LOCKED; m.note = "Cancelaci\xC3\xB3n no validada"; objects_screen(m, "obj_2_manifiesto_cancelacion_bloqueada"); }
+    { arq_obj_model_t &m = omodel(30, 29, 13, 13, 0); m.zoom = 2; objects_screen(m, "obj_3_zoom_x2"); }
+    { arq_obj_model_t &m = omodel(30, 29, 13, 13, 0); m.zoom = 4; m.page = 2; objects_screen(m, "obj_4_zoom_x4"); }
+    { arq_obj_model_t &m = omodel(30, 29, 29, 29, 1u << 29); m.page = 5; objects_screen(m, "obj_5_cancelado_restaurar"); }
+    g_names = 0;
+    { arq_obj_model_t &m = omodel(9, 4, 4, 4, 1u << 1); m.source = ARQ_SRC_LEARNED; objects_screen(m, "obj_6_sin_manifiesto"); }
+    { arq_obj_model_t &m = omodel(9, 4, 4, 4, 0); m.source = ARQ_SRC_LEARNED; m.action = ARQ_ACT_LOCKED; m.note = "Cama del G-code distinta"; objects_screen(m, "obj_7_manifiesto_cama_distinta"); }
+    { arq_obj_model_t &m = omodel(0, -1, -1, -1, 0); objects_screen(m, "obj_8_sin_objetos"); }
+    { arq_obj_model_t &m = omodel(6, -1, 0, 0, 0); m.source = ARQ_SRC_LEARNED; objects_screen(m, "obj_9_sin_posiciones"); }
+    g_names = 1;
+    { arq_obj_model_t &m = omodel(30, 29, 13, 3, 0); for (int i = 0; i < 30; ++i) m.state[i] = (uint8_t)(i % 5); objects_screen(m, "obj_10_cinco_estados"); }
+    { arq_obj_model_t &m = omodel(30, 29, 13, 28, 0); arq_obj_model_t *p = &m; objects_screen(*p, nullptr);
+      arq_dialog_open("Cancelar objeto 29", "Se dejar\xC3\xA1 de imprimir \"Soporte 8\" (objeto 29). Los dem\xC3\xA1s objetos siguen imprimi\xC3\xA9ndose.", "Cancelar objeto", "Volver", true, dlg_cb, 901, 902); dump("obj_11_dialogo"); arq_dialog_close(); } }
   { temps_screen(tmodel(0, 187, 210, 44, 60), "ctl_1_temp_hotend");
     temps_screen(tmodel(1, 25, 0, 60, 60, 10), "ctl_2_temp_cama");
     fans_screen(2, 0, 50, 0, "ctl_3_ventiladores");
