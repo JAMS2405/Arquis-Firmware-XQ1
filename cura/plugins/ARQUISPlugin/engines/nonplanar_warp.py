@@ -126,6 +126,8 @@ class WarpResult:
     findings: List[npe.Finding]
     stats: Dict[str, float]
     digest: str = ""
+    input_id: str = ""          # huella corta del G-code de ENTRADA (para saber si cambio entre dos exportaciones)
+    cfg_id: str = ""            # huella corta de los AJUSTES
 
     @property
     def ok(self) -> bool:
@@ -339,6 +341,8 @@ def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
     stats = {k: (float(v) if not isinstance(v, str) else v) for k, v in st.items()}
     stats["capas"] = float(len(layer_z))
     res = WarpResult(cfg, full, F, stats)
+    res.input_id = hashlib.sha256(text.encode()).hexdigest()[:8].upper()
+    res.cfg_id = hashlib.sha256(json.dumps(asdict(cfg), sort_keys=True, default=list).encode()).hexdigest()[:8].upper()
     # El codigo une ENTRADA + AJUSTES + el TEXTO EXACTO que se exportara: si cambia el algoritmo, cambia el codigo (un codigo aceptado no vale para otro archivo).
     res.digest = hashlib.sha256((hashlib.sha256(text.encode()).hexdigest() + json.dumps(asdict(cfg), sort_keys=True, default=list) + hashlib.sha256(full.encode()).hexdigest()).encode()).hexdigest()[:12].upper()
     banner = "%s A=%g L=%g IN=%g RAMP=%g CODE=%s" % (MARK, cfg.amplitude, cfg.wavelength, cfg.z_in, cfg.ramp, res.digest)
@@ -632,6 +636,7 @@ def apply_for_cura(text: str, s: dict, head_path: str, out_dir: str) -> CuraOutc
         return CuraOutcome(text, False, "error", "Ondulado NO aplicado: el cabezal no esta confirmado.", res.digest)
     if str(s.get("accept_code", "")).strip().upper() != res.digest:
         return CuraOutcome(text, False, "warning", "Ondulado NO aplicado todavia (el G-code se exporta sin cambios). 1) Abre y revisa la vista previa: %s  2) Si estas de acuerdo, escribe el codigo %s en el ajuste "
-                           "'Codigo de vista previa aceptado' y exporta de nuevo. El codigo cambia si cambia la pieza o cualquier ajuste." % (svg_path, res.digest), res.digest)
+                           "'Codigo de vista previa aceptado' y exporta de nuevo SIN CAMBIAR NADA entre las dos exportaciones (ni la pieza, ni sus ajustes, ni la lista de scripts: el codigo cambia si cambia cualquier cosa).  "
+                           "Huella de la entrada: %s  |  de los ajustes: %s  (si al exportar de nuevo la huella de la entrada cambia, algo de la pieza o de los scripts cambio)." % (svg_path, res.digest, res.input_id, res.cfg_id), res.digest)
     warns = [f.msg for f in res.findings if f.level == "WARN"]
     return CuraOutcome(res.text, True, "warning" if warns else "info", "Ondulado APLICADO (experimental, sin pruebas fisicas). " + " | ".join(warns) + "\nVista previa: %s" % svg_path, res.digest)

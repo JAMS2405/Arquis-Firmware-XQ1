@@ -90,12 +90,13 @@ Evidencia: capturas (`docs/slicer_suite/img/cura_script_ondulado_mensaje.png`) y
 |---|---|
 | 1. Instalación y carga del script | **OK**: Cura no se cierra y el script aparece en la lista, con sus 8 ajustes |
 | 2. Aparece apagado | **No informado** (en la captura ya está activado) |
+| Vista previa `.svg` | **OK**: la generó Cura (`C9B21C221B58`): onda de amplitud completa desde Z ≈ 11 mm y de nuevo plana en la capa superior (65 mm), espesor 0,200–0,264 mm, pendiente 6,2° |
 | 4. Primera exportación con el ondulado activado y sin código | **OK**: mensaje «Ondulado NO aplicado todavía…», con el código `B0C651E6076B` y la ruta de la vista previa; el G-code exportado **no** está ondulado (sin banner `;ARQUIS_NP_WARP`), conserva las marcas `;ARQUIS`, el manifiesto y la miniatura |
 | 6. Exportar con el código aceptado → «APLICADO» | **Pendiente** |
 | 7. Cambiar un ajuste invalida el código | **Pendiente** |
 | 8. Caso inaceptable → mensaje de error y G-code original | **Pendiente** |
 | Apagado: G-code idéntico al de antes | **Pendiente** |
 
-**Riesgo abierto:** el orden de scripts del propietario es M486 → Validation → CreateThumbnail → **Ondulado**. Si la miniatura no es idéntica entre exportaciones, el código cambiará cada vez y no se podrá aceptar. Si ocurre, mover el ondulado **antes** de CreateThumbnail.
+**Segunda exportación (propietario):** el código pasó de `B0C651E6076B` a `C9B21C221B58` y el mensaje volvió a ser «NO aplicado todavía». Comparando los dos G-code exportados: en el segundo **se quitó el script Create Thumbnail** (sin miniatura ni su línea de cabecera) y el corte salió con diferencias mínimas (`X157.13` frente a `X157.133`, 3882 → 3881 s, 3,20705 → 3,2067 m). Es decir, **cambió la entrada**, y el código está atado al G-code exacto (entrada + ajustes + texto exportado): **comportamiento esperado, no un fallo**. Para aceptar el código hay que exportar dos veces **sin cambiar nada** entre ellas (ni la pieza, ni los ajustes de corte, ni la lista de scripts). Mejora hecha: el mensaje ahora lo dice y muestra una «huella» de la entrada y de los ajustes para saber qué cambió. **Sigue pendiente demostrar que dos exportaciones consecutivas idénticas dan el mismo código en Cura real.**
 Predicción con el motor (sobre el G-code ya exportado, que no es idéntico a la entrada del script, así que el código no coincide): sin errores, 60 048 → 126 949 movimientos, extrusión +0,003 %, espesor 0,20–0,264 mm, pendiente 6,2°.
 

@@ -143,6 +143,17 @@ def test_nonplanar_script_first_export_only_writes_the_preview_and_the_code(monk
     lvl, msg = notes[-1]
     code = re.search(r"escribe el codigo ([0-9A-F]{12})", msg).group(1)
     assert lvl == "warning" and "NO aplicado todavia" in msg and "arquis_nonplanar_vista.svg" in msg and code
+    huella = re.search(r"Huella de la entrada: ([0-9A-F]{8})  \|  de los ajustes: ([0-9A-F]{8})", msg)
+    assert huella and "SIN CAMBIAR NADA" in msg
+    # misma pieza y mismos ajustes: mismo codigo y misma huella; otra entrada (p. ej. se quita un script o cambia el corte): otra huella y otro codigo
+    m2, sc2, notes2 = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    sc2.execute(_cura_chunks())
+    assert re.search(r"escribe el codigo ([0-9A-F]{12})", notes2[-1][1]).group(1) == code and re.search(r"entrada: ([0-9A-F]{8})", notes2[-1][1]).group(1) == huella.group(1)
+    m3, sc3, notes3 = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    other = _cura_chunks()
+    other[5] = other[5].replace("G1 F1800", "G1 F1801", 1) if "G1 F1800" in other[5] else other[5] + ";distinto\n"
+    sc3.execute(other)
+    assert re.search(r"escribe el codigo ([0-9A-F]{12})", notes3[-1][1]).group(1) != code and re.search(r"entrada: ([0-9A-F]{8})", notes3[-1][1]).group(1) != huella.group(1)
 
 
 def test_nonplanar_script_applies_only_with_the_right_code_and_keeps_the_header(monkeypatch, tmp_path):
