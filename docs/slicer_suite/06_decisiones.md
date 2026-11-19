@@ -15,3 +15,9 @@ Estas decisiones **no están pendientes**. Cualquier documento que las presente 
 - **Cancelación desde la pantalla protegida:** con manifiesto, la acción de cancelar/restaurar sale **deshabilitada** mientras no se compile con `ARQ_OBJ_VISUAL_CANCEL_VALIDATED 1` (ver `07_etapa3_firmware.md`), que solo se cambia tras la prueba física de orientación y la validación dentro de Cura real. Sin manifiesto, la pantalla conserva el comportamiento ya existente.
 - **Cura real:** la integración con Cura 5.11 no se considera terminada hasta ejecutar el plugin en el programa real (ver `cura/VALIDACION_EN_CURA.md`). Las pruebas con nodos falsos no validan la API.
 - Etapa 3 (firmware y TFT) autorizada en rama de desarrollo; rama estable intacta; `platformio.ini` e `ini/` solo con justificación y autorización.
+
+## Actualización de estado (2026-11-19, después de probar en la impresora)
+- El propietario **confirmó en la impresora**: interfaz TFT, lectura de SD, información de impresión y temperaturas, acceso al administrador de objetos, mapa, lista con selección sincronizada, zoom ×1/×2/×4, paginación y seis engranajes idénticos como objetos independientes. Detalle y límites en `08_estado_proyecto.md`.
+- **Las miniaturas no son requisito de esta fase**; quedan como mejora futura.
+- La cancelación visual **sigue bloqueada** (`ARQ_OBJ_VISUAL_CANCEL_VALIDATED 0`) hasta superar los pendientes #1–#6 de `08_estado_proyecto.md` §3.
+- **No hay etapa nueva autorizada.** Tras cerrar la Etapa 3 el orden es Etapa 4 (Calibration Suite), 5 (Non-Planar, desactivado por defecto) y 6 (distribución), cada una con autorización explícita.

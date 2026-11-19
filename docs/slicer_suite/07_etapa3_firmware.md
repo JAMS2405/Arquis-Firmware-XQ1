@@ -5,6 +5,8 @@ Autorizada por el propietario el 2026-11-19 con las condiciones de `06_decisione
 
 > **Leyenda de pruebas.** **[SINTÉTICA]** código real o modelo ejecutado en el PC con datos fabricados · **[SIMULACIÓN]** código real del firmware ejecutado en PC/ARM-qemu, sin la placa · **[LECTURA]** comprobación de que algo existe, sin ejecutarlo · **[FÍSICA]** en la impresora. **Hasta hoy no se ha hecho ninguna prueba [FÍSICA] de la Etapa 3**, ni se ha compilado el firmware completo con PlatformIO (no es posible en esta sesión: el núcleo STM32 de PlatformIO es un `.zip` de GitHub que el proxy bloquea).
 
+> **Actualización 2026-11-19.** Desde la redacción de este informe: el firmware **se compiló** con PlatformIO en el PC del propietario (Flash 87,2 %, RAM 62,8 %) y el propietario **probó en la impresora** la visualización (mapa, lista, zoom, páginas, seis idénticos). Siguen **sin** pruebas físicas la orientación, la correspondencia de IDs, la cancelación real y Z/E. El estado vigente está en [`08_estado_proyecto.md`](08_estado_proyecto.md); donde este informe diga «ninguna prueba física», se refiere a su fecha de redacción.
+
 ## 1. Qué cambia (resumen)
 
 | Condición del propietario | Qué se hizo | Estado |
