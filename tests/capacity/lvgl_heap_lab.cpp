@@ -1,5 +1,5 @@
 // Laboratorio: LVGL 6.1.1-MKS REAL. Mide el heap de LVGL al dibujar N marcadores (rect + etiqueta) en UN solo objeto con design_cb,
-// que es la tecnica de arquis_objects_view.cpp, con N = 16, 40, 64 y 128. Host de 64 bits: los tamanos de LVGL son MAYORES que en la placa (32 bits).
+// que es la tecnica de arquis_objects_view.cpp, con N = 0, 16, 30, 32 y 128. Host de 64 bits: los tamanos de LVGL son MAYORES que en la placa (32 bits).
 #include <stdio.h>
 #include <string.h>
 #include "arquis_widgets.h"
@@ -28,7 +28,7 @@ int main() {
   arq_theme_init(); lv_style_copy(&st, &lv_style_plain); st.body.radius = 12; st.body.main_color = st.body.grad_color = LV_COLOR_RED;
   lv_obj_t *scr = lv_obj_create(nullptr, nullptr); lv_scr_load(scr);
   printf("heap tras lv_init: %u B usados (de 16384)\n", (unsigned)used());
-  int ns[] = { 0, 16, 40, 64, 128 };
+  int ns[] = { 0, 16, 30, 32, 128 };
   for (int n : ns) {
     N = n; rects = labels = 0;
     lv_obj_t *o = lv_obj_create(scr, nullptr); lv_obj_set_pos(o, 6, 40); lv_obj_set_size(o, 266, 266); lv_obj_set_design_cb(o, design);
