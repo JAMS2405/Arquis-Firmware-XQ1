@@ -80,7 +80,7 @@ BED_Y_MM = %r
 HEIGHT_Z_MM = %r
 MIN_X_MM = %r
 MIN_Y_MM = %r
-ORIGIN = %r                       # PROVISIONAL mientras ORIGIN_CONFIRMED sea False (prueba de orientacion fisica pendiente)
+ORIGIN = %r                       # ORIGIN_CONFIRMED: confirmado por el propietario (observacion fisica, 2026-11-19)
 ORIGIN_CONFIRMED = %r
 CENTER_IS_ZERO = %r
 ''' % (m["name"], m["bed_x_mm"], m["bed_y_mm"], m["height_z_mm"], m["min_x_mm"], m["min_y_mm"], m["origin"], m["origin_confirmed"], m["center_is_zero"])

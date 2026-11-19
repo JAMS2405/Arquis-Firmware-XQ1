@@ -115,7 +115,7 @@ def test_tool_passes_a_consistent_scene_with_its_gcode_and_never_validates_a_fak
     rc, out = run_tool(tmp_path, make_dump(objs), exported(objs))
     assert rc == 0 and "FALLA" not in out.replace("FALLA (ver", ""), out
     assert "pinon x4" in out and "NO VALIDA la integracion con Cura" in out
-    assert "PENDIENTE" in out and "orientacion" in out.lower()
+    assert "orientacion" in out.lower()
 
 
 def test_tool_declares_validation_only_for_a_real_dump_with_nothing_unexercised(tmp_path):
@@ -188,4 +188,4 @@ def test_real_cura_capture_passes_the_verification_tool(tmp_path):
     assert rc == 0 and "[FALLA" not in out, out
     assert "6 instancias capturadas" in out and "pinon rusvel 66 dientes x6" in out
     assert "VALIDADO EN CURA REAL" not in out and "NO EJERCITADO" in out                              # falta el G-code exportado
-    assert "PENDIENTE" in out and "rientacion" in out                                                  # la orientacion fisica sigue sin confirmar
+    assert "rientacion" in out and "confirmada por el propietario" in out                              # orientacion confirmada por el propietario

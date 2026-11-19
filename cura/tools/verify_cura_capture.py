@@ -26,6 +26,7 @@ from arquis_engines.object_engine import SceneInstance, build_objects, split_nam
 from arquis_engines.validation_engine import validate_manifest_vs_gcode, validate_m486  # noqa: E402
 
 OK, FAIL, NOTRUN, PENDING = "OK", "FALLA", "NO EJERCITADO", "PENDIENTE"
+_ORIGIN_CONFIRMED = bool(mp.ORIGIN_CONFIRMED)
 
 
 class Report:
@@ -175,7 +176,8 @@ def main(argv):
         check_gcode(d, r, args[1], machine)
     else:
         r.add("gcode", "G-code exportado, manifiesto y validacion", NOTRUN, "pasa el .gcode exportado como segundo argumento")
-    r.add("orientacion", "Orientacion fisica ORG=FL (el origen X0 Y0 es la esquina frontal izquierda)", PENDING, "imprime cura/tools/make_orientation_gcode.py; hasta entonces ORG=FL es provisional")
+    r.add("orientacion", "Orientacion fisica ORG=FL (el origen X0 Y0 es la esquina frontal izquierda)", PENDING if not _ORIGIN_CONFIRMED else OK,
+          "imprime cura/tools/make_orientation_gcode.py; hasta entonces ORG=FL es provisional" if not _ORIGIN_CONFIRMED else "confirmada por el propietario el 2026-11-19 (observacion de una impresion de 6 piezas; no se imprimio la prueba formal)")
     print("Captura: Cura %s, plugin %s, origen de los datos: %s" % (d.get("cura", {}).get("version") or "?", d.get("arquis_plugin") or "?", d.get("source")))
     for key, label, st, det in r.rows:
         print("  [%-13s] %s%s" % (st, label, ("\n                    -> " + det) if det else ""))
@@ -190,7 +192,7 @@ def main(argv):
     if pend:
         print("\nRESULTADO: sin fallos en Cura real, pero hay comprobaciones SIN EJERCITAR (%s): la integracion NO se da por validada todavia." % ", ".join(pend))
     else:
-        print("\nRESULTADO: VALIDADO EN CURA REAL (la orientacion fisica es independiente: sigue PENDIENTE hasta imprimir la prueba).")
+        print("\nRESULTADO: VALIDADO EN CURA REAL (la orientacion fisica es independiente de Cura).")
     return 0
 
 

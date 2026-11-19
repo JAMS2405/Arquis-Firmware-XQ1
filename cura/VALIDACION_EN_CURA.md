@@ -67,6 +67,6 @@ Evidencia: `cura/tests/data/real_cura_5_11_captura_6_pinones.json` (volcado hech
 | Mapa y lista sincronizados | **Parcial**: la ventana del gestor abre y muestra mapa y lista de 6 (captura de pantalla). El propietario no ha informado de pulsar marcador↔fila **dentro de Cura**; la comprobación automática se hizo sobre los datos capturados |
 | Generación y validación del manifiesto | **OK**: manifiesto válido (CRC, 6 objetos, cama 300 × 300), igual a la escena capturada; el G-code real cae dentro de la caja de cada objeto |
 | Perfil 450 × 450 bloquea mapa y manifiesto | **Sin ejecutar en Cura real** (solo con los G-code de muestra procesados fuera de Cura) |
-| Orientación física (ORG=FL) | **Pendiente de confirmación formal** (ver `08_estado_proyecto.md` §1: el propietario observa que la posición coincide; falta confirmarlo como prueba de orientación) |
+| Orientación física (ORG=FL) | **Confirmada por el propietario (2026-11-19)** por observación de la impresión de 6 piezas; no se imprimió la prueba formal de 5 piezas |
 
 Nota: la validación cubre la API y los datos que usa el plugin con una escena de 6 copias y un perfil `creality_cr10max` renombrado «Arquis XQ1» con cama 300 × 300. No cubre rotaciones, grupos, modelos muy pequeños ni otras versiones de Cura.

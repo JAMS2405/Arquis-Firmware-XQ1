@@ -1,13 +1,13 @@
 {
   "name": "Arquis XQ1",
-  "comment": "Geometria de la maquina REAL de ARQUIS (la del firmware). Fuente unica para las pruebas y para el plugin de Cura; una prueba la compara con Marlin/Configuration.h (X_BED_SIZE, Y_BED_SIZE, Z_MAX_POS, X/Y_MIN_POS). El origen fisico (ORG=FL) es PROVISIONAL hasta imprimir la prueba de orientacion.",
+  "comment": "Geometria de la maquina REAL de ARQUIS (la del firmware). Fuente unica para las pruebas y para el plugin de Cura; una prueba la compara con Marlin/Configuration.h (X_BED_SIZE, Y_BED_SIZE, Z_MAX_POS, X/Y_MIN_POS). Origen fisico ORG=FL CONFIRMADO por el propietario el 2026-11-19 por observacion de la impresion de 6 piezas (disposicion asimetrica); NO se imprimio la prueba formal de 5 piezas.",
   "bed_x_mm": 300,
   "bed_y_mm": 300,
   "height_z_mm": 450,
   "min_x_mm": 0,
   "min_y_mm": 0,
   "origin": "FL",
-  "origin_confirmed": false,
+  "origin_confirmed": true,
   "center_is_zero": false,
   "gcode_flavor": "marlin"
 }

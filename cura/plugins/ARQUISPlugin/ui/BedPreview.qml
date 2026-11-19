@@ -33,7 +33,7 @@ Item {
         }
     }
     Text {
-        text: "abajo-izquierda = X0 Y0 (orientaci\u00f3n f\u00edsica sin confirmar)"
+        text: "abajo-izquierda = X0 Y0"
         color: "#7C8BA8"
         font.pixelSize: 10
         anchors.horizontalCenter: parent.horizontalCenter

@@ -39,8 +39,10 @@ def test_machine_profile_is_exactly_what_the_firmware_is_configured_for():
     assert (mp.BED_X_MM, mp.BED_Y_MM) == (300, 300) and mp.CENTER_IS_ZERO is False
 
 
-def test_orientation_stays_provisional_until_the_physical_test_is_done():
-    assert mp.ORIGIN == "FL" and mp.ORIGIN_CONFIRMED is False        # no se confirma hasta imprimir la prueba de orientacion
+def test_orientation_is_confirmed_by_the_owner():
+    # Confirmado por el propietario el 2026-11-19 (observacion de la impresion de 6 piezas), no con la prueba formal de 5 piezas.
+    j = json.load(open(os.path.join(ROOT, "shared", "machines", "arquis_xq1.json"), encoding="utf-8"))
+    assert mp.ORIGIN == "FL" and mp.ORIGIN_CONFIRMED is True and j["origin_confirmed"] is True and j["origin"] == "FL"
 
 
 def test_cura_script_defaults_to_the_real_machine_bed():
