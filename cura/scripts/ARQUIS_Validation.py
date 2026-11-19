@@ -34,7 +34,7 @@ class ARQUIS_Validation(Script):
                 "capacity": {
                     "label": "Capacidad de cancelacion del firmware",
                     "description": "Debe coincidir con la del script ARQUIS M486.",
-                    "type": "int", "default_value": 64, "minimum_value": 1, "maximum_value": 128
+                    "type": "int", "default_value": 30, "minimum_value": 1, "maximum_value": 32
                 }
             }
         }"""

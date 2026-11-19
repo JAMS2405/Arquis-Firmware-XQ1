@@ -1,10 +1,14 @@
 {
   "protocol": "ARQUIS_OBJECTS",
   "version": 1,
-  "target_capacity": 64,
-  "legacy_firmware_capacity": 32,
-  "max_protocol_index": 127,
+  "design_capacity": 30,
+  "capacity_ceiling": 32,
+  "protocol_max_objects": 128,
   "name_max_bytes": 20,
   "coord_unit_mm": 0.1,
-  "notes": "target_capacity = indices M486 S0..S63 (decision del propietario). max_protocol_index = limite de los contadores int8_t de Marlin. Cura y el firmware deben leer estos valores."
+  "notes": {
+    "design_capacity": "Objetos simultaneos de diseno = IDs cancelables 0..design_capacity-1 (decision del propietario: 30, IDs 0-29).",
+    "capacity_ceiling": "Mayor capacidad que admite hoy el motor M486 de Marlin sin tocar su estructura (mascara uint32_t = 32 bits). Ampliar la capacidad por encima exige cambiar el firmware Y este valor; mientras no se cambie, ningun componente acepta mas.",
+    "protocol_max_objects": "Limite absoluto del protocolo: object_count/active_object de Marlin son int8_t (indices 0..127)."
+  }
 }

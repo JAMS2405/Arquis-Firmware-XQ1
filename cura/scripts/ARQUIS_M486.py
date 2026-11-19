@@ -44,11 +44,11 @@ class ARQUIS_M486(Script):
             "settings": {
                 "capacity": {
                     "label": "Capacidad de cancelacion del firmware",
-                    "description": "Numero maximo de objetos cancelables del firmware (indices M486 S0..S<n-1>). ARQUIS Firmware con la ampliacion: 64. Marlin sin modificar: 32. Los objetos que sobren se imprimen pero no se podran cancelar.",
+                    "description": "Numero maximo de objetos cancelables (indices M486 S0..S<n-1>). Diseno ARQUIS: 30 (IDs 0-29). Los objetos que sobren se imprimen pero no se podran cancelar. El maximo es el del motor de Marlin actual (32).",
                     "type": "int",
-                    "default_value": 64,
+                    "default_value": 30,
                     "minimum_value": 1,
-                    "maximum_value": 128
+                    "maximum_value": 32
                 },
                 "tolerance": {
                     "label": "Tolerancia de posicion (mm)",
