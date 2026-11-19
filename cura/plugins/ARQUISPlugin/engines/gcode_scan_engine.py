@@ -76,6 +76,8 @@ class Section:
     filament_only_moves: int = 0
     travel_e_moves: int = 0         # viaje XY con E (retraccion/preparacion mientras se viaja)
     z_first: Optional[float] = None
+    z_min: Optional[float] = None   # menor/mayor Z con extrusion en el tramo
+    z_max: Optional[float] = None
 
 
 @dataclass
@@ -205,6 +207,9 @@ def scan_gcode(chunks: Sequence[str]) -> ScanResult:
                         cur.bbox = _grow(cur.bbox, nx, ny)
                     if has_z:
                         cur.z_extrude_moves += 1
+                    if nz is not None:
+                        cur.z_min = nz if cur.z_min is None else min(cur.z_min, nz)
+                        cur.z_max = nz if cur.z_max is None else max(cur.z_max, nz)
                 else:
                     if has_xy:
                         cur.travel_moves += 1

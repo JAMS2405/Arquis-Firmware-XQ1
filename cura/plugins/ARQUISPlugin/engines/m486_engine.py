@@ -37,6 +37,8 @@ class M486Options:
     protect_filament: bool = True               # R1 para movimientos de filamento sin XY
     id_order: str = "scene"                     # "scene" | "position"
     ceiling: int = limits.CAPACITY_CEILING      # mayor capacidad admitida (limits.json). Solo se cambia al ampliar el firmware.
+    bed: Optional[Tuple[float, float, float, float]] = None      # (min_x, min_y, ancho, profundo) en mm: si se da, se emite el manifiesto
+    expected_bed: Optional[Tuple[float, float]] = None           # (ancho, profundo) de la cama del FIRMWARE: si no coincide, no se emite el manifiesto
 
     def __post_init__(self):
         if not 1 <= self.ceiling <= limits.PROTOCOL_MAX_OBJECTS:
@@ -52,6 +54,7 @@ class M486Result:
     problems: List[Problem] = field(default_factory=list)
     objects: List[ArquisObject] = field(default_factory=list)
     stats: Dict[str, int] = field(default_factory=dict)
+    manifest: Optional[object] = None             # manifest_engine.Manifest si se emitio
 
     @property
     def ok(self) -> bool:
@@ -132,7 +135,55 @@ def process_gcode(chunks: Sequence[str], instances: Sequence[SceneInstance], opt
     if has_errors(post):
         # Defensa en profundidad: lo que acabamos de generar no supera nuestro propio validador => no se entrega.
         return _blocked(chunks, problems + [Problem("E_INTERNAL_VALIDATION", ERROR, "la salida no supera la validacion: " + "; ".join(p.message for p in post if p.severity == ERROR))], objects)
-    return M486Result("ok", out, problems + [p for p in post if p.severity == WARNING], objects, stats)
+    result = M486Result("ok", out, problems + [p for p in post if p.severity == WARNING], objects, stats)
+    if opt.bed is not None:
+        _add_manifest(result, objects, opt)
+    return result
+
+
+def _add_manifest(res: M486Result, objects: List[ArquisObject], opt: M486Options) -> None:
+    """Anade el manifiesto de objetos. Cualquier fallo lo OMITE (aviso) y deja el G-code con M486 intacto: la impresion y la
+    cancelacion por numero siguen funcionando; solo se pierde el mapa en pantalla."""
+    from . import manifest_engine as me
+    from .validation_engine import gcode_object_stats, print_order, validate_manifest_vs_gcode
+
+    def omit(code: str, msg: str) -> None:
+        res.problems.append(Problem("W_MANIFEST_OMITTED", WARNING, "%s: %s (el G-code lleva M486 pero no el mapa de objetos)" % (code, msg)))
+
+    if opt.expected_bed is not None and (abs(opt.expected_bed[0] - opt.bed[2]) > 1.0 or abs(opt.expected_bed[1] - opt.bed[3]) > 1.0):
+        return omit("E_BED_MISMATCH", "la cama del perfil de Cura (%.0f x %.0f mm) no coincide con la del firmware (%.0f x %.0f mm): "
+                    "el mapa no coincidiria con la cama real" % (opt.bed[2], opt.bed[3], opt.expected_bed[0], opt.expected_bed[1]))
+    cancelable = [o for o in objects if o.cancelable]
+    stats = gcode_object_stats(res.chunks)
+    if set(stats) != {o.id for o in cancelable}:
+        return omit("E_NO_EXTRUSION", "hay objetos cancelables sin extrusion en el G-code")
+    order = print_order(stats)
+    spans = sorted((s.first, s.last) for s in stats.values())
+    interleaved = any(b0 < a1 for (a0, a1), (b0, b1) in zip(spans, spans[1:]))
+    sequential = len(stats) > 1 and not interleaved
+    per_id = {i: {"z0": int(round(s.z0 * me.UNIT)), "ztop": int(round(s.ztop * me.UNIT)), "order": order[i]} for i, s in stats.items()}
+    try:
+        man = me.build_manifest(objects, per_id, opt.bed, sequential, opt.capacity)
+        header, block = me.render_block(man)
+    except Exception as e:                                    # nunca romper la exportacion por el manifiesto
+        return omit("E_MANIFEST_BUILD", str(e))
+    out = list(res.chunks)
+    first, _, rest = out[0].partition("\n")                  # primera linea = marca ;ARQUIS_M486
+    out[0] = first + "\n" + header + rest
+    if not out[-1].endswith("\n"):
+        out[-1] += "\n"
+    out[-1] += block
+    text = "".join(out)
+    pr = me.parse_text(text)
+    if not pr.ok or pr.manifest is None:
+        return omit("E_MANIFEST_REPARSE", "; ".join(p.message for p in pr.problems))
+    cross = validate_manifest_vs_gcode(out, pr.manifest, opt.tolerance_mm)
+    if has_errors(cross):
+        return omit("E_MANIFEST_SYNC", "; ".join(p.message for p in cross))
+    res.chunks = out
+    res.manifest = pr.manifest
+    res.stats["manifest_objects"] = len(pr.manifest.objects)
+    res.stats["sequential"] = int(sequential)
 
 
 def _is_xy(w: Dict[str, float]) -> bool:

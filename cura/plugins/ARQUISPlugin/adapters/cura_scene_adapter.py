@@ -11,9 +11,10 @@ API de Cura 5.11.0 / Uranium usadas (todas leidas en el codigo fuente, tag 5.11.
 Conversion de ejes (StartSliceJob.py:497-499 y CuraEngine MeshGroup.cpp:99-107):
   escena: X derecha, Y arriba, Z hacia el FRENTE de la maquina.   G-code: x = X + ancho/2,  y = -Z + profundidad/2  (si el origen no es el centro).
 """
-from typing import Any, Iterable, List, Optional, Sequence
+import math
+from typing import Any, Iterable, List, Optional, Sequence, Tuple
 
-from arquis_engines.object_engine import SceneInstance
+from arquis_engines.object_engine import SceneInstance, classify_shape
 
 
 def bbox_to_gcode(left: float, right: float, front: float, back: float, width: float, depth: float, center_is_zero: bool):
@@ -37,6 +38,31 @@ def _is_printable_leaf(node: Any, build_plate: Optional[int]) -> bool:
     return True
 
 
+def _yaw_deg(node: Any) -> int:
+    """Giro alrededor de la vertical (Y de la escena = Z del G-code), en grados 0..359; el sentido coincide con el del G-code visto desde arriba."""
+    try:
+        q = node.getWorldOrientation()
+        yaw = math.atan2(2.0 * (q.w * q.y + q.x * q.z), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        return int(round(math.degrees(yaw))) % 360
+    except Exception:
+        return 0
+
+
+def _shape(node: Any, box: Any, width: float, depth: float, center_is_zero: bool) -> str:
+    """Forma de referencia del marcador (C/S/R) a partir de la huella convexa de Cura; sin huella, de la caja."""
+    ox = 0.0 if center_is_zero else width / 2.0
+    oy = 0.0 if center_is_zero else depth / 2.0
+    try:
+        hull = node.callDecoration("getConvexHull")
+        pts = [(float(x) + ox, -float(z) + oy) for x, z in hull.getPoints()] if hull is not None else []
+        if len(pts) >= 3:
+            return classify_shape(pts)
+    except Exception:
+        pass
+    w, d = box.right - box.left, box.front - box.back
+    return "S" if w > 0 and abs(w - d) <= 0.12 * max(w, d) else "R"
+
+
 def instances_from_nodes(nodes: Iterable[Any], width: float, depth: float, center_is_zero: bool,
                          build_plate: Optional[int] = None) -> List[SceneInstance]:
     """``nodes`` en el orden de recorrido de la escena. Funcion pura: se prueba con nodos falsos."""
@@ -58,8 +84,24 @@ def instances_from_nodes(nodes: Iterable[Any], width: float, depth: float, cente
             if group < 0:
                 group = 1_000_000 + (id(parent) % 1_000_000)
             group_name = parent.getName()
-        out.append(SceneInstance(i, node.getName(), x0, y0, x1, y1, group, group_name))
+        out.append(SceneInstance(i, node.getName(), x0, y0, x1, y1, group, group_name,
+                                 shape=_shape(node, box, width, depth, center_is_zero), rot=_yaw_deg(node), z1=max(0.0, float(box.top))))
     return out
+
+
+def bed_from_machine(width: float, depth: float, center_is_zero: bool) -> Tuple[float, float, float, float]:
+    """Cama en coordenadas de G-code: (min_x, min_y, ancho, profundo) mm."""
+    return (-width / 2.0, -depth / 2.0, width, depth) if center_is_zero else (0.0, 0.0, width, depth)
+
+
+def capture_bed() -> Tuple[float, float, float, float]:
+    """Cama de la impresora activa de Cura (machine_width/depth/center_is_zero)."""
+    from cura.CuraApplication import CuraApplication                       # noqa: PLC0415
+    stack = CuraApplication.getInstance().getGlobalContainerStack()
+    if stack is None:
+        raise RuntimeError("no hay impresora activa")
+    return bed_from_machine(float(stack.getProperty("machine_width", "value")), float(stack.getProperty("machine_depth", "value")),
+                            bool(stack.getProperty("machine_center_is_zero", "value")))
 
 
 def capture_scene() -> List[SceneInstance]:
