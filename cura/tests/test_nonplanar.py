@@ -297,9 +297,11 @@ def test_volcano_head_profile_loads_but_cannot_export_until_confirmed():
     cfg = npe.config_from_dict(d)
     assert cfg.head.confirmed is False and cfg.bed_temp is None                                                  # no se confirma ni se elige material por el usuario
     names = {n: (r, h) for n, r, h in cfg.head.envelopes}
-    assert names["bloque calefactor Volcano 20x11.5"] == (11.5, 9.0)                                            # 23 mm de boquilla - 14 mm de rosca = 9 mm bajo el bloque
-    assert 23.0 - 14.0 == 9.0 and round(math.hypot(10.0, 5.75), 1) == 11.5                                      # derivacion documentada (media diagonal del bloque)
-    assert any("SIN MEDIR" in n for n in names)                                                                  # el ducto sigue sin medir
+    block = next(v for n, v in names.items() if n.startswith("bloque calefactor Volcano"))
+    duct = next(v for n, v in names.items() if n.startswith("ducto de ventilacion"))
+    assert block == (11.5, 7.3)                                                                                 # 7,3 mm MEDIDOS por el propietario (punta -> cara inferior del bloque)
+    assert duct[1] == 7.3 and duct[0] >= 11.5                                                                   # ductos a la altura del bloque; radio conservador
+    assert round(math.hypot(10.0, 5.75), 1) == 11.5                                                             # media diagonal del bloque (orientacion desconocida)
     plan = npe.build_plan(cfg)
     with pytest.raises(npe.ExportRefused):
         npe.export_gcode(plan, plan.digest)

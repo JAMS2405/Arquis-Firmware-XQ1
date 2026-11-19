@@ -182,3 +182,19 @@ El análisis detectó dos fallos de mi comprobación de colisiones, ya corregido
 python3 cura/tools/nonplanar_demo.py --enable-experimental --config cura/profiles/nonplanar_arquis_volcano.json --check-gcode archivo.gcode
 ```
 
+## 11. Medidas del propietario con calibre (2026-11-19)
+
+Tres fotos con calibre digital (lecturas visibles 17,98 / 26,5 / 17,69 mm; **no consta qué mide cada una**, así que no las uso) y la conclusión del propietario: **de la punta de la boquilla a la cara inferior del bloque hay 7,3 mm, y los ductos de aire de capa quedan a la altura del bloque.** Las fotos muestran el bloque con **manguito de silicona** naranja.
+
+| Parámetro | Antes (dibujos) | Ahora |
+|---|---|---|
+| Punta → cara inferior del bloque | 9 mm (suposición 23 − 14) | **7,3 mm (medido)** |
+| Ducto de ventilación, altura sobre la punta | por defecto, sin medir (2 mm) | **7,3 mm** (a la altura del bloque, según el propietario) |
+| Ducto, radio | por defecto (25 mm) | **25 mm, conservador, no medido** (solo importa si la pieza tiene más de 7,3 mm de relieve) |
+
+**Discrepancia que queda anotada:** el dibujo de la boquilla (23 mm, rosca 14 mm) daría 9 mm; lo medido es 7,3 mm. Probablemente la boquilla montada no es exactamente la del dibujo, o el manguito de silicona o el roscado cambian la cota. Se usa lo medido.
+
+**Lo que sigue siendo estimación** (`head.confirmed` sigue en `false`; lo cambia el propietario): la pendiente que tolera el cono (40°, sobre el dibujo), el hexágono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto y el filamento de 1,75 mm. Para la **pieza de prueba por defecto** (pendiente máxima 10,7°) la estimación del cono no es decisiva, porque está muy por debajo de cualquier valor razonable; sí lo es para piezas más empinadas como la flor (29°).
+
+Resultado con el perfil actualizado sobre el G-code de la flor (`max_slope_deg = 30`): ver el apartado de verificación; ya no salta el ducto (la flor tiene 3,6 mm de relieve frente a 7,3 mm de holgura).
+
