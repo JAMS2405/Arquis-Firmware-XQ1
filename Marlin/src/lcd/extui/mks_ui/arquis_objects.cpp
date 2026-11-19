@@ -45,6 +45,13 @@ uint32_t arq_crc32_update(uint32_t raw, const uint8_t *p, uint16_t n) {
   return raw;
 }
 
+uint32_t arq_file_id(const char *name, uint32_t size) {
+  uint32_t h = 2166136261UL;
+  for (; name && *name; ++name) { h ^= (uint8_t)*name; h *= 16777619UL; }
+  for (uint8_t i = 0; i < 4; ++i) { h ^= (uint8_t)(size >> (8 * i)); h *= 16777619UL; }
+  return h ? h : 1;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Lectura de numeros y literales de una linea (equivalen a las expresiones regulares del parser de referencia, ASCII)
 // ---------------------------------------------------------------------------------------------------------------------------------

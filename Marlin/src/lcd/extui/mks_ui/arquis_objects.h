@@ -86,6 +86,8 @@ void     arq_man_tail_feed(const uint8_t *buf, uint16_t n);     // bytes consecu
 uint8_t  arq_man_tail_finish(uint16_t bed_w_dmm, uint16_t bed_d_dmm);   // valida con la cama de la maquina (0,1 mm); 0 = sin comprobar
 uint8_t  arq_man_status();                                      // ARQ_MAN_NONE / OK / BAD
 uint32_t arq_man_errors();                                      // bits ARQ_E_* (si BAD)
+// Identificador del archivo (FNV-1a del nombre largo + tamano): liga el manifiesto cargado al archivo que se imprime. 0 nunca es valido.
+uint32_t arq_file_id(const char *name, uint32_t size);
 uint32_t arq_crc32_update(uint32_t raw, const uint8_t *p, uint16_t n);   // CRC-32 IEEE: estado en bruto (empezar con 0xFFFFFFFF; resultado = ~estado)
 
 // ---- Nombres y estados -----------------------------------------------------------------------------------------------------------------

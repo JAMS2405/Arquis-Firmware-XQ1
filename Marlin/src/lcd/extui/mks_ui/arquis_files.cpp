@@ -26,6 +26,7 @@
 
 #include "arquis_files.h"
 #include "arquis_files_view.h"
+#include "arquis_objects_sd.h"     // manifiesto de objetos (solo lectura, tras la miniatura)
 #include "draw_ui.h"
 #include "tft_lvgl_configuration.h"      // public_buf, bmp_public_buf
 #include "SPI_TFT.h"
@@ -91,19 +92,28 @@ static lv_event_cb_t ok_handler, cancel_handler;
     if (++thumb_row >= THUMB_ROWS) thumb_stop();
   }
 
-  void arq_files_poll() {
+  static void thumb_poll() {
     if (!thumb_active) return;
     // Solo mientras esta en pantalla la confirmacion: al pulsar Imprimir o Cancelar el estado cambia y se detiene
     if (disp_state != DIALOG_UI || uiCfg.dialogType != DIALOG_TYPE_PRINT_FILE) { thumb_stop(); return; }
     for (uint8_t n = 0; n < ROWS_PER_POLL && thumb_active; ++n) thumb_draw_row();
   }
-#else
-  void arq_files_poll() {}
 #endif
+
+// Primero la miniatura (como siempre); cuando termina (o si no hay), se carga el manifiesto de objetos
+void arq_files_poll() {
+  #if HAS_GCODE_PREVIEW
+    if (thumb_active) { thumb_poll(); return; }
+  #endif
+  arq_objload_poll();
+}
 
 static void confirm_cb(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
-  if (obj->mks_obj_id == ARQ_PC_OK) { if (ok_handler) ok_handler(obj, event); }
+  if (obj->mks_obj_id == ARQ_PC_OK) {
+    arq_objload_finish();                   // si la carga del manifiesto va a medias, se completa AHORA (antes de que empiece la impresion)
+    if (ok_handler) ok_handler(obj, event);
+  }
   else if (cancel_handler) cancel_handler(obj, event);
 }
 
@@ -122,6 +132,7 @@ void arq_print_confirm_draw(lv_obj_t *scr, const char *file_name, lv_event_cb_t 
   #if HAS_GCODE_PREVIEW
     thumb_row = 0; thumb_found = false; thumb_active = has_thumb;
   #endif
+  arq_objload_start();                      // el manifiesto se lee cuando termine la miniatura (arq_files_poll)
 }
 
 #endif // HAS_TFT_LVGL_UI && ARQUIS_UI

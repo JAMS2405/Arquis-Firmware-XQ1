@@ -35,6 +35,7 @@ int8_t CancelObject::object_count, // = 0
 uint32_t CancelObject::canceled; // = 0x0000
 bool CancelObject::skipping; // = false
 bool CancelObject::overflow; // = false
+int8_t CancelObject::declared_count = -1;
 uint32_t CancelObject::bbox_valid; // = 0x0000
 int16_t CancelObject::bbox_x0[ARQ_OBJ_DESIGN_CAPACITY], CancelObject::bbox_y0[ARQ_OBJ_DESIGN_CAPACITY],
         CancelObject::bbox_x1[ARQ_OBJ_DESIGN_CAPACITY], CancelObject::bbox_y1[ARQ_OBJ_DESIGN_CAPACITY];
@@ -65,6 +66,7 @@ void CancelObject::note_z(const float z) {
 void CancelObject::set_object_count(const int32_t n) {
   if (n < 0 || n > ARQ_OBJ_DESIGN_CAPACITY) overflow = true;
   object_count = n < 0 ? 0 : (n > ARQ_OBJ_DESIGN_CAPACITY ? ARQ_OBJ_DESIGN_CAPACITY : (int8_t)n);
+  declared_count = object_count;
 }
 
 // S-1 = no es un objeto (brim, torre...), siempre se imprime. Un indice fuera de rango NO se estrecha ni se enmascara: se trata como
