@@ -44,6 +44,7 @@ def main(argv=None) -> int:
     ap.add_argument("--export", metavar="SALIDA.gcode")
     ap.add_argument("--accept", metavar="CODIGO", help="codigo de la vista previa revisada")
     ap.add_argument("--analyze-stl", metavar="MODELO.stl", help="SOLO analiza la superficie de un STL (pendiente, relieve, agujeros); no genera G-code")
+    ap.add_argument("--adapt-gcode", metavar="ARCHIVO.gcode", help="adapta un G-code de FullControl a esta impresora (conserva la trayectoria); con --preview y --export/--accept")
     ap.add_argument("--cell", type=float, default=1.0, help="tamano de celda del analisis (mm)")
     ap.add_argument("--check-gcode", metavar="ARCHIVO.gcode", help="SOLO mide un G-code externo (p. ej. FullControl) contra tu firmware y tu cabezal; no lo modifica")
     a = ap.parse_args(argv)
@@ -61,6 +62,30 @@ def main(argv=None) -> int:
             d = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
     d["enabled"] = True
     cfg = npe.config_from_dict(d)
+    if a.adapt_gcode:
+        with open(a.adapt_gcode, encoding="utf-8", errors="replace") as f:
+            try:
+                adp = npe.adapt_external_gcode(f.read(), cfg, os.path.basename(a.adapt_gcode))
+            except npe.AdaptRefused as e:
+                print("ADAPTACION RECHAZADA: %s" % e)
+                return 3
+        for fd in adp.findings:
+            print("  [%s] %s: %s" % (fd.level, fd.code, fd.msg))
+        print("CODIGO DE VISTA PREVIA: %s" % adp.digest)
+        if a.preview:
+            with open(a.preview, "w", encoding="utf-8") as f:
+                f.write(npe.render_adapted_preview(adp))
+            print("vista previa escrita en %s (abrela y revisala)" % a.preview)
+        if a.export:
+            try:
+                text = npe.export_adapted(adp, a.accept or "")
+            except npe.ExportRefused as e:
+                print("EXPORTACION RECHAZADA: %s" % e)
+                return 3
+            with open(a.export, "w", encoding="utf-8", newline="\n") as f:
+                f.write(text)
+            print("G-code adaptado EXPERIMENTAL escrito en %s. Sin pruebas fisicas: una mano en el paro de emergencia." % a.export)
+        return 0 if adp.ok else 1
     if a.check_gcode:
         with open(a.check_gcode, encoding="utf-8", errors="replace") as f:
             rep = npe.analyze_external_gcode(f.read(), cfg)

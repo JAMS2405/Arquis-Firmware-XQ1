@@ -318,3 +318,144 @@ def test_cli_check_gcode_is_read_only_and_needs_the_enable_flag(tmp_path, capsys
     assert cli.main(["--check-gcode", str(g)]) == 2
     assert cli.main(["--enable-experimental", "--check-gcode", str(g)]) == 0
     assert "SOLO LECTURA" in capsys.readouterr().out and g.read_text() == before and sorted(p.name for p in tmp_path.iterdir()) == ["ext.gcode"]
+
+
+# ---------------------------------------------------------------- adaptar G-code externo (formato FullControl)
+def fullcontrol_like(n=60, e_mode="M83", extra_body=(), off=(20.0, 20.0), with_marks=True):
+    """Archivo sintetico con la estructura de FullControl: cabecera, cebado, espiral con Z ondulada, final de la otra maquina."""
+    h = ["; GCode created with FullControl", "M140 S50", "M104 S150", "M190 S50", "M109 S150", "G28", "G90", "G21", e_mode, "M106 S255", "M106 P2 S255",
+         "G0 F8000 X%g Y%g Z10" % off, "G92 X0 Y0", "G0 X5 Y5", "M109 S210", "G1 F250 E20", "G0 F250 Z50", "G0 F8000 X10 Y10 Z0.3", "M220 S100", "M221 S100"]
+    if with_marks:
+        h.append(";END OF STARTING PROCEDURE")
+    body = ["G0 F8000 Y12 Z0.32", "G1 F500 X60 E6.65"]
+    for i in range(1, n + 1):
+        a = i / 6.0
+        body.append("G1 X%.4f Y%.4f Z%.4f E%.6f" % (30 + 8 * math.cos(a), 30 + 8 * math.sin(a), 0.32 + 0.5 * (1 - math.cos(a / 2)), 0.0123456 + i * 1e-5))
+    body += list(extra_body)
+    t = [";START OF ENDING PROCEDURE", "M83", "G0 E-0.8 F3000", "G91", "G0 Z20 F8000", "G90", "M106 S0", "M140 S0", "M104 S0", "M900 K0", "M106 P2 S0", "M84"]
+    return "\n".join(h + body + t) + "\n"
+
+
+def adapt(text=None, **kw):
+    cfg = ok_cfg(fan_speed=kw.pop("fan_speed", 255), head=kw.pop("head", npe.HeadModel(confirmed=True)), **kw)
+    return npe.adapt_external_gcode(text or fullcontrol_like(), cfg, "flor_prueba.gcode")
+
+
+def test_adapter_keeps_the_path_and_replaces_everything_else():
+    src = fullcontrol_like()
+    ap = adapt(src)
+    lines = ap.text.splitlines()
+    assert lines[0].startswith(npe.MARKER) and ap.ok, [f.msg for f in ap.findings if f.level == "ERROR"]
+    names = {l.split()[0] for l in lines if l and not l.startswith(";")}
+    assert names <= set(npe.ALLOWED_CMDS) and "G92" not in " ".join(lines[3:-1]) .replace("G92 E0", "")        # sin G92 X/Y, G91, M900, M106 P2, G21
+    assert not any(t in ap.text for t in ("G91", "M900", "P2", "G21", "Z50", "Z10"))
+    # la trayectoria es exactamente la original trasladada (+20, +20): coordenadas, Z y E
+    def pts(t, on):
+        o = []
+        for ln in t.splitlines():
+            if "END OF STARTING" in ln: on = True
+            if "START OF ENDING" in ln: on = False
+            w = ln.split(";")[0].split()
+            if on and w and w[0] == "G1" and "E" in "".join(w) and "X" in "".join(w) and "Z" in "".join(w):
+                o.append({x[0]: float(x[1:]) for x in w[1:] if len(x) > 1})
+        return o
+    a, b = pts(src, False), pts(ap.text, True)
+    b = [m for m in b if "Z" in m][:len(a)]
+    assert len(a) == len(b) == 60
+    for u, v in zip(a, b):
+        assert v["X"] == pytest.approx(u["X"] + 20.0, abs=1e-4) and v["Y"] == pytest.approx(u["Y"] + 20.0, abs=1e-4)
+        assert v["Z"] == pytest.approx(u["Z"], abs=1e-4) and v["E"] == pytest.approx(u["E"], abs=1e-6)        # E sin perder precision
+    assert "M140 S60" in lines and "M140 S50" not in lines and "M109 S210" in lines and "M106 S255" in lines     # temperaturas/ventilador de la CONFIGURACION, no las del archivo (cama 50)
+    assert any(f.code == "NIVELACION" and f.level == "WARN" for f in ap.findings)
+    assert 0 < ap.stats["az_est_mm_s2"] < ap.cfg.machine.max_accel[2]                                          # la aceleracion de Z estimada se informa y esta dentro del firmware
+
+
+def test_adapter_caps_the_z_speed_and_never_exceeds_firmware_limits():
+    steep = fullcontrol_like(extra_body=["G1 F3000 X40 Y40 Z0.8 E0.1", "G1 X41 Y40 Z1.6 E0.1"])                 # pide mucha velocidad en Z (50 mm/s)
+    ap = adapt(steep, max_slope_deg=60.0, head=npe.HeadModel(nozzle_clearance_deg=80.0, confirmed=True))
+    assert not [f for f in ap.findings if f.code in ("G_VEL", "EXT_VEL")], [f.msg for f in ap.findings]
+    zcap = 0.9 * 5.0
+    assert ap.stats["vz_extrusion_mm_s"] <= zcap + 1e-6                                                       # el adaptador limito F por movimiento
+
+
+@pytest.mark.parametrize("kw,msg", [
+    (dict(with_marks=False), "marcadores"),
+    (dict(e_mode="M82"), "absoluta"),
+    (dict(extra_body=["M900 K0.1"]), "no traduce"),
+    (dict(extra_body=["G2 X1 Y1 I1 J0 E1"]), "no traduce"),
+    (dict(extra_body=["G1 X40 Y40 S1 E1"]), "no soportadas"),
+])
+def test_adapter_refuses_what_it_cannot_translate(kw, msg):
+    with pytest.raises(npe.AdaptRefused, match=msg):
+        adapt(fullcontrol_like(**kw))
+
+
+def test_adapter_requires_explicit_material_and_disabled_by_default():
+    with pytest.raises(npe.AdaptRefused, match="no asume el material"):
+        npe.adapt_external_gcode(fullcontrol_like(), npe.NPConfig(enabled=True, head=npe.HeadModel(confirmed=True)), "x")      # sin temperaturas ni ventilador
+    with pytest.raises(npe.NotEnabled):
+        npe.adapt_external_gcode(fullcontrol_like(), npe.NPConfig(), "x")
+    with pytest.raises(npe.AdaptRefused, match="no permitida"):
+        adapt(custom_start_lines=("G1 X10",))
+
+
+def test_adapter_reports_bed_overflow_and_steepness_and_blocks_export():
+    out_of_bed = adapt(fullcontrol_like(off=(285.0, 20.0)))                                                     # el G92 deja el origen en X 285: la espiral sale de la cama
+    assert "EXT_LIMITES" in {f.code for f in out_of_bed.findings if f.level == "ERROR"}
+    with pytest.raises(npe.ExportRefused, match="ERROR"):
+        npe.export_adapted(out_of_bed, out_of_bed.digest)
+    steep = adapt(fullcontrol_like(extra_body=["G1 F600 X40 Y40 Z0.4 E0.1", "G1 X41 Y40 Z1.2 E0.1"]))
+    assert "EXT_PENDIENTE" in {f.code for f in steep.findings if f.level == "ERROR"}
+    jerky = ext(["G90", "G1 F1800 X50 Y50 Z0.3 E0.1"] + ["G1 X%.2f Y50 Z%.2f E0.05" % (50 + 0.3 * i, 0.3 + (0.15 if i % 2 else 0.0)) for i in range(1, 40)])   # Z sube y baja cada 0,3 mm a 30 mm/s
+    assert "EXT_ACEL_Z" in {f.code for f in jerky.findings if f.level in ("WARN", "ERROR")}
+
+
+def test_adapter_export_requires_confirmed_head_and_the_preview_code():
+    ap = adapt()
+    with pytest.raises(npe.ExportRefused, match="codigo"):
+        npe.export_adapted(ap, "AAAAAAAAAAAA")
+    with pytest.raises(npe.ExportRefused, match="codigo"):
+        npe.export_adapted(ap, "")
+    unconf = adapt(head=npe.HeadModel())
+    with pytest.raises(npe.ExportRefused, match="cabezal"):
+        npe.export_adapted(unconf, unconf.digest)
+    text = npe.export_adapted(ap, ap.digest)
+    assert text == ap.text and ap.digest in text.splitlines()[1]
+    assert npe.verify_gcode(text, ap.cfg) == []
+    assert ap.digest != adapt(nozzle_temp=215).digest                                                           # cualquier cambio cambia el codigo
+
+
+def test_adapted_gcode_is_executable_by_the_marlin_model_with_relative_e():
+    ap = adapt()
+    tr = simulate([ap.text], capacity=30)
+    x, y, z = tr.final
+    assert 0 < x < 300 and 0 < y < 300 and z >= 20.0                                                            # termina arriba
+    src_e = sum(float(w[1:]) for ln in fullcontrol_like().split("ENDING")[0].split("OF STARTING PROCEDURE")[1].splitlines() if ln.startswith("G1")
+                for w in ln.split() if w.startswith("E"))
+    assert tr.physical_e == pytest.approx(src_e - ap.cfg.retract_mm, abs=0.01)
+
+
+def test_cli_adapts_with_every_barrier(tmp_path, capsys):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("nonplanar_demo", os.path.join(ROOT, "cura", "tools", "nonplanar_demo.py"))
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    src, cfgf, out, svg = tmp_path / "f.gcode", tmp_path / "c.json", tmp_path / "o.gcode", tmp_path / "v.svg"
+    src.write_text(fullcontrol_like())
+    d = {"head": {"confirmed": False}, "bed_temp": 50, "nozzle_temp": 210, "fan_speed": 255}
+    cfgf.write_text(json.dumps(d))
+    assert cli.main(["--adapt-gcode", str(src)]) == 2                                                           # sin --enable-experimental no hace nada
+    assert cli.main(["--enable-experimental", "--config", str(cfgf), "--adapt-gcode", str(src), "--preview", str(svg), "--export", str(out), "--accept", "000000000000"]) == 3
+    assert svg.exists() and not out.exists()                                                                    # hay vista previa pero no G-code
+    code = re.findall(r"CODIGO DE VISTA PREVIA: ([0-9A-F]{12})", capsys.readouterr().out)[-1]
+    assert cli.main(["--enable-experimental", "--config", str(cfgf), "--adapt-gcode", str(src), "--export", str(out), "--accept", code]) == 3 and not out.exists()   # cabezal sin confirmar
+    d["head"]["confirmed"] = True
+    cfgf.write_text(json.dumps(d))
+    capsys.readouterr()
+    cli.main(["--enable-experimental", "--config", str(cfgf), "--adapt-gcode", str(src)])
+    code2 = re.findall(r"CODIGO DE VISTA PREVIA: ([0-9A-F]{12})", capsys.readouterr().out)[-1]
+    assert cli.main(["--enable-experimental", "--config", str(cfgf), "--adapt-gcode", str(src), "--export", str(out), "--accept", code2]) == 0 and out.exists()
+    assert out.read_text().startswith(npe.MARKER)
+    bad = tmp_path / "no_fullcontrol.gcode"
+    bad.write_text("G28\nG1 X10 Y10 E1\n")
+    assert cli.main(["--enable-experimental", "--config", str(cfgf), "--adapt-gcode", str(bad)]) == 3

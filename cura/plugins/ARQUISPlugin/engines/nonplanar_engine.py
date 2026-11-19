@@ -17,7 +17,7 @@ Etapas internas (una funcion por etapa, en el orden pedido por el PROMPT MAESTRO
   7 verify_limits     8 detect_collisions  9 render_preview  10 export_gcode (+ verify_gcode, comprobacion independiente del texto)
 Barreras de seguridad: ``cfg.enabled`` (False por defecto), vista previa con codigo que el usuario debe devolver, cabezal confirmado,
 temperaturas explicitas y cero hallazgos ERROR. Solo usa ordenes de Marlin ya presentes en este firmware (G0 G1 G28 G29 G90 G92
-M82 M84 M104 M106 M107 M109 M140 M190 M420); no usa arcos, ni relativo, ni inventa comandos.
+M82 M83 M84 M104 M106 M107 M109 M140 M190 M220 M221 M420); no usa arcos, ni relativo, ni inventa comandos.
 """
 import hashlib
 import json
@@ -30,7 +30,7 @@ from .gcode_scan_engine import parse_cmd
 EXPERIMENTAL = True
 ENABLED_BY_DEFAULT = False
 MARKER = ";ARQUIS_NONPLANAR EXPERIMENTAL"
-ALLOWED_CMDS = ("G0", "G1", "G28", "G29", "G90", "G92", "M82", "M84", "M104", "M106", "M107", "M109", "M140", "M190", "M420")
+ALLOWED_CMDS = ("G0", "G1", "G28", "G29", "G90", "G92", "M82", "M83", "M84", "M104", "M106", "M107", "M109", "M140", "M190", "M220", "M221", "M420")
 SMALL_ENVELOPE_MM = 6.0          # volumenes del cabezal de hasta este radio se comprueban con la rejilla fina
 HARD_MAX_Z_DEV_MM = 2.0          # tope absoluto de desviacion en Z, aunque el usuario pida mas
 
@@ -100,6 +100,7 @@ class NPConfig:
     # temperaturas: None obliga al usuario a elegirlas (no se asume el material)
     bed_temp: Optional[float] = None
     nozzle_temp: Optional[float] = None
+    fan_speed: Optional[int] = None          # 0-255; tampoco se asume (solo para adaptar G-code externo)
     custom_start_lines: Tuple[str, ...] = ()  # p. ej. ("M420 S1",) si el usuario usa malla guardada; se validan contra ALLOWED_CMDS
     head: HeadModel = field(default_factory=HeadModel)
     machine: MachineMotion = field(default_factory=MachineMotion)
@@ -655,6 +656,7 @@ def verify_gcode(text: str, cfg: NPConfig, plan: Optional[Plan] = None) -> List[
     seen_xyz = False
     n_print = 0
     e_max = 0.0
+    rel = False                                   # M83: extrusion relativa
     for ln in lines:
         c = parse_cmd(ln)
         if c is None:
@@ -663,12 +665,16 @@ def verify_gcode(text: str, cfg: NPConfig, plan: Optional[Plan] = None) -> List[
             F.append(Finding("ERROR", "G_ORDEN", "Orden no permitida: %s" % c.name))
             continue
         w = c.words
+        if c.name in ("M82", "M83"):
+            rel = c.name == "M83"
+            continue
         if c.name == "G92":
             e = w.get("E", e)
             continue
         if c.name not in ("G0", "G1"):
             continue
-        nx, ny, nz, ne = w.get("X", x), w.get("Y", y), w.get("Z", z), w.get("E", e)
+        nx, ny, nz = w.get("X", x), w.get("Y", y), w.get("Z", z)
+        ne = (e + w["E"]) if (rel and "E" in w) else w.get("E", e)
         if "F" in w:
             feed = w["F"] / 60.0
         if not (0 <= nx <= m.bed_x and 0 <= ny <= m.bed_y and 0 <= nz <= m.z_max):
@@ -684,7 +690,7 @@ def verify_gcode(text: str, cfg: NPConfig, plan: Optional[Plan] = None) -> List[
         if "E" in w:
             if ne > e + 1e-9 and d > 1e-9:
                 n_print += 1
-            if ne < e_max - cfg.retract_mm - 1e-6:
+            if (rel and w["E"] < -cfg.retract_mm - 1e-6) or (not rel and ne < e_max - cfg.retract_mm - 1e-6):
                 F.append(Finding("ERROR", "G_E", "Retroceso de E mayor que la retraccion final."))
             e_max = max(e_max, ne)
         x, y, z, e = nx, ny, nz, ne
@@ -802,6 +808,15 @@ def analyze_external_gcode(text: str, cfg: NPConfig) -> ExternalReport:
     if worst_slope > lim:
         F.append(Finding("ERROR", "EXT_PENDIENTE", "Pendiente maxima %.1f deg > limite efectivo %.1f deg (min(max_slope %.1f, cono %.1f - margen %.1f))."
                          % (worst_slope, lim, cfg.max_slope_deg, cfg.head.nozzle_clearance_deg, cfg.head.safety_margin_deg)))
+    az_max = 0.0                                              # aceleracion de Z estimada (velocidad constante por segmento; pesimista en esquinas)
+    for a, b in zip(segs, segs[1:]):
+        if a.length > 1e-9 and b.length > 1e-9 and a.feed > 0 and b.feed > 0:
+            va, vb = a.feed * (a.z1 - a.z0) / a.length, b.feed * (b.z1 - b.z0) / b.length
+            az_max = max(az_max, abs(vb - va) / ((a.length + b.length) / 2 / ((a.feed + b.feed) / 2)))
+    if az_max > m.max_accel[2]:
+        F.append(Finding("ERROR", "EXT_ACEL_Z", "Aceleracion de Z estimada %.0f mm/s2 > maximo del firmware %.0f." % (az_max, m.max_accel[2])))
+    elif az_max > 0.8 * m.max_accel[2]:
+        F.append(Finding("WARN", "EXT_ACEL_Z", "Aceleracion de Z estimada %.0f mm/s2, cerca del maximo del firmware (%.0f)." % (az_max, m.max_accel[2])))
     col: List[Finding] = []
     detect_collisions(segs, cfg, col)
     F += [f for f in col if f.level != "INFO"]
@@ -812,5 +827,204 @@ def analyze_external_gcode(text: str, cfg: NPConfig) -> ExternalReport:
         F.append(Finding("INFO", "EXT_OTRAS", "Ordenes fuera de la lista del motor: " + ", ".join("%s x%d" % kv for kv in sorted(other.items()))))
     F.append(Finding("INFO", "EXT_MODELO", "Colisiones comprobadas con el MODELO del cabezal (%s)." % ("confirmado por el usuario" if cfg.head.confirmed else "SIN CONFIRMAR")))
     stats = {"movimientos_extrusion": float(len(segs)), "x_min": ext[0], "x_max": ext[1], "y_min": ext[2], "y_max": ext[3], "z_min": ext[4], "z_max": ext[5],
-             "pendiente_max_deg": worst_slope, "vz_extrusion_mm_s": pz, "vx_max": vx_max, "vy_max": vy_max}
+             "pendiente_max_deg": worst_slope, "vz_extrusion_mm_s": pz, "az_est_mm_s2": az_max, "vx_max": vx_max, "vy_max": vy_max}
     return ExternalReport(F, stats)
+
+
+# ---------------------------------------------------------------- adaptar un G-code EXTERNO (p. ej. FullControl) a esta impresora
+class AdaptRefused(RuntimeError):
+    """El G-code externo no tiene la estructura esperada o contiene algo que el adaptador no sabe traducir con seguridad."""
+
+
+START_MARK = "END OF STARTING PROCEDURE"
+END_MARK = "START OF ENDING PROCEDURE"
+ZCAP_FRAC = 0.9                      # fraccion del maximo de Z que el adaptador permite pedir
+
+
+@dataclass
+class AdaptedPlan:
+    cfg: NPConfig
+    source_name: str
+    text: str
+    findings: List[Finding]
+    stats: Dict[str, float]
+    path: List[Tuple[float, float, float]]
+    digest: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return not any(f.level == "ERROR" for f in self.findings)
+
+
+def _fmt(v: float, nd: int = 5) -> str:
+    return ("%.*f" % (nd, v)).rstrip("0").rstrip(".") or "0"
+
+
+def adapt_external_gcode(text: str, cfg: NPConfig, source_name: str = "externo.gcode") -> AdaptedPlan:
+    """Conserva la TRAYECTORIA del archivo externo (el tramo entre 'END OF STARTING PROCEDURE' y 'START OF ENDING PROCEDURE', formato de
+    FullControl) y sustituye lo demas: cabecera y final propios, origen aplicado como traslado explicito (sin G92), temperaturas y
+    ventilador elegidos por el usuario, y velocidad de Z limitada al 90 % del maximo del firmware. No cambia ninguna coordenada relativa
+    entre puntos: solo traslada X/Y por el desplazamiento que el archivo original aplicaba con G92. Rechaza todo lo que no sepa traducir."""
+    if not cfg.enabled:
+        raise NotEnabled("Motor desactivado.")
+    lines = text.splitlines()
+    i0 = next((i for i, ln in enumerate(lines) if START_MARK in ln), None)
+    i1 = next((i for i, ln in enumerate(lines) if END_MARK in ln), None)
+    if i0 is None or i1 is None or i1 <= i0:
+        raise AdaptRefused("No encuentro los marcadores '%s' / '%s': este adaptador solo entiende G-code de FullControl con esa estructura." % (START_MARK, END_MARK))
+    head, body = lines[:i0 + 1], lines[i0 + 1:i1]
+    # ---- estado al final de la cabecera (origen desplazado por G92, modo de E, posicion, F)
+    x = y = z = 0.0
+    off_x = off_y = 0.0
+    rel_e, feed = False, 0.0
+    for ln in head:
+        c = parse_cmd(ln)
+        if c is None:
+            continue
+        w = c.words
+        if c.name == "G91":
+            raise AdaptRefused("La cabecera usa coordenadas relativas (G91): no se adapta.")
+        if c.name == "M83":
+            rel_e = True
+        elif c.name == "M82":
+            rel_e = False
+        elif c.name == "G92":
+            if "X" in w:
+                off_x = (x + off_x) - w["X"]; x = w["X"]
+            if "Y" in w:
+                off_y = (y + off_y) - w["Y"]; y = w["Y"]
+            if "Z" in w:
+                z = w["Z"]
+        elif c.name in ("G0", "G1"):
+            x, y, z = w.get("X", x), w.get("Y", y), w.get("Z", z)
+            if "F" in w:
+                feed = w["F"] / 60.0
+    if not rel_e:
+        raise AdaptRefused("La cabecera usa extrusion absoluta (M82): el adaptador solo acepta extrusion relativa (M83), para no reescribir E.")
+    start = (x + off_x, y + off_y, z)
+    zcap = ZCAP_FRAC * cfg.machine.max_feedrate[2]
+    # ---- cuerpo: solo G0/G1 con X Y Z E F
+    out: List[str] = []
+    path: List[Tuple[float, float, float]] = []
+    unknown: Dict[str, int] = {}
+    emitted_f = None
+    for ln in body:
+        c = parse_cmd(ln)
+        if c is None:
+            continue
+        if c.name not in ("G0", "G1"):
+            unknown[c.name] = unknown.get(c.name, 0) + 1
+            continue
+        w = c.words
+        if set(w) - set("XYZEF") or c.flags:
+            raise AdaptRefused("Movimiento con palabras no soportadas: %r" % ln.strip())
+        nx, ny, nz = w.get("X", x), w.get("Y", y), w.get("Z", z)
+        if "F" in w:
+            feed = w["F"] / 60.0
+        L = math.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
+        f_line = feed
+        if L > 1e-9 and abs(nz - z) > 1e-9:
+            f_line = min(feed, zcap * L / abs(nz - z))
+        f_line = min(f_line, cfg.machine.max_feedrate[0], cfg.machine.max_feedrate[1])
+        words = []
+        if "X" in w: words.append("X" + _fmt(nx + off_x))
+        if "Y" in w: words.append("Y" + _fmt(ny + off_y))
+        if "Z" in w: words.append("Z" + _fmt(nz))
+        if "E" in w: words.append("E" + _fmt(w["E"], 6))                  # E con 6 decimales: no se pierde precision en segmentos diminutos
+        if f_line > 0 and (emitted_f is None or abs(f_line - emitted_f) > 1e-6):
+            words.append("F" + _fmt(f_line * 60.0)); emitted_f = f_line
+        out.append("%s %s" % (c.name, " ".join(words)))
+        if "E" in w and w["E"] > 0 and L > 1e-9 and c.name == "G1":
+            path.append((nx + off_x, ny + off_y, nz))
+        x, y, z = nx, ny, nz
+    if unknown:
+        raise AdaptRefused("El tramo de la pieza contiene ordenes que el adaptador no traduce: %s." % ", ".join("%s x%d" % kv for kv in sorted(unknown.items())))
+    if not path:
+        raise AdaptRefused("El tramo de la pieza no tiene movimientos de extrusion.")
+    # ---- cabecera y final propios (con las barreras: temperaturas y ventilador explicitos)
+    if cfg.bed_temp is None or cfg.nozzle_temp is None or cfg.fan_speed is None:
+        raise AdaptRefused("Faltan bed_temp, nozzle_temp o fan_speed: el adaptador no asume el material.")
+    for ln in cfg.custom_start_lines:
+        cc = parse_cmd(ln)
+        if cc is None or cc.name not in ALLOWED_CMDS or cc.name in ("G0", "G1"):
+            raise AdaptRefused("custom_start_lines: orden no permitida: %r" % ln)
+    m = cfg.machine
+    zspeed = int(0.5 * m.max_feedrate[2] * 60)
+    pre = min(150.0, cfg.nozzle_temp)                                   # como el original: calentar a ~150 para el G28 y subir despues
+    z_end = min(max(p[2] for p in path) + 20.0, m.z_max)
+    pre_lines = [MARKER + " - adaptado de G-code externo (%s): NO USAR SIN REVISAR LA VISTA PREVIA" % source_name, "; codigo de vista previa: @@CODIGO@@",
+                 "; EXPERIMENTAL: sin pruebas fisicas. Una mano en el paro de emergencia. La trayectoria es la del archivo original; solo se traslada con el origen del G92.",
+                 "M140 S%g" % cfg.bed_temp, "M104 S%g" % pre, "M190 S%g" % cfg.bed_temp, "M109 S%g" % pre, "G28"] + list(cfg.custom_start_lines) + \
+                ["G90", "M83", "G92 E0", "M220 S100", "M221 S100", "M106 S%d" % cfg.fan_speed, "M109 S%g" % cfg.nozzle_temp,
+                 "G1 Z5 F%d" % zspeed, "G1 X%s Y%s F%d" % (_fmt(start[0]), _fmt(start[1]), cfg.speed_travel * 60), "G1 Z%s F%d" % (_fmt(start[2]), zspeed)]
+    post_lines = ["G1 E-%g F2400" % cfg.retract_mm, "G1 Z%s F%d" % (_fmt(z_end), zspeed), "M104 S0", "M140 S0", "M107", "M84 X Y E", ";End of adapted non-planar file"]
+    full = "\n".join(pre_lines + out + post_lines) + "\n"
+    # ---- verificacion independiente del texto resultante
+    F: List[Finding] = []
+    F += verify_gcode(full, cfg)
+    rep = analyze_external_gcode(full, cfg)
+    F += rep.findings
+    if m.leveling_bilinear:
+        F.append(Finding("WARN", "NIVELACION", "El archivo NO activa tu malla de nivelacion tras el G28 y la primera capa va a Z %.2f mm. Si usas malla guardada, anade tu orden (p. ej. M420 S1) en custom_start_lines; "
+                         "con la nivelacion apagada la primera capa puede salir mal." % start[2]))
+    F.append(Finding("INFO", "ADAPT_ORIGEN", "Traslado X/Y de (+%.1f, +%.1f) mm (el G92 X0 Y0 del archivo original) aplicado a la trayectoria; se elimina el G92." % (off_x, off_y)))
+    F.append(Finding("INFO", "ADAPT_QUITADO", "Se quitan la cabecera y el final del archivo original (M106 P2, M900, G91, G21, G92...) y se sustituyen por los propios. No se hace ningun purgado en el aire (era de la cortadora de filamento de la Bambu): usa custom_start_lines para tu purga habitual."))
+    stats = dict(rep.stats)
+    stats["movimientos"] = float(len(out))
+    ap = AdaptedPlan(cfg, source_name, full, F, stats, path)
+    ap.digest = hashlib.sha256((full.replace("@@CODIGO@@", "") + json.dumps(asdict(cfg), sort_keys=True, default=list)).encode()).hexdigest()[:12].upper()
+    ap.text = full.replace("@@CODIGO@@", ap.digest)
+    return ap
+
+
+def export_adapted(ap: AdaptedPlan, accept_code: str) -> str:
+    """Mismas barreras que export_gcode: motor activo, cero ERROR, cabezal confirmado, codigo de la vista previa, y el texto verificado de nuevo."""
+    cfg = ap.cfg
+    if not cfg.enabled:
+        raise NotEnabled("Motor desactivado.")
+    if not ap.ok:
+        raise ExportRefused("Hay hallazgos ERROR: " + "; ".join(sorted({f.code for f in ap.findings if f.level == "ERROR"})))
+    if not cfg.head.confirmed:
+        raise ExportRefused("Las dimensiones del cabezal no estan confirmadas (head.confirmed=False).")
+    if (accept_code or "").strip().upper() != ap.digest:
+        raise ExportRefused("El codigo de vista previa no coincide (%s): genera la vista previa, revisala y devuelve su codigo." % ap.digest)
+    errs = [f for f in verify_gcode(ap.text, cfg) if f.level == "ERROR"]
+    if errs:
+        raise ExportRefused("El G-code adaptado no pasa la verificacion independiente: " + "; ".join(f.code for f in errs))
+    return ap.text
+
+
+def render_adapted_preview(ap: AdaptedPlan) -> str:
+    """SVG: vista superior de la trayectoria coloreada por Z y perfil Z a lo largo del recorrido."""
+    pts = ap.path
+    xs, ys, zs = [p[0] for p in pts], [p[1] for p in pts], [p[2] for p in pts]
+    x0, x1, y0, y1, z0, z1 = min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)
+    sc = min(560.0 / max(x1 - x0, 1e-6), 300.0 / max(y1 - y0, 1e-6))
+    W, H = 1020, 620
+    out = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" font-family="sans-serif" font-size="12">' % (W, H), '<rect width="100%" height="100%" fill="#0f1620"/>',
+           '<text x="16" y="24" fill="#ffb020" font-size="15" font-weight="bold">ARQUIS Non-Planar EXPERIMENTAL - G-code externo adaptado (vista previa; NO probado en la impresora)</text>',
+           '<text x="16" y="44" fill="#cfd8e3">Origen: %s   Codigo de vista previa: %s</text>' % (_esc(ap.source_name), ap.digest)]
+    ox, oy = 16, 70
+    out.append('<text x="%d" y="%d" fill="#9fb3c8">Vista superior (X derecha, Y arriba), color = Z</text>' % (ox, oy - 4))
+    step = max(1, len(pts) // 3000)
+    for a, b in zip(pts[::step], pts[step::step]):
+        t = (a[2] - z0) / max(z1 - z0, 1e-6)
+        col = "#%02x%02x%02x" % (int(60 + 180 * t), int(140 + 60 * (1 - abs(2 * t - 1))), int(240 - 200 * t))
+        out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.6"/>' % (ox + (a[0] - x0) * sc, oy + (y1 - a[1]) * sc, ox + (b[0] - x0) * sc, oy + (y1 - b[1]) * sc, col))
+    px, py, pw, ph = 600, 80, 400, 200
+    out.append('<text x="%d" y="%d" fill="#9fb3c8">Z a lo largo del recorrido (%.2f..%.2f mm)</text>' % (px, py - 8, z0, z1))
+    d = " ".join("%.1f,%.1f" % (px + i * pw / max(len(pts) - 1, 1), py + ph - (p[2] - z0) / max(z1 - z0, 1e-6) * ph) for i, p in enumerate(pts[::max(1, len(pts) // 800)]) for i in [i * max(1, len(pts) // 800)])
+    out.append('<polyline points="%s" fill="none" stroke="#4aa3ff" stroke-width="1.2"/>' % d)
+    y = 400
+    st = ap.stats
+    for ln in ["Cabezal: %s" % ("CONFIRMADO por el usuario" if ap.cfg.head.confirmed else "SIN CONFIRMAR: no se podra exportar"),
+               "pendiente max %.1f deg (limite efectivo %.1f)   vz extrusion %.2f mm/s (firmware %.1f)   X %.0f..%.0f  Y %.0f..%.0f  Z %.2f..%.2f" %
+               (st.get("pendiente_max_deg", 0), ap.cfg.eff_max_slope_deg, st.get("vz_extrusion_mm_s", 0), ap.cfg.machine.max_feedrate[2], st.get("x_min", 0), st.get("x_max", 0), st.get("y_min", 0), st.get("y_max", 0), st.get("z_min", 0), st.get("z_max", 0))]:
+        out.append('<text x="16" y="%d" fill="#cfd8e3">%s</text>' % (y, _esc(ln))); y += 18
+    for f in ap.findings:
+        col = {"ERROR": "#ff6b6b", "WARN": "#ffb020", "INFO": "#8fb4d9"}[f.level]
+        out.append('<text x="16" y="%d" fill="%s">[%s] %s: %s</text>' % (y, col, f.level, f.code, _esc(f.msg[:160]))); y += 16
+        if y > H - 8:
+            break
+    out.append('</svg>')
+    return "\n".join(out)

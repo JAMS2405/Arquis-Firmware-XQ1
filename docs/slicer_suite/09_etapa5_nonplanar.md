@@ -34,7 +34,7 @@ Un solo módulo, `cura/plugins/ARQUISPlugin/engines/nonplanar_engine.py` (Python
 | 9 | Vista previa | `render_preview` | SVG: vista superior por pendiente, perfil lateral por capas, resumen y hallazgos |
 | 10 | Exportación | `export_gcode` + `verify_gcode` | Solo con todas las barreras (§3); el texto resultante se vuelve a verificar |
 
-Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (22) y `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9).
+Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34) y `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9).
 
 ## 3. Barreras de seguridad (todas obligatorias)
 
@@ -197,4 +197,46 @@ Tres fotos con calibre digital (lecturas visibles 17,98 / 26,5 / 17,69 mm; **no 
 **Lo que sigue siendo estimación** (`head.confirmed` sigue en `false`; lo cambia el propietario): la pendiente que tolera el cono (40°, sobre el dibujo), el hexágono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto y el filamento de 1,75 mm. Para la **pieza de prueba por defecto** (pendiente máxima 10,7°) la estimación del cono no es decisiva, porque está muy por debajo de cualquier valor razonable; sí lo es para piezas más empinadas como la flor (29°).
 
 Resultado con el perfil actualizado sobre el G-code de la flor (`max_slope_deg = 30`): ver el apartado de verificación; ya no salta el ducto (la flor tiene 3,6 mm de relieve frente a 7,3 mm de holgura).
+
+## 12. No hay STL: la referencia es G-code generado por código. Adaptador de G-code externo
+
+El propietario aclara (2026-11-19) que **no existe un STL**: la pieza de referencia es un G-code que se descarga, generado por código con FullControl. Por tanto la lectura de STL (§9) queda como utilidad secundaria, y el camino es **adaptar ese tipo de G-code a la impresora**, con las mismas barreras que el resto del motor.
+
+**Cómo está hecha la flor** (medido sobre el G-code): **una sola trayectoria en espiral** de 17,5 vueltas, del centro (radio 0,7 mm) a un radio de ~15 mm, con cinco pétalos, Z de 0,32 a 3,92 mm, a 8,3 mm/s y extrusión constante. Cada vuelta se apoya en la anterior (una lámina que crece hacia afuera), así que nada se imprime en el aire. Es la misma técnica que el anillo ondulado de la foto de referencia.
+
+**Qué hace `adapt_external_gcode`** (`--adapt-gcode`): conserva la **trayectoria** (el tramo entre `END OF STARTING PROCEDURE` y `START OF ENDING PROCEDURE`) y sustituye lo demás.
+- **Se conserva:** cada coordenada y cada E (con 6 decimales). Comprobado contra el original: traslado único de +20 mm en X y en Y, diferencia máxima de Z de 0,00005 mm, extrusión total 170,21 mm.
+- **Se aplica como traslado:** el `G92 X0 Y0` del original se convierte en un desplazamiento explícito (+20, +20 mm), y el `G92` desaparece. La pieza queda en X 30–130, Y 32–84.
+- **Se quita:** cabecera y final de la Bambu (`M106 P2`, `M900 K0`, `G91`, `G21`, `G92`, purga en el aire para su cortador de filamento, `G0 Z50`).
+- **Se pone:** cabecera y final propios, con tu temperatura de cama y de hotend y tu ventilador (**obligatorios**: el adaptador no asume el material), `G28`, tus líneas de inicio (`custom_start_lines`), y un final con retracción y subida de Z.
+- **Se limita:** la velocidad de Z al 90 % del máximo de tu firmware (4,5 mm/s), por movimiento.
+- **Se rechaza** (no se adivina): archivo sin los marcadores de FullControl, extrusión absoluta (`M82`), arcos (`G2`/`G3`), `M900` u otra orden dentro de la pieza, palabras no soportadas.
+
+**Barreras de exportación** (las mismas que §3): motor activado, cero hallazgos `ERROR`, `head.confirmed`, código de vista previa devuelto, y el texto resultante verificado otra vez (`verify_gcode`). Sin cabezal confirmado **no se exporta**: comprobado con la flor.
+
+**Resultado con la flor** (cabezal Volcano medido, `max_slope_deg = 30`, temperaturas de prueba; **solo cálculo**):
+
+| Comprobación | Resultado |
+|---|---|
+| Pendiente máxima | 29,1° frente al límite efectivo de 30° (**margen de solo 0,9°**; depende de que el cono tolere de verdad ≥ 35°, que es una estimación) |
+| Velocidad en Z | 4,05 mm/s (límite 5; tope del adaptador 4,5) |
+| Aceleración de Z estimada | máx. 29,6 mm/s² (límite 100), mediana 5 mm/s² |
+| Colisiones (punta, hexágono, bloque, ducto) | ninguna según el modelo |
+| Tiempo de la espiral | ~2,5 min sin aceleraciones |
+| Avisos | **nivelación**: el archivo no activa tu malla tras el `G28` y la primera capa va a Z 0,30 mm; añade tu orden (p. ej. `M420 S1`) en `custom_start_lines` |
+
+Vista previa de ejemplo: `img/nonplanar_flor_adaptada_vista_previa.png`.
+
+**Antes de imprimir (pendientes del propietario):**
+1. **Purga/cebado:** la primera línea de la pieza es un cebado de 100 mm a Z 0,32; el adaptador **no** hace purga en el aire. Pon tu purga habitual en `custom_start_lines`, o asegúrate de que la boquilla está cebada.
+2. **Nivelación:** tu orden en `custom_start_lines` (el archivo no la activa).
+3. `head.confirmed: true`, `bed_temp`, `nozzle_temp` y `fan_speed` en tu configuración.
+4. Genera la vista previa, revísala y devuelve su código:
+```bash
+python3 cura/tools/nonplanar_demo.py --enable-experimental --config nonplanar.json --adapt-gcode flor.gcode --preview vista.svg
+python3 cura/tools/nonplanar_demo.py --enable-experimental --config nonplanar.json --adapt-gcode flor.gcode --export flor_arquis.gcode --accept CODIGO
+```
+5. **Primera ejecución en seco** (sin filamento, hotend caliente, mano en el paro): observa que Z sigue la onda sin ruidos ni pérdida de pasos y que la boquilla no roza nada; solo después, una impresión.
+
+**Limitaciones:** solo entiende G-code de FullControl con esos marcadores; no cambia la geometría (si la flor no cabe o es demasiado empinada, lo dice, no la modifica); la seguridad frente a colisiones es del **modelo** del cabezal, no de tu hotend; todo sin prueba física.
 
