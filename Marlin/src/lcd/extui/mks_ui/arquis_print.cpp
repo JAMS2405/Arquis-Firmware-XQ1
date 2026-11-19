@@ -209,14 +209,24 @@ void arq_print_poll() {
       const char *n = card.longest_filename();
       if (n && strncmp(last_file, n, sizeof(last_file) - 1)) arq_strlcpy(last_file, n, sizeof(last_file));
     }
-    // marlin_state == MF_SD_COMPLETE dura solo hasta que Marlin encola M1001: hay que anotarlo en cuanto aparece, en cualquier pantalla
-    if (!once_flag && !finish_latched && uiCfg.print_state == WORKING && (marlin_state == MF_SD_COMPLETE || card.flag.sdprintdone)) {
+    // marlin_state == MF_SD_COMPLETE dura solo hasta que Marlin encola M1001: hay que anotarlo en cuanto aparece, en cualquier pantalla.
+    // Si esa ventana se pierde, el respaldo de arq_finish_detect() lo detecta igualmente (ver arquis_logic.h).
+    static arq_finish_state_t fin;
+    const arq_finish_in_t in = { uiCfg.print_state == WORKING, gcode_preview_over, once_flag,
+                                 marlin_state == MF_SD_COMPLETE || card.flag.sdprintdone, arq_data_job_active(), card.isFileOpen(), (uint32_t)millis() };
+    if (!finish_latched && arq_finish_detect(&fin, &in)) {
       finish_latched = true;
       stop_print_time();
     }
   #endif
   if (!finish_latched) return;
-  if (once_flag || arq_data_job_active()) { finish_latched = false; return; }   // ya atendido, o empezo otra impresion
+  // Descartar solo si ya se atendio o si EMPEZO otra impresion. (Antes se descartaba con arq_data_job_active(): al terminar el archivo
+  // el trabajo sigue "activo" hasta que Marlin ejecuta M1001, asi que el aviso de fin se perdia siempre que los movimientos finales tardaban.)
+  #if HAS_MEDIA
+    if (once_flag || arq_finish_new_job(card.isFileOpen(), card.flag.sdprintdone)) { finish_latched = false; return; }
+  #else
+    if (once_flag) { finish_latched = false; return; }
+  #endif
   if (gcode_preview_over || arq_dialog_is_open()) return;
   if (disp_state == PRINTING_UI || disp_state == PRINT_READY_UI) { finish_latched = false; show_finish(); }
 }

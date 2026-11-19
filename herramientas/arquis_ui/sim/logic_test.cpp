@@ -69,6 +69,51 @@ int main() {
   { char d[6]; size_t n = arq_strlcpy(d, "abcdefghij", sizeof d); EXPECT(n == 10 && !strcmp(d, "abcde"), "strlcpy trunca y termina en NUL"); }
   { char d[6]; arq_strlcpy(d, "ab", sizeof d); EXPECT(!strcmp(d, "ab"), "strlcpy copia corto"); }
 
+  // Fin de impresion (arq_finish_detect / arq_finish_new_job). Caso real del propietario: el archivo termino, el trabajo sigue "activo" hasta M1001.
+  {
+    arq_finish_state_t s = { false, 0 };
+    arq_finish_in_t in = { true, false, false, false, true, true, 1000 };                     // imprimiendo con normalidad
+    EXPECT(!arq_finish_detect(&s, &in), "imprimiendo: no hay fin");
+    in.file_open = false; in.sd_done = true; in.job_active = true;                            // EOF: sdprintdone, trabajo activo hasta M1001
+    EXPECT(arq_finish_detect(&s, &in), "fin de archivo con el trabajo aun activo SE DETECTA (el fallo original lo perdia)");
+    in.once = true;
+    EXPECT(!arq_finish_detect(&s, &in), "ya atendido: no se repite");
+  }
+  {
+    arq_finish_state_t s = { false, 0 };
+    arq_finish_in_t in = { true, false, false, false, false, false, 5000 };                   // la foto: WORKING, sin trabajo, sin archivo, ventana perdida
+    EXPECT(!arq_finish_detect(&s, &in), "respaldo: empieza a contar");
+    in.now_ms = 5000 + ARQ_FINISH_GONE_MS - 1;
+    EXPECT(!arq_finish_detect(&s, &in), "respaldo: aun no pasaron 3 s");
+    in.now_ms = 5000 + ARQ_FINISH_GONE_MS;
+    EXPECT(arq_finish_detect(&s, &in), "respaldo: a los 3 s se detecta el fin (caso de la foto)");
+  }
+  {
+    arq_finish_state_t s = { false, 0 };
+    arq_finish_in_t in = { true, true, false, false, false, false, 0 };                       // cargando la miniatura: aun no empezo
+    EXPECT(!arq_finish_detect(&s, &in), "preparando");
+    in.now_ms = 60000; EXPECT(!arq_finish_detect(&s, &in), "preparando mucho rato: nunca es fin");
+    in.preparing = false; in.job_active = true;                                               // empieza y hay trabajo: el contador se rearma
+    EXPECT(!arq_finish_detect(&s, &in), "con trabajo activo no hay fin");
+    in.job_active = false; in.now_ms = 61000;
+    EXPECT(!arq_finish_detect(&s, &in) && s.armed, "el contador reempieza desde cero tras una interrupcion");
+    in.job_active = false; in.file_open = true; in.now_ms = 70000;
+    EXPECT(!arq_finish_detect(&s, &in), "con archivo abierto (preparando el inicio, pausa) nunca es fin");
+  }
+  {
+    arq_finish_state_t s = { false, 0 };
+    arq_finish_in_t in = { false, false, false, true, false, false, 0 };                      // pantalla sin impresion (p. ej. cancelada por el usuario)
+    EXPECT(!arq_finish_detect(&s, &in), "sin impresion en la pantalla (IDLE/cancelada): nunca fin");
+    in.working = true; in.sd_done = false; in.now_ms = 1; arq_finish_detect(&s, &in); in.now_ms = 10000;
+    EXPECT(arq_finish_detect(&s, &in), "wrap-around de millis no rompe la resta");
+    arq_finish_state_t w = { true, 0xFFFFFF00u }; arq_finish_in_t i2 = { true, false, false, false, false, false, 0x00000100u + ARQ_FINISH_GONE_MS };
+    EXPECT(arq_finish_detect(&w, &i2), "millis() desbordado (wrap) sigue contando bien");
+  }
+  EXPECT(arq_finish_new_job(true, false), "archivo abierto y sin terminar = impresion nueva: descartar el aviso");
+  EXPECT(!arq_finish_new_job(false, true), "terminada y archivo cerrado: el aviso sigue valido");
+  EXPECT(!arq_finish_new_job(false, false), "tras M1001 (todo limpio): el aviso sigue valido");
+  EXPECT(!arq_finish_new_job(true, true), "archivo abierto pero ya marcado como terminado: no es nueva");
+
   printf("Pruebas de logica: %d de %d correctas%s\n", total - fails, total, fails ? "  <-- HAY FALLOS" : "");
   return fails ? 1 : 0;
 }

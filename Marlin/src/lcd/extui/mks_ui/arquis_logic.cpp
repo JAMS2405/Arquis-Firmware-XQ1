@@ -67,3 +67,15 @@ size_t arq_strlcpy(char *dst, const char *src, size_t n) {
   while (src[i]) ++i;
   return i;
 }
+
+bool arq_finish_detect(arq_finish_state_t *st, const arq_finish_in_t *in) {
+  if (!in->working || in->once) { st->armed = false; return false; }
+  if (in->sd_done)              { st->armed = false; return true; }
+  if (in->preparing || in->job_active || in->file_open) { st->armed = false; return false; }
+  if (!st->armed) { st->armed = true; st->since_ms = in->now_ms; return false; }
+  if ((uint32_t)(in->now_ms - st->since_ms) >= ARQ_FINISH_GONE_MS) { st->armed = false; return true; }
+  return false;
+}
+
+bool arq_finish_new_job(bool file_open, bool sd_done) { return file_open && !sd_done; }
+

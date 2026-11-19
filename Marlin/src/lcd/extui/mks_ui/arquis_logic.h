@@ -58,3 +58,33 @@ size_t arq_fmt_hm(char *buf, size_t n, uint32_t seconds);
 
 // Copia segura y siempre terminada en NUL (no depende de que la libc traiga strlcpy).
 size_t arq_strlcpy(char *dst, const char *src, size_t n);
+
+// ---- Fin de impresion (funciones puras; las usa arquis_print.cpp) --------------------------------------------------------------------
+// Entradas: lo que Marlin informa en este instante. Se prueban en el PC con los casos reales (herramientas/arquis_ui/sim/logic_test.cpp).
+#define ARQ_FINISH_GONE_MS 3000UL    // respaldo: sin trabajo ni archivo abierto durante tanto tiempo con la pantalla en "imprimiendo"
+
+typedef struct {
+  bool     armed;                    // el respaldo esta contando
+  uint32_t since_ms;
+} arq_finish_state_t;
+
+typedef struct {
+  bool     working;                  // la pantalla cree que hay una impresion en marcha (uiCfg.print_state == WORKING)
+  bool     preparing;                // cargando la miniatura: la impresion aun no ha empezado
+  bool     once;                     // ya se mostro el aviso de fin de ESTA impresion
+  bool     sd_done;                  // Marlin anuncia el fin del archivo (MF_SD_COMPLETE o sdprintdone)
+  bool     job_active;               // impresion activa o en pausa segun Marlin
+  bool     file_open;                // hay un archivo abierto en la tarjeta
+  uint32_t now_ms;
+} arq_finish_in_t;
+
+// true = hay que mostrar "Impresion finalizada". Dos caminos:
+//  1) Marlin anuncia el fin del archivo (sd_done). NO se descarta aunque el trabajo siga "activo": hasta que Marlin ejecuta M1001
+//     (tras los movimientos finales) el temporizador y el indicador de impresion siguen activos aunque el archivo ya termino.
+//  2) Respaldo: la pantalla sigue en "imprimiendo" pero ya no hay trabajo ni archivo abierto durante ARQ_FINISH_GONE_MS
+//     (la ventana del camino 1 se perdio). Solo con la pantalla en imprimiendo y sin cargar la miniatura.
+bool arq_finish_detect(arq_finish_state_t *st, const arq_finish_in_t *in);
+
+// true = una impresion NUEVA ha empezado mientras el aviso estaba aplazado (archivo abierto y sin haber terminado): hay que descartarlo.
+bool arq_finish_new_job(bool file_open, bool sd_done);
+
