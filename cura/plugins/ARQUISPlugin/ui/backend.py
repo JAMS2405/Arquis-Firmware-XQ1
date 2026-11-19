@@ -73,6 +73,14 @@ class ObjectManagerBackend(QObject):
     def warnings(self):
         return self._vm["warnings"]
 
+    @pyqtProperty(bool, notify=changed)
+    def mapValid(self):
+        return self._vm["mapValid"]
+
+    @pyqtProperty(str, notify=changed)
+    def bedMismatch(self):
+        return self._vm["bedMismatch"]
+
     @pyqtProperty(str, notify=changed)
     def summary(self):
         return self._vm["summary"]
@@ -85,5 +93,5 @@ class ObjectManagerBackend(QObject):
     def selectedInfo(self):
         for r in self._vm["rows"]:
             if r["id"] == self._selected:
-                return "%s  %s  -  X %.1f  Y %.1f  -  %s" % (r["label"], r["name"], r["x"], r["y"], r["stateText"])
+                return "%s  %s  -  %s  -  %s" % (r["label"], r["name"], ("sin posicion valida" if not self._vm["mapValid"] else "X %.1f  Y %.1f" % (r["x"], r["y"])), r["stateText"])
         return "Toca un objeto del mapa o de la lista"

@@ -85,6 +85,7 @@ static int cmd_batch() {
     }
     else if (c == "object_state") printf("%u\n", arq_obj_state(a[0], a[1], a[2], a[3], (uint16_t)a[4], (uint16_t)a[5], (uint8_t)a[6], (uint16_t)a[7], (int16_t)a[8]));
     else if (c == "crc32") { uint8_t buf[256]; uint16_t n = 0; for (long x : a) buf[n++] = (uint8_t)x; printf("%08X\n", ~arq_crc32_update(0xFFFFFFFFu, buf, n)); }
+    else if (c == "box_within") { ArqObjRec r{}; r.cx = (int16_t)a[0]; r.cy = (int16_t)a[1]; r.w = (uint16_t)a[2]; r.d = (uint16_t)a[3]; printf("%d\n", arq_box_within(r, (int32_t)a[4], (int32_t)a[5], (int32_t)a[6], (int32_t)a[7], (int32_t)a[8])); }
     else printf("?\n");
   }
   return 0;

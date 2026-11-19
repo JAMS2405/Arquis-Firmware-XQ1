@@ -63,9 +63,32 @@ static_assert(ARQ_OBJ_CAPACITY_CEILING <= ARQ_OBJ_PROTOCOL_MAX, "el techo no pue
 ''' % j
 
 
+MACHINE_JSON = os.path.join(ROOT, "shared", "machines", "arquis_xq1.json")
+MACHINE_OUT = os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "engines", "machine_profile.py")
+
+
+def render_machine():
+    with open(MACHINE_JSON, encoding="utf-8") as f:
+        m = json.load(f)
+    return '''# SPDX-License-Identifier: LGPL-3.0-or-later
+# ARCHIVO GENERADO por shared/object_protocol/gen_limits.py a partir de shared/machines/arquis_xq1.json. NO EDITAR A MANO.
+"""Geometria de la maquina real de ARQUIS (la fuente es shared/machines/arquis_xq1.json; una prueba la compara con Marlin/Configuration.h)."""
+
+MACHINE_NAME = %r
+BED_X_MM = %r
+BED_Y_MM = %r
+HEIGHT_Z_MM = %r
+MIN_X_MM = %r
+MIN_Y_MM = %r
+ORIGIN = %r                       # PROVISIONAL mientras ORIGIN_CONFIRMED sea False (prueba de orientacion fisica pendiente)
+ORIGIN_CONFIRMED = %r
+CENTER_IS_ZERO = %r
+''' % (m["name"], m["bed_x_mm"], m["bed_y_mm"], m["height_z_mm"], m["min_x_mm"], m["min_y_mm"], m["origin"], m["origin_confirmed"], m["center_is_zero"])
+
+
 def main():
     j = load()
-    outs = {PY_OUT: render_py(j), H_OUT: render_h(j)}
+    outs = {PY_OUT: render_py(j), H_OUT: render_h(j), MACHINE_OUT: render_machine()}
     if "--check" in sys.argv:
         bad = [p for p, t in outs.items() if not os.path.exists(p) or open(p, encoding="utf-8").read() != t]
         if bad:

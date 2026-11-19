@@ -8,5 +8,7 @@
 | [`04_cambio_capacidad_30.md`](04_cambio_capacidad_30.md) | Revisión de la Etapa 1, cambios por el nuevo límite y hallazgos con G-code real de Cura |
 | [`03_etapa1_m486.md`](03_etapa1_m486.md) | Etapa 1: motor M486 en Cura — reglas, pruebas, limitaciones, cómo validarlo con Cura real |
 | [`05_etapa2_manifiesto.md`](05_etapa2_manifiesto.md) | Etapa 2: gestor de objetos, mapa de cama y manifiesto — qué hay, pruebas, limitaciones, validación |
+| [`07_etapa3_firmware.md`](07_etapa3_firmware.md) | Etapa 3: firmware y TS35 (rechazo M486 fuera de 0-29, lector de manifiesto, mapa y lista de 30 objetos, puerta de cancelación), pruebas por tipo, memoria antes/después, riesgos e instrucciones para tu impresora |
+| [`../../cura/VALIDACION_EN_CURA.md`](../../cura/VALIDACION_EN_CURA.md) | Cómo validar el plugin dentro de Cura 5.11 real (hoy: NO validado) |
 | [`06_decisiones.md`](06_decisiones.md) | Decisiones confirmadas del propietario (manifiesto, licencia, capacidad, repositorio, orientación provisional, política de cancelación visual) |
 | [`../../shared/object_protocol/ARQUIS_OBJECTS_V1.md`](../../shared/object_protocol/ARQUIS_OBJECTS_V1.md) | Especificación normativa del manifiesto y del mapa |

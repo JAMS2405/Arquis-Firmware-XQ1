@@ -110,3 +110,16 @@ def test_thirty_identical_copies_render_without_warnings(app):
     v.close()
     b.setData(instances_from(grid_objects(34, "Llavero", w=20, d=20, gap=6)), (0.0, 0.0, 300.0, 300.0))
     assert sum(1 for r in b.rows if not r["cancelable"]) == 4 and any("superan la capacidad" in w for w in b.warnings)
+
+
+def test_incompatible_bed_shows_a_red_banner_and_no_markers(app):
+    from ui_backend import ObjectManagerBackend
+    b = ObjectManagerBackend()
+    b.setData(instances_from(grid_objects(8, "Llavero", w=20, d=20, gap=6, bed=450.0)), (0.0, 0.0, 450.0, 450.0))      # perfil CR-10 Max
+    v, warnings = make_view(b)
+    assert not warnings and not b.mapValid and b.markers == [] and len(b.rows) == 8
+    assert "450 x 450" in b.bedMismatch and "sin posicion valida" in (b.select(0) or b.selectedInfo)
+    img = v.grabWindow()
+    assert not img.isNull()
+    img.save(os.path.join(IMG, "gestor_objetos_cama_incompatible.png"))
+    v.close()

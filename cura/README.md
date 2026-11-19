@@ -8,6 +8,8 @@ Módulo independiente (no se compila con el firmware) del repositorio ARQUIS. Cu
 - `plugins/ARQUISPlugin/adapters/` — **única** capa que conoce la API de Cura/Uranium.
 - `scripts/` — scripts de post-procesado de Cura (`ARQUIS_M486.py`, `ARQUIS_Validation.py`); solo adaptan los motores.
 - `tests/` — pruebas (`pytest`); no necesitan Cura.
+- `tools/` — `arquis_check.py` (valida un .gcode exportado), `make_orientation_gcode.py`, `verify_cura_capture.py` (verifica el volcado que genera el plugin dentro de Cura), `check_cura_api_source.py` (comprueba la API contra el código fuente 5.11.0).
+- **`VALIDACION_EN_CURA.md`** — cómo validar el plugin en Cura real (hoy **no validado**).
 
 ```bash
 cd cura

@@ -4,3 +4,6 @@
 - Conformidad del protocolo: los vectores de `shared/object_protocol/test_vectors/` (417 casos) los cumple el parser de referencia de Cura (`cura/tests/test_shared_vectors.py`) y deberá cumplirlos el parser/mapa del firmware (Etapa 3).
 
 Las pruebas propias del módulo de Cura están en `cura/tests/`; las del firmware, en `herramientas/pruebas/`.
+
+## tests/firmware (Etapa 3)
+`arq_cli.cpp` + `build_cli.sh` compilan el módulo REAL `Marlin/src/lcd/extui/mks_ui/arquis_objects.cpp` en el PC (opción `san`: ASan+UBSan) y lo exponen a las pruebas de Python (`cura/tests/test_firmware_manifest_parser.py`, `test_machine_profile.py`). `measure_size.sh` mide el tamaño ARM antes/después. `tests/capacity/stock_marlin/` guarda el motor M486 estable sin modificar para comparar.

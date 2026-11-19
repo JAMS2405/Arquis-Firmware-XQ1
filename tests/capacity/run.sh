@@ -12,5 +12,5 @@ python3 "$HERE/scan_real_engine.py" "$T/real/harness" stock
 "$HERE/build_real_engine.sh" "$T/dev" dev
 python3 "$HERE/scan_real_engine.py" "$T/dev/harness" dev
 g++ -std=c++17 -O1 "$HERE/co30_prototype.cpp" -o "$T/co30" && "$T/co30"
-g++ -std=c++17 "$HERE/sizes.cpp" -o "$T/sizes" && "$T/sizes"
+g++ -std=gnu++17 -I"$HERE/../../Marlin/src/lcd/extui/mks_ui" "$HERE/sizes.cpp" -o "$T/sizes" && "$T/sizes"
 python3 "$HERE/manifest_size.py"

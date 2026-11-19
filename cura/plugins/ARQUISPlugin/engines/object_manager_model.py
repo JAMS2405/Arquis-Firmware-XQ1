@@ -13,11 +13,28 @@ from .object_engine import ArquisObject
 GRID_MM = 50
 
 
+_DEFAULT = object()
+
+
+def bed_mismatch(bed_mm: Tuple[float, float, float, float], machine_bed: Optional[Tuple[float, float]], tol_mm: float = 1.0) -> Optional[str]:
+    """Texto de error si la cama del perfil de Cura no es la de la maquina ARQUIS (``None`` = coincide o no se pidio comprobar)."""
+    if machine_bed is None:
+        return None
+    if abs(bed_mm[2] - machine_bed[0]) > tol_mm or abs(bed_mm[3] - machine_bed[1]) > tol_mm:
+        return ("La cama del perfil de Cura es de %.0f x %.0f mm y la de la impresora ARQUIS es de %.0f x %.0f mm: el mapa NO es valido "
+                "y no se genera manifiesto. Usa el perfil de la maquina real." % (bed_mm[2], bed_mm[3], machine_bed[0], machine_bed[1]))
+    return None
+
+
 def build_view_model(objects: Sequence[ArquisObject], bed_mm: Tuple[float, float, float, float], selected: int = -1,
                      view: Optional[bm.View] = None, states: Optional[Dict[int, int]] = None,
-                     capacity: int = limits.DESIGN_CAPACITY, cura_bed_note: bool = True) -> dict:
+                     capacity: int = limits.DESIGN_CAPACITY, cura_bed_note: bool = True, machine_bed=_DEFAULT) -> dict:
     """``selected``: id del objeto seleccionado (-1 = ninguno). ``states``: estados por id (demo/pruebas); por defecto, antes de
     imprimir: Pendiente para los cancelables y No disponible para los que superan la capacidad."""
+    if machine_bed is _DEFAULT:                                       # la maquina REAL de ARQUIS (shared/machines/arquis_xq1.json)
+        from . import machine_profile as mp
+        machine_bed = (float(mp.BED_X_MM), float(mp.BED_Y_MM))
+    mismatch = bed_mismatch(bed_mm, machine_bed)
     view = view or bm.View(0, 0, 266, 266)
     bed = bm.Bed(round(bed_mm[0] * 10), round(bed_mm[1] * 10), round(bed_mm[2] * 10), round(bed_mm[3] * 10))
     markers, rows, ms = [], [], []
@@ -33,7 +50,7 @@ def build_view_model(objects: Sequence[ArquisObject], bed_mm: Tuple[float, float
         markers.append({"id": key, "label": label, "badge": bm.STATE_BADGE[state], "x0": m.x0, "y0": m.y0, "x1": m.x1, "y1": m.y1,
                         "w": m.w, "h": m.h, "shape": o.shape, "state": state, "stateText": bm.STATE_TEXT[state], "selected": key == selected,
                         "overlap": False})
-        rows.append({"id": key, "label": label, "name": name, "x": round(cx / 10.0, 1), "y": round(cy / 10.0, 1),
+        rows.append({"id": key, "label": label, "name": name, "x": round(cx / 10.0, 1), "y": round(cy / 10.0, 1), "pos": ("-" if mismatch else "%.1f / %.1f" % (cx / 10.0, cy / 10.0)),
                      "size": "%.1f x %.1f" % (w / 10.0, d / 10.0), "shape": o.shape, "state": state, "stateText": bm.STATE_TEXT[state],
                      "badge": bm.STATE_BADGE[state], "cancelable": o.cancelable, "selected": key == selected})
     touching = {i for pair in bm.overlaps(ms) for i in pair}
@@ -54,13 +71,16 @@ def build_view_model(objects: Sequence[ArquisObject], bed_mm: Tuple[float, float
         gy += GRID_MM * 10
     over = sum(1 for o in objects if not o.cancelable)
     warnings = []
+    if mismatch:                                                       # cama incompatible: NI mapa NI marcadores NI posiciones; solo la lista de objetos
+        markers, grid, ms = [], [], []
+        warnings.append(mismatch)
     if over:
         warnings.append("%d objetos superan la capacidad de cancelacion (%d): se imprimen pero no se podran cancelar." % (over, capacity))
     if any(mk["overlap"] for mk in markers):
         warnings.append("Algunos marcadores se tocan en pantalla: se pueden elegir desde la lista o ampliando el mapa de la impresora.")
     if cura_bed_note:
         warnings.append("Cama del perfil de Cura: %.0f x %.0f mm. El mapa solo coincide con la impresora si es la misma." % (bed_mm[2], bed_mm[3]))
-    return {"bed": {"x0": bx0, "y0": by0, "x1": bx1, "y1": by1, "w": bed_mm[2], "d": bed_mm[3]}, "grid": grid, "markers": markers, "rows": rows,
+    return {"mapValid": mismatch is None, "bedMismatch": mismatch or "", "bed": {"x0": bx0, "y0": by0, "x1": bx1, "y1": by1, "w": bed_mm[2], "d": bed_mm[3]}, "grid": grid, "markers": markers, "rows": rows,
             "warnings": warnings, "selected": selected,
             "summary": "%d objetos · %d cancelables (maximo %d)" % (len(objects), len(objects) - over, capacity),
             "_markers": ms}

@@ -18,6 +18,14 @@ Item {
         anchors.fill: parent
         anchors.margins: 8
         spacing: 6
+        Rectangle {                                         // cama del perfil distinta de la de la impresora: el mapa no se habilita
+            visible: !backend.mapValid
+            Layout.fillWidth: true
+            implicitHeight: banner.implicitHeight + 8
+            color: "#7A1F1F"
+            border.color: "#FF6B6B"
+            Text { id: banner; anchors.fill: parent; anchors.margins: 4; text: backend.bedMismatch; color: "#FFFFFF"; font.pixelSize: 12; font.bold: true; wrapMode: Text.WordWrap }
+        }
         Text {
             text: backend.summary
             font.pixelSize: 15
@@ -67,7 +75,7 @@ Item {
                             spacing: 0
                             Text { text: modelData.label + modelData.badge; Layout.preferredWidth: 44; color: "#FFFFFF"; font.pixelSize: 13; font.bold: true }
                             Text { text: modelData.name; Layout.preferredWidth: 150; color: "#E6ECF7"; font.pixelSize: 13; elide: Text.ElideRight }
-                            Text { text: modelData.x.toFixed(1) + " / " + modelData.y.toFixed(1); Layout.preferredWidth: 100; color: "#C7D2E8"; font.pixelSize: 12 }
+                            Text { text: modelData.pos; Layout.preferredWidth: 100; color: "#C7D2E8"; font.pixelSize: 12 }
                             Text { text: modelData.size; Layout.preferredWidth: 90; color: "#C7D2E8"; font.pixelSize: 12 }
                             Text { text: modelData.stateText; Layout.fillWidth: true; color: "#C7D2E8"; font.pixelSize: 12 }
                         }

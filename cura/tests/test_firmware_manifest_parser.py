@@ -257,3 +257,46 @@ def test_firmware_reads_the_manifest_of_real_cura_gcode_and_rejects_the_wrong_be
     assert wrong["status"] == "bad" and wrong["errors"] == ["E_BED_MISMATCH"]
     crlf = run_parse(cli, tmp_path, text.replace("\n", "\r\n"), 200, (4500, 4500))
     assert crlf["status"] == "ok"
+
+
+def _learned_boxes(chunks):
+    """Reproduce CancelObject::note_extrusion de Marlin: G0/G1 con E y X|Y, destino = posicion actual si falta un eje, truncado a mm enteros."""
+    from arquis_engines.gcode_scan_engine import parse_cmd
+    x = y = 0.0
+    act = -1
+    boxes = {}
+    for chunk in chunks:
+        for line in chunk.split("\n"):
+            c = parse_cmd(line)
+            if not c:
+                continue
+            if c.name == "M486":
+                act = int(c.words["S"]) if "S" in c.words else act
+            elif c.name in ("G0", "G1"):
+                nx, ny = c.words.get("X", x), c.words.get("Y", y)
+                if act >= 0 and "E" in c.words and ("X" in c.words or "Y" in c.words):
+                    b = boxes.setdefault(act, [int(nx), int(ny), int(nx), int(ny)])
+                    b[0], b[1], b[2], b[3] = min(b[0], int(nx)), min(b[1], int(ny)), max(b[2], int(nx)), max(b[3], int(ny))
+                x, y = nx, ny
+    return boxes
+
+
+@pytest.mark.parametrize("name", ["real_3_distintos", "real_4_iguales"])
+def test_runtime_box_check_accepts_the_real_print_and_rejects_a_mirrored_manifest(cli, name):
+    """Comprobacion en ejecucion del firmware (arq_box_within, margen 6 mm) con las cajas REALES que aprenderia Marlin de G-code de Cura."""
+    chunks = split_like_cura(load_reduced(name))
+    res = process_gcode(chunks, derive_scene(chunks), M486Options(bed=(0, 0, 450, 450)))
+    man = res.manifest
+    boxes = _learned_boxes(res.chunks)
+    assert len(boxes) == len(man.objects)
+    ask = []
+    for o in man.objects:
+        b = boxes[o.id]
+        ask.append("box_within %d %d %d %d %d %d %d %d 60" % (o.cx, o.cy, o.w, o.d, *b))                       # tal como se imprime
+        ask.append("box_within %d %d %d %d %d %d %d %d 60" % (o.cx, 4500 - o.cy, o.w, o.d, *b))               # manifiesto con Y reflejado
+    res_out = subprocess.run([cli, "batch"], input="\n".join(ask) + "\n", capture_output=True, text=True).stdout.split()
+    real, mirrored = res_out[0::2], res_out[1::2]
+    assert real == ["1"] * len(man.objects), "una impresion real debe pasar la comprobacion (margen 6 mm)"
+    centered = [o for o in man.objects if abs(4500 - o.cy - o.cy) <= 100]
+    assert mirrored.count("0") >= len(man.objects) - len(centered), "un manifiesto con el eje Y reflejado debe BLOQUEAR el mapa"
+    assert "0" in mirrored

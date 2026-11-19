@@ -1,5 +1,7 @@
 # Capacidad de 30 objetos — estudio de viabilidad (sustituye al de 64)
 
+> **Actualización (Etapa 3).** El rechazo de índices fuera de 0–29 **ya está implementado en el firmware** de la rama de desarrollo (verificado con el motor real compilado en el PC: 0 alias); sigue **sin validarse en la placa**. Las estructuras reales son mayores que las estimadas aquí (`ArqObjRec` 16 B, `ArqObjStore` 1 136 B) y las cifras de Flash/RAM medidas compilando para ARM están en `07_etapa3_firmware.md` §4.
+
 Decisión del propietario (Enmienda 2): **30 objetos simultáneos de diseño, IDs cancelables 0–29**. Ya no hay objetivo de 64 ni de 256. Este documento reemplaza a `02_capacidad_64.md` (renombrado). **No se ha modificado ningún archivo de `Marlin/`, `platformio.ini` ni `ini/`.**
 
 Leyenda: **[MEDIDO]** ejecutado con código real o prototipo (`tests/capacity/run.sh`, `cura/tests/`) · **[CALCULADO]** derivado de `sizeof` medidos · **[REFERENCIA]** medida previa del repositorio (Etapa 6), no repetida · **[PENDIENTE]** requiere compilar para la placa (no es posible en esta sesión: sin PlatformIO ni GCC ARM, y el *core* Arduino STM32 es un `.zip` de GitHub que el proxy bloquea).
