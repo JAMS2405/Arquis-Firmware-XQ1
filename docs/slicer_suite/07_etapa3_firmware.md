@@ -47,7 +47,7 @@ Ninguno de `platformio.ini`, `ini/`, `Configuration*.h`, el planificador, el *st
 |---|---|---|---|
 | 1 | Motor M486 **real** de Marlin (código del repositorio compilado en el PC): barrido de 65 536 valores `int16` + 12 de 32 bits, motor estable vs motor de esta rama | SIMULACIÓN | estable: 8 170 `P` y 32 746 `S` ajenos; **rama: 0 y 0**; 0–29 correctos |
 | 2 | Motor real: cada uno de los 30 objetos, G-code ARQUIS sintético y **G-code real de Cura**, trazas idénticas al modelo | SIMULACIÓN | OK |
-| 3 | Parser de manifiesto del firmware (C++ real, ASan+UBSan) vs parser de referencia: **64 vectores compartidos × 4 troceados** (1 B … 100 kB) | SIMULACIÓN | idénticos (ok + conjunto de errores) |
+| 3 | Parser de manifiesto del firmware (C++ real, ASan+UBSan) vs parser de referencia: **46 vectores compartidos × 4 troceados** (1 B … 100 kB) | SIMULACIÓN | idénticos (ok + conjunto de errores) |
 | 4 | Fuzz: 450 mutaciones con CRC roto (+4 500 de una sesión de exploración), **6 000 mutaciones estructurales con CRC válido** (llegan a todas las validaciones semánticas), bytes aleatorios | SIMULACIÓN | 0 divergencias, 0 errores de memoria/UB |
 | 5 | Mapa de cama y estados: **391 vectores** (aritmética entera) | SIMULACIÓN | idénticos bit a bit |
 | 6 | G-code real de Cura 5.11 (2 archivos): el firmware lee su manifiesto; con la cama de la máquina (300×300) lo **rechaza** (`E_BED_MISMATCH`, sin tabla) | SIMULACIÓN | OK |
@@ -86,7 +86,9 @@ Heap de LVGL (16 KB, medido con LVGL real en ARM 32 bits): la pantalla de objeto
 7. **Margen de 6 mm** de la comprobación en ejecución: calibrado con 2 G-code reales (exceso ≤ 0,5 mm); un perfil con anchos de extrusión o *brims* atípicos podría bloquear de más (falla del lado seguro).
 8. **`Z_MAX_POS 450`** en `Configuration.h` frente a una cama de 300 × 300: no lo he tocado; solo lo anoto (el perfil de máquina de las pruebas lo refleja tal cual).
 9. El defecto de `value_int()` truncando también puede existir en otros comandos de Marlin (no revisados; fuera de alcance).
-10. `T`: un G-code ajeno con `M486 T40` se acota a 30; los objetos 30–39 se imprimen sin poder cancelarse (seguro).
+10. **Vinculación manifiesto ↔ archivo:** se compara un identificador (hash del nombre largo + tamaño) calculado al elegir el archivo y al imprimirlo. Si Marlin resolviera el nombre largo de forma distinta en esos dos momentos, el manifiesto se **ignoraría** (falla seguro: vuelve al comportamiento sin manifiesto, pero la función no aparecería). Si en T3 no ves los nombres, dímelo.
+11. **Rutas relativas a `shared/`:** `cancel_object.h` y `arquis_objects.h` incluyen `shared/object_protocol/generated/arquis_object_limits.h` por ruta relativa: hay que compilar con el repositorio completo (como ya haces), no con `Marlin/` suelto.
+12. `T`: un G-code ajeno con `M486 T40` se acota a 30; los objetos 30–39 se imprimen sin poder cancelarse (seguro).
 
 ## 6. Instrucciones exactas para probar en tu impresora
 
