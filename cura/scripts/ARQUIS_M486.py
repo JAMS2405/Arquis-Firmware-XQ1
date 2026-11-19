@@ -59,6 +59,29 @@ class ARQUIS_M486(Script):
                     "minimum_value": "0",
                     "maximum_value_warning": "3"
                 },
+                "emit_manifest": {
+                    "label": "Incluir el mapa de objetos para la pantalla",
+                    "description": "Anade al final del G-code el manifiesto ARQUIS_OBJECTS_V1 (posicion, tamano, forma y nombre de cada objeto) para que la pantalla de la impresora dibuje el mapa de la cama. Si no se puede generar con seguridad, se omite y el G-code conserva el M486.",
+                    "type": "bool",
+                    "default_value": true
+                },
+                "check_bed": {
+                    "label": "Comprobar el tamano de cama del firmware",
+                    "description": "Si el perfil de Cura no tiene la misma cama que la impresora, el mapa saldria desplazado: en ese caso no se incluye el mapa.",
+                    "type": "bool",
+                    "default_value": true,
+                    "enabled": "emit_manifest"
+                },
+                "bed_x": {
+                    "label": "Cama del firmware, ancho X",
+                    "type": "float", "unit": "mm", "default_value": 300, "minimum_value": "50",
+                    "enabled": "emit_manifest and check_bed"
+                },
+                "bed_y": {
+                    "label": "Cama del firmware, fondo Y",
+                    "type": "float", "unit": "mm", "default_value": 300, "minimum_value": "50",
+                    "enabled": "emit_manifest and check_bed"
+                },
                 "id_order": {
                     "label": "Numeracion de objetos",
                     "description": "Escena: el orden de la lista de objetos de Cura. Posicion: de la esquina frontal izquierda hacia atras, fila a fila.",
@@ -73,9 +96,13 @@ class ARQUIS_M486(Script):
         try:
             eng, scene = _load_arquis()
             instances = scene.capture_scene()
+            emit = bool(self.getSettingValueByKey("emit_manifest"))
             opt = eng.M486Options(capacity=int(self.getSettingValueByKey("capacity")),
                                   tolerance_mm=float(self.getSettingValueByKey("tolerance")),
-                                  id_order=str(self.getSettingValueByKey("id_order")))
+                                  id_order=str(self.getSettingValueByKey("id_order")),
+                                  bed=scene.capture_bed() if emit else None,
+                                  expected_bed=((float(self.getSettingValueByKey("bed_x")), float(self.getSettingValueByKey("bed_y")))
+                                                if emit and bool(self.getSettingValueByKey("check_bed")) else None))
             res = eng.process_gcode(data, instances, opt)
         except Exception as e:                               # nunca romper la exportacion: el G-code original queda intacto
             _notify("No se pudo preparar la cancelacion de objetos (el G-code se exporta sin cambios): %s" % e, True)

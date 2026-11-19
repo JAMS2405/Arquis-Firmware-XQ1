@@ -1,13 +1,34 @@
-"""Extension de Cura. Etapa 1: solo expone los motores y la carpeta del plugin a los scripts de post-procesado
-(``scripts/ARQUIS_M486.py`` y ``scripts/ARQUIS_Validation.py``). La interfaz (gestor de objetos, vista de cama) llega en la Etapa 2."""
+"""Extension de Cura: menu ARQUIS > Gestor de objetos (lista + mapa de la cama, sincronizados) y carga de los motores para los scripts de
+post-procesado (``scripts/ARQUIS_M486.py``, ``scripts/ARQUIS_Validation.py``). Toda la logica esta en ``engines/`` y ``adapters/``."""
+import os
+
+from PyQt6.QtCore import QObject
+
 from UM.Extension import Extension
 from UM.Logger import Logger
+from UM.PluginRegistry import PluginRegistry
 
 from . import arquis_bootstrap
 
 
-class ARQUISPlugin(Extension):
+class ARQUISPlugin(QObject, Extension):
     def __init__(self) -> None:
         super().__init__()
-        arquis_bootstrap.load_adapters()          # registra arquis_engines / arquis_adapters para los scripts
-        Logger.log("i", "ARQUIS Slicer Suite 0.1.0 cargado")
+        arquis_bootstrap.load_adapters()          # registra arquis_engines / arquis_adapters (tambien para los scripts)
+        from .ui.backend import ObjectManagerBackend
+        self._backend = ObjectManagerBackend()
+        self._view = None
+        self.setMenuName("ARQUIS")
+        self.addMenuItem("Gestor de objetos...", self.showManager)
+        Logger.log("i", "ARQUIS Slicer Suite 0.2.0 cargado")
+
+    def showManager(self) -> None:
+        from cura.CuraApplication import CuraApplication
+        if self._view is None:
+            path = os.path.join(str(PluginRegistry.getInstance().getPluginPath("ARQUISPlugin")), "ui", "ObjectManager.qml")
+            self._view = CuraApplication.getInstance().createQmlComponent(path, {"manager": self._backend})
+        if self._view is None:
+            Logger.log("e", "No se pudo crear la ventana del Gestor de objetos de ARQUIS")
+            return
+        self._backend.refreshFromCura()
+        self._view.show()
