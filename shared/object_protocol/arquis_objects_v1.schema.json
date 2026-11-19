@@ -1,0 +1,157 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "arquis_objects_v1.schema.json",
+ "title": "ARQUIS_OBJECTS_V1 (forma logica del manifiesto; el transporte son comentarios del G-code, ver ARQUIS_OBJECTS_V1.md)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "format",
+  "version",
+  "print_id",
+  "bed",
+  "sequential",
+  "capacity",
+  "names",
+  "objects"
+ ],
+ "properties": {
+  "format": {
+   "const": "ARQUIS_OBJECTS"
+  },
+  "version": {
+   "const": 1
+  },
+  "print_id": {
+   "type": "string",
+   "pattern": "^[0-9A-F]{8}$"
+  },
+  "bed": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "width",
+    "depth",
+    "min_x",
+    "min_y",
+    "origin"
+   ],
+   "properties": {
+    "width": {
+     "type": "integer",
+     "minimum": 1,
+     "description": "0,1 mm"
+    },
+    "depth": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "min_x": {
+     "type": "integer"
+    },
+    "min_y": {
+     "type": "integer"
+    },
+    "origin": {
+     "type": "string",
+     "pattern": "^[A-Z]{2}$"
+    }
+   }
+  },
+  "sequential": {
+   "type": "boolean"
+  },
+  "capacity": {
+   "type": "integer",
+   "minimum": 1,
+   "maximum": 32,
+   "description": "capacity_ceiling de limits.json"
+  },
+  "names": {
+   "type": "array",
+   "maxItems": 30,
+   "items": {
+    "type": "string",
+    "minLength": 1,
+    "maxBytes": 20
+   }
+  },
+  "objects": {
+   "type": "array",
+   "maxItems": 30,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "instance",
+     "x",
+     "y",
+     "width",
+     "depth",
+     "rotation",
+     "shape",
+     "z0",
+     "ztop",
+     "order"
+    ],
+    "properties": {
+     "id": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 29,
+      "description": "indice de M486 S<id>; pantalla = id + 1"
+     },
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxBytes": 20
+     },
+     "instance": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 29
+     },
+     "x": {
+      "type": "integer",
+      "description": "centro, 0,1 mm, coordenadas de G-code"
+     },
+     "y": {
+      "type": "integer"
+     },
+     "width": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "depth": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "rotation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 359
+     },
+     "shape": {
+      "enum": [
+       "C",
+       "S",
+       "R"
+      ]
+     },
+     "z0": {
+      "type": "integer"
+     },
+     "ztop": {
+      "type": "integer"
+     },
+     "order": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 29
+     }
+    }
+   }
+  }
+ }
+}

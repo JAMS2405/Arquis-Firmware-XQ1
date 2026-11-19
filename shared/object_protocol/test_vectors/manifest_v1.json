@@ -1,0 +1,2186 @@
+{
+ "version": 1,
+ "tail_window": 16384,
+ "header_window": 512,
+ "comment": "El firmware debe dar el mismo ok/errores/warnings que el parser de referencia para cada texto.",
+ "cases": [
+  {
+   "name": "valid_one_object",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=768EB32A N=1\n;FLAVOR:Marlin\n;TIME:100\nG28\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=768EB32A N=1 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Pieza\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQUIS_OBJECTS_END CRC=FC0E417A\n;ARQUIS_TRAILER CRC=FC0E417A PID=768EB32A N=1\n",
+   "expect": {
+    "ok": true,
+    "errors": [],
+    "warnings": [],
+    "manifest": {
+     "format": "ARQUIS_OBJECTS",
+     "version": 1,
+     "print_id": "768EB32A",
+     "bed": {
+      "width": 3000,
+      "depth": 3000,
+      "min_x": 0,
+      "min_y": 0,
+      "origin": "FL"
+     },
+     "sequential": false,
+     "capacity": 30,
+     "names": [
+      "Pieza"
+     ],
+     "objects": [
+      {
+       "id": 0,
+       "name": "Pieza",
+       "instance": 0,
+       "x": 200,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 0,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 40,
+       "order": 0
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "valid_30_objects_3_names",
+   "note": "caso tipico de diseno: 30 objetos, IDs 0-29",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": true,
+    "errors": [],
+    "warnings": [],
+    "manifest": {
+     "format": "ARQUIS_OBJECTS",
+     "version": 1,
+     "print_id": "91EE3174",
+     "bed": {
+      "width": 3000,
+      "depth": 3000,
+      "min_x": 0,
+      "min_y": 0,
+      "origin": "FL"
+     },
+     "sequential": false,
+     "capacity": 30,
+     "names": [
+      "Llavero",
+      "Soporte",
+      "Tapa"
+     ],
+     "objects": [
+      {
+       "id": 0,
+       "name": "Llavero",
+       "instance": 0,
+       "x": 200,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 0,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 40,
+       "order": 0
+      },
+      {
+       "id": 1,
+       "name": "Soporte",
+       "instance": 0,
+       "x": 650,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 7,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 41,
+       "order": 1
+      },
+      {
+       "id": 2,
+       "name": "Tapa",
+       "instance": 0,
+       "x": 1100,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 14,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 42,
+       "order": 2
+      },
+      {
+       "id": 3,
+       "name": "Llavero",
+       "instance": 1,
+       "x": 1550,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 21,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 43,
+       "order": 3
+      },
+      {
+       "id": 4,
+       "name": "Soporte",
+       "instance": 1,
+       "x": 2000,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 28,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 44,
+       "order": 4
+      },
+      {
+       "id": 5,
+       "name": "Tapa",
+       "instance": 1,
+       "x": 2450,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 35,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 45,
+       "order": 5
+      },
+      {
+       "id": 6,
+       "name": "Llavero",
+       "instance": 2,
+       "x": 200,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 42,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 46,
+       "order": 6
+      },
+      {
+       "id": 7,
+       "name": "Soporte",
+       "instance": 2,
+       "x": 650,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 49,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 47,
+       "order": 7
+      },
+      {
+       "id": 8,
+       "name": "Tapa",
+       "instance": 2,
+       "x": 1100,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 56,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 48,
+       "order": 8
+      },
+      {
+       "id": 9,
+       "name": "Llavero",
+       "instance": 3,
+       "x": 1550,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 63,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 49,
+       "order": 9
+      },
+      {
+       "id": 10,
+       "name": "Soporte",
+       "instance": 3,
+       "x": 2000,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 70,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 50,
+       "order": 10
+      },
+      {
+       "id": 11,
+       "name": "Tapa",
+       "instance": 3,
+       "x": 2450,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 77,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 51,
+       "order": 11
+      },
+      {
+       "id": 12,
+       "name": "Llavero",
+       "instance": 4,
+       "x": 200,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 84,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 52,
+       "order": 12
+      },
+      {
+       "id": 13,
+       "name": "Soporte",
+       "instance": 4,
+       "x": 650,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 91,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 53,
+       "order": 13
+      },
+      {
+       "id": 14,
+       "name": "Tapa",
+       "instance": 4,
+       "x": 1100,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 98,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 54,
+       "order": 14
+      },
+      {
+       "id": 15,
+       "name": "Llavero",
+       "instance": 5,
+       "x": 1550,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 105,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 55,
+       "order": 15
+      },
+      {
+       "id": 16,
+       "name": "Soporte",
+       "instance": 5,
+       "x": 2000,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 112,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 56,
+       "order": 16
+      },
+      {
+       "id": 17,
+       "name": "Tapa",
+       "instance": 5,
+       "x": 2450,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 119,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 57,
+       "order": 17
+      },
+      {
+       "id": 18,
+       "name": "Llavero",
+       "instance": 6,
+       "x": 200,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 126,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 58,
+       "order": 18
+      },
+      {
+       "id": 19,
+       "name": "Soporte",
+       "instance": 6,
+       "x": 650,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 133,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 59,
+       "order": 19
+      },
+      {
+       "id": 20,
+       "name": "Tapa",
+       "instance": 6,
+       "x": 1100,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 140,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 60,
+       "order": 20
+      },
+      {
+       "id": 21,
+       "name": "Llavero",
+       "instance": 7,
+       "x": 1550,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 147,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 61,
+       "order": 21
+      },
+      {
+       "id": 22,
+       "name": "Soporte",
+       "instance": 7,
+       "x": 2000,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 154,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 62,
+       "order": 22
+      },
+      {
+       "id": 23,
+       "name": "Tapa",
+       "instance": 7,
+       "x": 2450,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 161,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 63,
+       "order": 23
+      },
+      {
+       "id": 24,
+       "name": "Llavero",
+       "instance": 8,
+       "x": 200,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 168,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 64,
+       "order": 24
+      },
+      {
+       "id": 25,
+       "name": "Soporte",
+       "instance": 8,
+       "x": 650,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 175,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 65,
+       "order": 25
+      },
+      {
+       "id": 26,
+       "name": "Tapa",
+       "instance": 8,
+       "x": 1100,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 182,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 66,
+       "order": 26
+      },
+      {
+       "id": 27,
+       "name": "Llavero",
+       "instance": 9,
+       "x": 1550,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 189,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 67,
+       "order": 27
+      },
+      {
+       "id": 28,
+       "name": "Soporte",
+       "instance": 9,
+       "x": 2000,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 196,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 68,
+       "order": 28
+      },
+      {
+       "id": 29,
+       "name": "Tapa",
+       "instance": 9,
+       "x": 2450,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 203,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 69,
+       "order": 29
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "valid_30_with_settings_tail",
+   "note": "Cura anade ;SETTING_3 despues del G-code",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n",
+   "expect": {
+    "ok": true,
+    "errors": [],
+    "warnings": [],
+    "manifest": {
+     "format": "ARQUIS_OBJECTS",
+     "version": 1,
+     "print_id": "91EE3174",
+     "bed": {
+      "width": 3000,
+      "depth": 3000,
+      "min_x": 0,
+      "min_y": 0,
+      "origin": "FL"
+     },
+     "sequential": false,
+     "capacity": 30,
+     "names": [
+      "Llavero",
+      "Soporte",
+      "Tapa"
+     ],
+     "objects": [
+      {
+       "id": 0,
+       "name": "Llavero",
+       "instance": 0,
+       "x": 200,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 0,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 40,
+       "order": 0
+      },
+      {
+       "id": 1,
+       "name": "Soporte",
+       "instance": 0,
+       "x": 650,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 7,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 41,
+       "order": 1
+      },
+      {
+       "id": 2,
+       "name": "Tapa",
+       "instance": 0,
+       "x": 1100,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 14,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 42,
+       "order": 2
+      },
+      {
+       "id": 3,
+       "name": "Llavero",
+       "instance": 1,
+       "x": 1550,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 21,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 43,
+       "order": 3
+      },
+      {
+       "id": 4,
+       "name": "Soporte",
+       "instance": 1,
+       "x": 2000,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 28,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 44,
+       "order": 4
+      },
+      {
+       "id": 5,
+       "name": "Tapa",
+       "instance": 1,
+       "x": 2450,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 35,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 45,
+       "order": 5
+      },
+      {
+       "id": 6,
+       "name": "Llavero",
+       "instance": 2,
+       "x": 200,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 42,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 46,
+       "order": 6
+      },
+      {
+       "id": 7,
+       "name": "Soporte",
+       "instance": 2,
+       "x": 650,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 49,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 47,
+       "order": 7
+      },
+      {
+       "id": 8,
+       "name": "Tapa",
+       "instance": 2,
+       "x": 1100,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 56,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 48,
+       "order": 8
+      },
+      {
+       "id": 9,
+       "name": "Llavero",
+       "instance": 3,
+       "x": 1550,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 63,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 49,
+       "order": 9
+      },
+      {
+       "id": 10,
+       "name": "Soporte",
+       "instance": 3,
+       "x": 2000,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 70,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 50,
+       "order": 10
+      },
+      {
+       "id": 11,
+       "name": "Tapa",
+       "instance": 3,
+       "x": 2450,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 77,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 51,
+       "order": 11
+      },
+      {
+       "id": 12,
+       "name": "Llavero",
+       "instance": 4,
+       "x": 200,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 84,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 52,
+       "order": 12
+      },
+      {
+       "id": 13,
+       "name": "Soporte",
+       "instance": 4,
+       "x": 650,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 91,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 53,
+       "order": 13
+      },
+      {
+       "id": 14,
+       "name": "Tapa",
+       "instance": 4,
+       "x": 1100,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 98,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 54,
+       "order": 14
+      },
+      {
+       "id": 15,
+       "name": "Llavero",
+       "instance": 5,
+       "x": 1550,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 105,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 55,
+       "order": 15
+      },
+      {
+       "id": 16,
+       "name": "Soporte",
+       "instance": 5,
+       "x": 2000,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 112,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 56,
+       "order": 16
+      },
+      {
+       "id": 17,
+       "name": "Tapa",
+       "instance": 5,
+       "x": 2450,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 119,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 57,
+       "order": 17
+      },
+      {
+       "id": 18,
+       "name": "Llavero",
+       "instance": 6,
+       "x": 200,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 126,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 58,
+       "order": 18
+      },
+      {
+       "id": 19,
+       "name": "Soporte",
+       "instance": 6,
+       "x": 650,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 133,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 59,
+       "order": 19
+      },
+      {
+       "id": 20,
+       "name": "Tapa",
+       "instance": 6,
+       "x": 1100,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 140,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 60,
+       "order": 20
+      },
+      {
+       "id": 21,
+       "name": "Llavero",
+       "instance": 7,
+       "x": 1550,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 147,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 61,
+       "order": 21
+      },
+      {
+       "id": 22,
+       "name": "Soporte",
+       "instance": 7,
+       "x": 2000,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 154,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 62,
+       "order": 22
+      },
+      {
+       "id": 23,
+       "name": "Tapa",
+       "instance": 7,
+       "x": 2450,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 161,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 63,
+       "order": 23
+      },
+      {
+       "id": 24,
+       "name": "Llavero",
+       "instance": 8,
+       "x": 200,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 168,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 64,
+       "order": 24
+      },
+      {
+       "id": 25,
+       "name": "Soporte",
+       "instance": 8,
+       "x": 650,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 175,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 65,
+       "order": 25
+      },
+      {
+       "id": 26,
+       "name": "Tapa",
+       "instance": 8,
+       "x": 1100,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 182,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 66,
+       "order": 26
+      },
+      {
+       "id": 27,
+       "name": "Llavero",
+       "instance": 9,
+       "x": 1550,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 189,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 67,
+       "order": 27
+      },
+      {
+       "id": 28,
+       "name": "Soporte",
+       "instance": 9,
+       "x": 2000,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 196,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 68,
+       "order": 28
+      },
+      {
+       "id": 29,
+       "name": "Tapa",
+       "instance": 9,
+       "x": 2450,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 203,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 69,
+       "order": 29
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "valid_30_crlf",
+   "note": "Cura en Windows escribe CRLF; el CRC es sobre lineas normalizadas",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\r\n;FLAVOR:Marlin\r\n;TIME:100\r\nG1 X1\r\n;ARQUIS_OBJECTS_BEGIN\r\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\r\n;ARQ:M 0 Llavero\r\n;ARQ:M 1 Soporte\r\n;ARQ:M 2 Tapa\r\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\r\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\r\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\r\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\r\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\r\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\r\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\r\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\r\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\r\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\r\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\r\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\r\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\r\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\r\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\r\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\r\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\r\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\r\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\r\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\r\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\r\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\r\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\r\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\r\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\r\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\r\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\r\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\r\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\r\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\r\n;ARQUIS_OBJECTS_END CRC=74E1E661\r\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\r\n",
+   "expect": {
+    "ok": true,
+    "errors": [],
+    "warnings": [],
+    "manifest": {
+     "format": "ARQUIS_OBJECTS",
+     "version": 1,
+     "print_id": "91EE3174",
+     "bed": {
+      "width": 3000,
+      "depth": 3000,
+      "min_x": 0,
+      "min_y": 0,
+      "origin": "FL"
+     },
+     "sequential": false,
+     "capacity": 30,
+     "names": [
+      "Llavero",
+      "Soporte",
+      "Tapa"
+     ],
+     "objects": [
+      {
+       "id": 0,
+       "name": "Llavero",
+       "instance": 0,
+       "x": 200,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 0,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 40,
+       "order": 0
+      },
+      {
+       "id": 1,
+       "name": "Soporte",
+       "instance": 0,
+       "x": 650,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 7,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 41,
+       "order": 1
+      },
+      {
+       "id": 2,
+       "name": "Tapa",
+       "instance": 0,
+       "x": 1100,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 14,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 42,
+       "order": 2
+      },
+      {
+       "id": 3,
+       "name": "Llavero",
+       "instance": 1,
+       "x": 1550,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 21,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 43,
+       "order": 3
+      },
+      {
+       "id": 4,
+       "name": "Soporte",
+       "instance": 1,
+       "x": 2000,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 28,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 44,
+       "order": 4
+      },
+      {
+       "id": 5,
+       "name": "Tapa",
+       "instance": 1,
+       "x": 2450,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 35,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 45,
+       "order": 5
+      },
+      {
+       "id": 6,
+       "name": "Llavero",
+       "instance": 2,
+       "x": 200,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 42,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 46,
+       "order": 6
+      },
+      {
+       "id": 7,
+       "name": "Soporte",
+       "instance": 2,
+       "x": 650,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 49,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 47,
+       "order": 7
+      },
+      {
+       "id": 8,
+       "name": "Tapa",
+       "instance": 2,
+       "x": 1100,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 56,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 48,
+       "order": 8
+      },
+      {
+       "id": 9,
+       "name": "Llavero",
+       "instance": 3,
+       "x": 1550,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 63,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 49,
+       "order": 9
+      },
+      {
+       "id": 10,
+       "name": "Soporte",
+       "instance": 3,
+       "x": 2000,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 70,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 50,
+       "order": 10
+      },
+      {
+       "id": 11,
+       "name": "Tapa",
+       "instance": 3,
+       "x": 2450,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 77,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 51,
+       "order": 11
+      },
+      {
+       "id": 12,
+       "name": "Llavero",
+       "instance": 4,
+       "x": 200,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 84,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 52,
+       "order": 12
+      },
+      {
+       "id": 13,
+       "name": "Soporte",
+       "instance": 4,
+       "x": 650,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 91,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 53,
+       "order": 13
+      },
+      {
+       "id": 14,
+       "name": "Tapa",
+       "instance": 4,
+       "x": 1100,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 98,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 54,
+       "order": 14
+      },
+      {
+       "id": 15,
+       "name": "Llavero",
+       "instance": 5,
+       "x": 1550,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 105,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 55,
+       "order": 15
+      },
+      {
+       "id": 16,
+       "name": "Soporte",
+       "instance": 5,
+       "x": 2000,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 112,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 56,
+       "order": 16
+      },
+      {
+       "id": 17,
+       "name": "Tapa",
+       "instance": 5,
+       "x": 2450,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 119,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 57,
+       "order": 17
+      },
+      {
+       "id": 18,
+       "name": "Llavero",
+       "instance": 6,
+       "x": 200,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 126,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 58,
+       "order": 18
+      },
+      {
+       "id": 19,
+       "name": "Soporte",
+       "instance": 6,
+       "x": 650,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 133,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 59,
+       "order": 19
+      },
+      {
+       "id": 20,
+       "name": "Tapa",
+       "instance": 6,
+       "x": 1100,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 140,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 60,
+       "order": 20
+      },
+      {
+       "id": 21,
+       "name": "Llavero",
+       "instance": 7,
+       "x": 1550,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 147,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 61,
+       "order": 21
+      },
+      {
+       "id": 22,
+       "name": "Soporte",
+       "instance": 7,
+       "x": 2000,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 154,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 62,
+       "order": 22
+      },
+      {
+       "id": 23,
+       "name": "Tapa",
+       "instance": 7,
+       "x": 2450,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 161,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 63,
+       "order": 23
+      },
+      {
+       "id": 24,
+       "name": "Llavero",
+       "instance": 8,
+       "x": 200,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 168,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 64,
+       "order": 24
+      },
+      {
+       "id": 25,
+       "name": "Soporte",
+       "instance": 8,
+       "x": 650,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 175,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 65,
+       "order": 25
+      },
+      {
+       "id": 26,
+       "name": "Tapa",
+       "instance": 8,
+       "x": 1100,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 182,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 66,
+       "order": 26
+      },
+      {
+       "id": 27,
+       "name": "Llavero",
+       "instance": 9,
+       "x": 1550,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 189,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 67,
+       "order": 27
+      },
+      {
+       "id": 28,
+       "name": "Soporte",
+       "instance": 9,
+       "x": 2000,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 196,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 68,
+       "order": 28
+      },
+      {
+       "id": 29,
+       "name": "Tapa",
+       "instance": 9,
+       "x": 2450,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 203,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 69,
+       "order": 29
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "valid_30_bed_check_ok",
+   "note": "",
+   "bed_check": [
+    3000,
+    3000
+   ],
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": true,
+    "errors": [],
+    "warnings": [],
+    "manifest": {
+     "format": "ARQUIS_OBJECTS",
+     "version": 1,
+     "print_id": "91EE3174",
+     "bed": {
+      "width": 3000,
+      "depth": 3000,
+      "min_x": 0,
+      "min_y": 0,
+      "origin": "FL"
+     },
+     "sequential": false,
+     "capacity": 30,
+     "names": [
+      "Llavero",
+      "Soporte",
+      "Tapa"
+     ],
+     "objects": [
+      {
+       "id": 0,
+       "name": "Llavero",
+       "instance": 0,
+       "x": 200,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 0,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 40,
+       "order": 0
+      },
+      {
+       "id": 1,
+       "name": "Soporte",
+       "instance": 0,
+       "x": 650,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 7,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 41,
+       "order": 1
+      },
+      {
+       "id": 2,
+       "name": "Tapa",
+       "instance": 0,
+       "x": 1100,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 14,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 42,
+       "order": 2
+      },
+      {
+       "id": 3,
+       "name": "Llavero",
+       "instance": 1,
+       "x": 1550,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 21,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 43,
+       "order": 3
+      },
+      {
+       "id": 4,
+       "name": "Soporte",
+       "instance": 1,
+       "x": 2000,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 28,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 44,
+       "order": 4
+      },
+      {
+       "id": 5,
+       "name": "Tapa",
+       "instance": 1,
+       "x": 2450,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 35,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 45,
+       "order": 5
+      },
+      {
+       "id": 6,
+       "name": "Llavero",
+       "instance": 2,
+       "x": 200,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 42,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 46,
+       "order": 6
+      },
+      {
+       "id": 7,
+       "name": "Soporte",
+       "instance": 2,
+       "x": 650,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 49,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 47,
+       "order": 7
+      },
+      {
+       "id": 8,
+       "name": "Tapa",
+       "instance": 2,
+       "x": 1100,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 56,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 48,
+       "order": 8
+      },
+      {
+       "id": 9,
+       "name": "Llavero",
+       "instance": 3,
+       "x": 1550,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 63,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 49,
+       "order": 9
+      },
+      {
+       "id": 10,
+       "name": "Soporte",
+       "instance": 3,
+       "x": 2000,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 70,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 50,
+       "order": 10
+      },
+      {
+       "id": 11,
+       "name": "Tapa",
+       "instance": 3,
+       "x": 2450,
+       "y": 650,
+       "width": 300,
+       "depth": 300,
+       "rotation": 77,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 51,
+       "order": 11
+      },
+      {
+       "id": 12,
+       "name": "Llavero",
+       "instance": 4,
+       "x": 200,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 84,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 52,
+       "order": 12
+      },
+      {
+       "id": 13,
+       "name": "Soporte",
+       "instance": 4,
+       "x": 650,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 91,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 53,
+       "order": 13
+      },
+      {
+       "id": 14,
+       "name": "Tapa",
+       "instance": 4,
+       "x": 1100,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 98,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 54,
+       "order": 14
+      },
+      {
+       "id": 15,
+       "name": "Llavero",
+       "instance": 5,
+       "x": 1550,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 105,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 55,
+       "order": 15
+      },
+      {
+       "id": 16,
+       "name": "Soporte",
+       "instance": 5,
+       "x": 2000,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 112,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 56,
+       "order": 16
+      },
+      {
+       "id": 17,
+       "name": "Tapa",
+       "instance": 5,
+       "x": 2450,
+       "y": 1100,
+       "width": 300,
+       "depth": 300,
+       "rotation": 119,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 57,
+       "order": 17
+      },
+      {
+       "id": 18,
+       "name": "Llavero",
+       "instance": 6,
+       "x": 200,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 126,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 58,
+       "order": 18
+      },
+      {
+       "id": 19,
+       "name": "Soporte",
+       "instance": 6,
+       "x": 650,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 133,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 59,
+       "order": 19
+      },
+      {
+       "id": 20,
+       "name": "Tapa",
+       "instance": 6,
+       "x": 1100,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 140,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 60,
+       "order": 20
+      },
+      {
+       "id": 21,
+       "name": "Llavero",
+       "instance": 7,
+       "x": 1550,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 147,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 61,
+       "order": 21
+      },
+      {
+       "id": 22,
+       "name": "Soporte",
+       "instance": 7,
+       "x": 2000,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 154,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 62,
+       "order": 22
+      },
+      {
+       "id": 23,
+       "name": "Tapa",
+       "instance": 7,
+       "x": 2450,
+       "y": 1550,
+       "width": 300,
+       "depth": 300,
+       "rotation": 161,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 63,
+       "order": 23
+      },
+      {
+       "id": 24,
+       "name": "Llavero",
+       "instance": 8,
+       "x": 200,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 168,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 64,
+       "order": 24
+      },
+      {
+       "id": 25,
+       "name": "Soporte",
+       "instance": 8,
+       "x": 650,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 175,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 65,
+       "order": 25
+      },
+      {
+       "id": 26,
+       "name": "Tapa",
+       "instance": 8,
+       "x": 1100,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 182,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 66,
+       "order": 26
+      },
+      {
+       "id": 27,
+       "name": "Llavero",
+       "instance": 9,
+       "x": 1550,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 189,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 67,
+       "order": 27
+      },
+      {
+       "id": 28,
+       "name": "Soporte",
+       "instance": 9,
+       "x": 2000,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 196,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 68,
+       "order": 28
+      },
+      {
+       "id": 29,
+       "name": "Tapa",
+       "instance": 9,
+       "x": 2450,
+       "y": 2000,
+       "width": 300,
+       "depth": 300,
+       "rotation": 203,
+       "shape": "R",
+       "z0": 3,
+       "ztop": 69,
+       "order": 29
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "valid_utf8_name",
+   "note": "nombre UTF-8 (13 bytes)",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=5A946783 N=2\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=5A946783 N=2 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Piñón ñandú\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 0 1 650 200 300 300 7 S 3 41 1\n;ARQUIS_OBJECTS_END CRC=15094EC1\n;ARQUIS_TRAILER CRC=15094EC1 PID=5A946783 N=2\n",
+   "expect": {
+    "ok": true,
+    "errors": [],
+    "warnings": [],
+    "manifest": {
+     "format": "ARQUIS_OBJECTS",
+     "version": 1,
+     "print_id": "5A946783",
+     "bed": {
+      "width": 3000,
+      "depth": 3000,
+      "min_x": 0,
+      "min_y": 0,
+      "origin": "FL"
+     },
+     "sequential": false,
+     "capacity": 30,
+     "names": [
+      "Piñón ñandú"
+     ],
+     "objects": [
+      {
+       "id": 0,
+       "name": "Piñón ñandú",
+       "instance": 0,
+       "x": 200,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 0,
+       "shape": "C",
+       "z0": 3,
+       "ztop": 40,
+       "order": 0
+      },
+      {
+       "id": 1,
+       "name": "Piñón ñandú",
+       "instance": 1,
+       "x": 650,
+       "y": 200,
+       "width": 300,
+       "depth": 300,
+       "rotation": 7,
+       "shape": "S",
+       "z0": 3,
+       "ztop": 41,
+       "order": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "no_manifest_old_gcode",
+   "note": "G-code antiguo: no es un error; se imprime normal",
+   "bed_check": null,
+   "text": ";FLAVOR:Marlin\n;TIME:100\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\nG28\nG1 X1 Y1 E1\n",
+   "expect": {
+    "ok": false,
+    "errors": [],
+    "warnings": [
+     "W_NO_MANIFEST"
+    ]
+   }
+  },
+  {
+   "name": "no_manifest_beyond_tail_window",
+   "note": "el bloque queda fuera de los ultimos 16 KB",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;SETTING_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n",
+   "expect": {
+    "ok": false,
+    "errors": [],
+    "warnings": [
+     "W_NO_MANIFEST"
+    ]
+   }
+  },
+  {
+   "name": "bad_bed_mismatch",
+   "note": "la cama del manifiesto no es la de la maquina",
+   "bed_check": [
+    2200,
+    2200
+   ],
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_BED_MISMATCH"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_crc_data_changed",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 1 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_MANIFEST_CRC"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_truncated_no_end",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_MANIFEST_TRUNCATED"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_no_trailer",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_MANIFEST_TRAILER"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_trailer_pid",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=DEADBEEF N=30\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=DEADBEEF N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_HEADER_MISMATCH",
+     "E_TRAILER_MISMATCH"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_header_mismatch",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=29\n;FLAVOR:Marlin\n;TIME:100\nG1 X1\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=74E1E661\n;ARQUIS_TRAILER CRC=74E1E661 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_HEADER_MISMATCH"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_dup_id",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=50579914 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=50579914 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 0 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=CA043897\n;ARQUIS_TRAILER CRC=CA043897 PID=50579914 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_ID_DUPLICATE"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_id_range",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=D74009B7 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=D74009B7 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 40 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=1B50A8BB\n;ARQUIS_TRAILER CRC=1B50A8BB PID=D74009B7 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_ID_RANGE"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_outside_bed",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=A7DC242E N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=A7DC242E N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 99999 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=E602B487\n;ARQUIS_TRAILER CRC=E602B487 PID=A7DC242E N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_OUTSIDE_BED"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_size_zero",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=11E7E3BC N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=11E7E3BC N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 0 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=84B05D56\n;ARQUIS_TRAILER CRC=84B05D56 PID=11E7E3BC N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_SIZE"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_z0_above_ztop",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=B16C0E08 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=B16C0E08 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 999 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=8AC585DB\n;ARQUIS_TRAILER CRC=8AC585DB PID=B16C0E08 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_Z"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_rotation",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=75C811D8 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=75C811D8 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 400 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=1BE4511F\n;ARQUIS_TRAILER CRC=1BE4511F PID=75C811D8 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_ROT"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_name_index",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=B093F606 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=B093F606 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 9 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=A5314730\n;ARQUIS_TRAILER CRC=A5314730 PID=B093F606 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_NAME_INDEX"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_name_too_long",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=372F75A4 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=372F75A4 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=01522078\n;ARQUIS_TRAILER CRC=01522078 PID=372F75A4 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_NAME_TOO_LONG"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_order",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=2A476636 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=2A476636 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 5\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=9BBE468D\n;ARQUIS_TRAILER CRC=9BBE468D PID=2A476636 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_ORDER"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_cap_above_ceiling",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=33\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=1A88DB05\n;ARQUIS_TRAILER CRC=1A88DB05 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_CAP"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_version_2",
+   "note": "",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=91EE3174 N=30\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=2 PID=91EE3174 N=30 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:M 1 Soporte\n;ARQ:M 2 Tapa\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 1 0 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 2 0 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 1 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 1 1 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 2 1 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 2 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 1 2 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 2 2 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 3 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 1 3 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 2 3 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 4 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 1 4 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 2 4 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 5 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 1 5 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 2 5 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 6 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 1 6 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 2 6 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 7 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 1 7 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 2 7 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 8 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 1 8 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 2 8 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 9 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 1 9 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 2 9 2450 2000 300 300 203 R 3 69 29\n;ARQUIS_OBJECTS_END CRC=0E6F6BC6\n;ARQUIS_TRAILER CRC=0E6F6BC6 PID=91EE3174 N=30\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_VERSION"
+    ],
+    "warnings": []
+   }
+  },
+  {
+   "name": "bad_over_capacity_31",
+   "note": "31 objetos > 30",
+   "bed_check": null,
+   "text": ";ARQUIS_OBJECTS=1 PID=B1C18178 N=31\n;FLAVOR:Marlin\n;TIME:100\n;ARQUIS_OBJECTS_BEGIN\n;ARQ:H V=1 PID=B1C18178 N=31 BED=3000,3000 MIN=0,0 ORG=FL SEQ=0 CAP=30\n;ARQ:M 0 Llavero\n;ARQ:O 0 0 0 200 200 300 300 0 C 3 40 0\n;ARQ:O 1 0 1 650 200 300 300 7 S 3 41 1\n;ARQ:O 2 0 2 1100 200 300 300 14 R 3 42 2\n;ARQ:O 3 0 3 1550 200 300 300 21 C 3 43 3\n;ARQ:O 4 0 4 2000 200 300 300 28 S 3 44 4\n;ARQ:O 5 0 5 2450 200 300 300 35 R 3 45 5\n;ARQ:O 6 0 6 200 650 300 300 42 C 3 46 6\n;ARQ:O 7 0 7 650 650 300 300 49 S 3 47 7\n;ARQ:O 8 0 8 1100 650 300 300 56 R 3 48 8\n;ARQ:O 9 0 9 1550 650 300 300 63 C 3 49 9\n;ARQ:O 10 0 10 2000 650 300 300 70 S 3 50 10\n;ARQ:O 11 0 11 2450 650 300 300 77 R 3 51 11\n;ARQ:O 12 0 12 200 1100 300 300 84 C 3 52 12\n;ARQ:O 13 0 13 650 1100 300 300 91 S 3 53 13\n;ARQ:O 14 0 14 1100 1100 300 300 98 R 3 54 14\n;ARQ:O 15 0 15 1550 1100 300 300 105 C 3 55 15\n;ARQ:O 16 0 16 2000 1100 300 300 112 S 3 56 16\n;ARQ:O 17 0 17 2450 1100 300 300 119 R 3 57 17\n;ARQ:O 18 0 18 200 1550 300 300 126 C 3 58 18\n;ARQ:O 19 0 19 650 1550 300 300 133 S 3 59 19\n;ARQ:O 20 0 20 1100 1550 300 300 140 R 3 60 20\n;ARQ:O 21 0 21 1550 1550 300 300 147 C 3 61 21\n;ARQ:O 22 0 22 2000 1550 300 300 154 S 3 62 22\n;ARQ:O 23 0 23 2450 1550 300 300 161 R 3 63 23\n;ARQ:O 24 0 24 200 2000 300 300 168 C 3 64 24\n;ARQ:O 25 0 25 650 2000 300 300 175 S 3 65 25\n;ARQ:O 26 0 26 1100 2000 300 300 182 R 3 66 26\n;ARQ:O 27 0 27 1550 2000 300 300 189 C 3 67 27\n;ARQ:O 28 0 28 2000 2000 300 300 196 S 3 68 28\n;ARQ:O 29 0 29 2450 2000 300 300 203 R 3 69 29\n;ARQ:O 30 0 30 200 2450 300 300 210 C 3 70 30\n;ARQUIS_OBJECTS_END CRC=BA0B3720\n;ARQUIS_TRAILER CRC=BA0B3720 PID=B1C18178 N=31\n",
+   "expect": {
+    "ok": false,
+    "errors": [
+     "E_ID_RANGE",
+     "E_OVER_CAPACITY"
+    ],
+    "warnings": []
+   }
+  }
+ ]
+}
