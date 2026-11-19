@@ -21,3 +21,4 @@ Estas decisiones **no están pendientes**. Cualquier documento que las presente 
 - **Las miniaturas no son requisito de esta fase**; quedan como mejora futura.
 - La cancelación visual **sigue bloqueada** (`ARQ_OBJ_VISUAL_CANCEL_VALIDATED 0`) hasta superar los pendientes #1–#6 de `08_estado_proyecto.md` §3.
 - **No hay etapa nueva autorizada.** Tras cerrar la Etapa 3 el orden es Etapa 4 (Calibration Suite), 5 (Non-Planar, desactivado por defecto) y 6 (distribución), cada una con autorización explícita.
+- **Cura real (2026-11-19):** captura hecha dentro de Cura 5.11 (`source: "cura"`) y G-code exportado verificados: validación en Cura real **cumplida** para captura de escena, duplicados, posiciones y manifiesto. La orientación sigue siendo independiente y **provisional** (`ORG=FL`): el propietario observa que la posición coincide, pero no se da por probada hasta que la confirme expresamente o imprima la prueba.

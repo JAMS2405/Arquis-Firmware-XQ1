@@ -174,3 +174,18 @@ def test_dump_is_json_serializable_and_roundtrips(tmp_path):
     d = make_dump(objs_with_copies())
     p = diag.save_dump(d, str(tmp_path / "x.json"))
     assert json.load(open(p, encoding="utf-8"))["instances"] == json.loads(json.dumps(d))["instances"]
+
+
+REAL_CAPTURE = os.path.join(os.path.dirname(__file__), "data", "real_cura_5_11_captura_6_pinones.json")
+
+
+def test_real_cura_capture_passes_the_verification_tool(tmp_path):
+    """Captura hecha DENTRO de Cura 5.11 real por el propietario (no son nodos falsos). Sin G-code quedan comprobaciones sin ejercitar."""
+    with open(REAL_CAPTURE, encoding="utf-8") as f:
+        d = json.load(f)
+    assert d["source"] == "cura" and d["cura"]["version"] == "5.11.0" and not d["errors"]
+    rc, out = run_tool(tmp_path, d)
+    assert rc == 0 and "[FALLA" not in out, out
+    assert "6 instancias capturadas" in out and "pinon rusvel 66 dientes x6" in out
+    assert "VALIDADO EN CURA REAL" not in out and "NO EJERCITADO" in out                              # falta el G-code exportado
+    assert "PENDIENTE" in out and "rientacion" in out                                                  # la orientacion fisica sigue sin confirmar

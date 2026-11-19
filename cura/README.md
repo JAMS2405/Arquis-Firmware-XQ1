@@ -19,7 +19,7 @@ python -m pytest tests
 ```
 Instalación en Cura y validación: ver `docs/slicer_suite/03_etapa1_m486.md` §7. Contrato con el firmware: `shared/object_protocol/`. Organización del repositorio: `docs/slicer_suite/01_arquitectura_repositorio.md`.
 
-Estado: **Etapas 1 y 2** implementadas (motor M486; gestor de objetos y manifiesto), **sin validar todavía dentro de Cura real**. La Etapa 3 (firmware y TFT) está implementada y su visualización probada en la impresora; la cancelación visual sigue bloqueada. Etapas 4 (calibración), 5 (no planar) y 6 (distribución) sin iniciar. Detalle: `docs/slicer_suite/08_estado_proyecto.md`.
+Estado: **Etapas 1 y 2** implementadas (motor M486; gestor de objetos y manifiesto) y **validadas en Cura 5.11 real** con una escena de 6 copias y cama 300 × 300 (`cura/VALIDACION_EN_CURA.md`); falta la confirmación formal de la orientación. La Etapa 3 (firmware y TFT) está implementada y su visualización probada en la impresora; la cancelación visual sigue bloqueada. Etapas 4 (calibración), 5 (no planar) y 6 (distribución) sin iniciar. Detalle: `docs/slicer_suite/08_estado_proyecto.md`.
 
 ## Instalación en Cura 5.11
 1. Copia la carpeta `plugins/ARQUISPlugin/` a la carpeta de plugins de Cura (`%APPDATA%\cura\5.11\plugins\`, `~/.local/share/cura/5.11/plugins/` o `~/Library/Application Support/cura/5.11/plugins/`).

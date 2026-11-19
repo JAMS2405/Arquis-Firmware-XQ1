@@ -1,6 +1,6 @@
 # Validación del plugin ARQUIS dentro de Cura 5.11 real
 
-**Estado: NO VALIDADO en Cura real.** El plugin y los scripts nunca se han ejecutado dentro de Cura. Todas las pruebas automáticas de este repositorio usan **nodos falsos** (`SimpleNamespace`) o G-code procesado fuera de Cura, y por eso **no** pueden dar por válida la API. Esta guía y las herramientas `verify_cura_capture.py` / `check_cura_api_source.py` sirven para cerrar ese hueco con evidencia generada por Cura.
+**Estado (2026-11-19): validado en Cura 5.11 real para captura de escena, duplicados, posiciones y generación del manifiesto con una escena de 6 copias y cama 300 × 300** (ver el registro al final). Quedan sin ejecutar en Cura real el perfil de 450 × 450, rotaciones/grupos/modelos pequeños y la orientación física. Las pruebas automáticas de este repositorio usan **nodos falsos** (`SimpleNamespace`) o G-code procesado fuera de Cura, y por eso **no** pueden dar por válida la API. Esta guía y las herramientas `verify_cura_capture.py` / `check_cura_api_source.py` sirven para cerrar ese hueco con evidencia generada por Cura.
 
 ## Qué está hecho y qué no
 
@@ -53,16 +53,20 @@ Imprime `prueba_orientacion.gcode` (5 piezas) y anota en qué esquina de la cama
 ## Qué enviarme
 `~/arquis_cura_captura.json`, la salida completa de `verify_cura_capture.py` (con y sin G-code, con el perfil de 300 y el de 450), el G-code exportado, la captura del gestor y las líneas «ARQUIS» de `cura.log`. Con eso se rellena la tabla siguiente.
 
-## Registro (se rellena con tus resultados; hoy todo está sin ejecutar)
+## Registro (resultados del propietario, 2026-11-19, Cura 5.11.0 real, Windows)
+
+Evidencia: `cura/tests/data/real_cura_5_11_captura_6_pinones.json` (volcado hecho **dentro de Cura**, `source: "cura"`) y el G-code exportado de esa escena (`;ARQUIS_M486 V=1 N=6 CAP=30 STATUS=OK`, manifiesto de 6 objetos, cama 300 x 300). `verify_cura_capture.py <captura> <gcode>` y `arquis_check.py` dan **VALIDADO EN CURA REAL** y `M486 y sincronizacion con el G-code: CORRECTO` (ejecutados en el entorno de desarrollo sobre esos archivos).
 
 | Comprobación | Resultado en Cura real |
 |---|---|
-| Instalación y carga del plugin | **sin ejecutar** |
-| Llamadas a la API sin errores | **sin ejecutar** |
-| Captura de instancias de la escena | **sin ejecutar** |
-| Duplicados idénticos (4 copias) | **sin ejecutar** |
-| Posiciones y dimensiones | **sin ejecutar** |
-| Mapa y lista sincronizados | **sin ejecutar** |
-| Generación y validación del manifiesto | **sin ejecutar** |
-| Perfil 450 × 450 bloquea mapa y manifiesto | **sin ejecutar** |
-| Orientación física (ORG=FL) | **sin ejecutar** |
+| Instalación y carga del plugin | **OK**: el menú generó la captura con `arquis_plugin 0.2.0`. El script `ARQUIS_M486` carga y exporta (tras corregir la falta de `description` en `bed_x`/`bed_y`; ver `07_etapa3_firmware.md`) |
+| Llamadas a la API sin errores | **OK** (`errors: []` en la captura y en los 20 nodos) |
+| Captura de instancias de la escena | **OK**: 20 nodos, 6 mallas imprimibles, 6 instancias |
+| Duplicados idénticos | **OK con 6 copias** (`pinon rusvel 66 dientes.stl`, `(1)`…`(5)`): cada una con su caja y su ID |
+| Posiciones y dimensiones | **OK**: `x = X + ancho/2`, `y = −Z + fondo/2` coinciden con los números de Cura (±0,1 mm) |
+| Mapa y lista sincronizados | **Parcial**: la ventana del gestor abre y muestra mapa y lista de 6 (captura de pantalla). El propietario no ha informado de pulsar marcador↔fila **dentro de Cura**; la comprobación automática se hizo sobre los datos capturados |
+| Generación y validación del manifiesto | **OK**: manifiesto válido (CRC, 6 objetos, cama 300 × 300), igual a la escena capturada; el G-code real cae dentro de la caja de cada objeto |
+| Perfil 450 × 450 bloquea mapa y manifiesto | **Sin ejecutar en Cura real** (solo con los G-code de muestra procesados fuera de Cura) |
+| Orientación física (ORG=FL) | **Pendiente de confirmación formal** (ver `08_estado_proyecto.md` §1: el propietario observa que la posición coincide; falta confirmarlo como prueba de orientación) |
+
+Nota: la validación cubre la API y los datos que usa el plugin con una escena de 6 copias y un perfil `creality_cr10max` renombrado «Arquis XQ1» con cama 300 × 300. No cubre rotaciones, grupos, modelos muy pequeños ni otras versiones de Cura.

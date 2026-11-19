@@ -8,3 +8,9 @@ Lo que se aprendio de ellos (y esta cubierto por pruebas):
 - Cada capa empieza con contexto implicito NONMESH (brim/soporte) y `;MESH:NONMESH` solo al final de la capa (viaje + Z a la siguiente capa).
 - Las retracciones van **dentro** del tramo del objeto, y como `G0 X.. Y.. E<retraido>` (viaje con filamento). Sin partirlas, cancelar un objeto dejaba 0,8 mm de filamento de mas por retraccion.
 - El G-code final del usuario (`G1 Z5`, `G1 X0 Y310`, `M84`) va tras el ultimo `;TIME_ELAPSED:` sin marcador.
+
+# Captura REAL de la escena en Cura 5.11.0 (aportada por el propietario, 2026-11-19)
+
+`real_cura_5_11_captura_6_pinones.json`: volcado del menu *Extensiones -> ARQUIS -> Diagnostico* ejecutado **dentro de Cura 5.11.0** (`source: "cura"`, plugin 0.2.0, Python 3.12.2, Windows) con 6 copias del mismo STL en una cama de 300 x 300 mm. No contiene nodos falsos. Lo usa `test_cura_validation_tools.py::test_real_cura_capture_*`.
+El G-code exportado de esa escena (7,9 MB, manifiesto de 6 objetos) no se incluye por tamano; con `ARQUIS_REAL_GCODE_DIR` apuntando a el, `cura/tools/verify_cura_capture.py <captura> <gcode>` da `VALIDADO EN CURA REAL` (la orientacion fisica es independiente).
+
