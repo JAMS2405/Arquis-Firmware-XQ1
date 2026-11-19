@@ -1,5 +1,5 @@
 {
-  "_leeme": "EXPERIMENTAL. Ondulado de un G-code de Cura (capas no planas con volumen). head.confirmed sigue en false: lo cambia el propietario. Valores de ejemplo prudentes: amplitud 1 mm pico a pico, longitud de onda 20 mm, empieza a 0,8 mm y llega al maximo a los 5 mm de altura.",
+  "_leeme": "EXPERIMENTAL. Ondulado de un G-code de Cura (capas no planas con volumen). head.confirmed = true por autorizacion del propietario (ver _confirmacion). Valores de ejemplo prudentes: amplitud 1 mm pico a pico, longitud de onda 20 mm, empieza a 0,8 mm y llega al maximo a los 5 mm de altura.",
   "amplitude": 1.0,
   "wavelength": 20.0,
   "function": "wave",
@@ -12,7 +12,7 @@
   "nozzle_d": 0.4,
   "max_slope_deg": 15.0,
   "head": {
-    "nozzle_clearance_deg": 40.0,
+    "nozzle_clearance_deg": 35.0,
     "safety_margin_deg": 5.0,
     "envelopes": [
       [
@@ -31,6 +31,7 @@
         7.3
       ]
     ],
-    "confirmed": false
-  }
+    "confirmed": true
+  },
+  "_confirmacion": "CONFIRMADO por autorizacion expresa del propietario el 2026-11-19 (la confirmacion la fija Claude por delegacion). Medido con calibre por el propietario: 7,3 mm de la punta a la cara inferior del bloque y ductos a la altura del bloque. SIGUEN SIENDO ESTIMACIONES (no medidas): la pendiente que tolera el cono (35 grados: lo prudente frente a los 40 estimados sobre el dibujo), el hexagono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto (25 mm, conservador) y el filamento de 1,75 mm."
 }

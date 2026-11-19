@@ -23,7 +23,8 @@ import ast
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass, field
+import os
+from dataclasses import asdict, dataclass, field, replace
 from typing import Callable, Dict, List, Optional, Tuple
 
 from . import nonplanar_engine as npe
@@ -49,6 +50,7 @@ class WarpConfig:
     z_in: float = 0.8                           # Z donde empieza a deformarse (por encima de la primera capa)
     ramp: float = 5.0                           # mm de transicion
     z_out: Optional[float] = None               # Z donde termina; None = sin rampa de salida (la cara superior tambien ondula)
+    flat_top: bool = False                      # True: z_out = Z de la ultima capa (la cara superior queda plana); ignorado si z_out esta definido
     max_seg: float = 1.0                        # mm: longitud maxima de los segmentos
     nozzle_d: float = 0.4
     max_slope_deg: float = 15.0
@@ -142,6 +144,20 @@ def _zone(lines: List[str]) -> Tuple[int, int]:
     return first, last
 
 
+def _z_top(lines: List[str], z0i: int, z1i: int) -> float:
+    """Mayor Z a la que hay una EXTRUSION con movimiento XY dentro de la pieza (los Z-hops de viaje no cuentan)."""
+    z, top = 0.0, 0.0
+    for ln in lines[z0i:z1i + 1]:
+        c = parse_cmd(ln)
+        if c is None or c.name not in ("G0", "G1"):
+            continue
+        if "Z" in c.words:
+            z = c.words["Z"]
+        if c.name == "G1" and c.words.get("E", 0.0) != 0.0 and ("X" in c.words or "Y" in c.words):
+            top = max(top, z)
+    return top
+
+
 def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
     if not cfg.enabled:
         raise npe.NotEnabled("El ondulador esta desactivado por defecto: activa cfg.enabled=True expresamente (experimental, sin pruebas fisicas).")
@@ -150,6 +166,8 @@ def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
     f = make_f(cfg)
     lines = text.splitlines()
     z0i, z1i = _zone(lines)
+    if cfg.flat_top and cfg.z_out is None:
+        cfg = replace(cfg, z_out=_z_top(lines, z0i, z1i))
     m = cfg.machine
     zcap = ZCAP_FRAC * m.max_feedrate[2]
     out: List[str] = []
@@ -231,6 +249,22 @@ def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
             e_in = e_in_new
             x, y, z = nx, ny, nz
             continue
+        if not any(k in w for k in "XYZ"):
+            # Solo E y/o F (retraccion, cebado): no hay movimiento que ondular. Pasa tal cual, con su velocidad, y solo se ajusta E si hay desfase acumulado.
+            if "F" not in w and emitted_f is not None and abs(emitted_f - feed) > 1e-6:
+                out.append("G1 F%s" % _fmt(feed, 1))
+                emitted_f = feed
+            elif "F" in w:
+                emitted_f = w["F"]
+            if "E" in w and abs_e and abs(e_out - e_in) > 1e-12:
+                e_out = e_out + de
+                out.append(_rewrite_e(ln, e_out))
+            else:
+                out.append(ln)
+                if "E" in w:
+                    e_out = e_out + de if abs_e else e_out
+            e_in = e_in_new
+            continue
         st["mov_entrada"] += 1
         extruding = n == "G1" and de > 1e-9 and ("X" in w or "Y" in w)
         horiz = math.hypot(nx - x, ny - y)
@@ -305,7 +339,8 @@ def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
     stats = {k: (float(v) if not isinstance(v, str) else v) for k, v in st.items()}
     stats["capas"] = float(len(layer_z))
     res = WarpResult(cfg, full, F, stats)
-    res.digest = hashlib.sha256((hashlib.sha256(text.encode()).hexdigest() + json.dumps(asdict(cfg), sort_keys=True, default=list)).encode()).hexdigest()[:12].upper()
+    # El codigo une ENTRADA + AJUSTES + el TEXTO EXACTO que se exportara: si cambia el algoritmo, cambia el codigo (un codigo aceptado no vale para otro archivo).
+    res.digest = hashlib.sha256((hashlib.sha256(text.encode()).hexdigest() + json.dumps(asdict(cfg), sort_keys=True, default=list) + hashlib.sha256(full.encode()).hexdigest()).encode()).hexdigest()[:12].upper()
     banner = "%s A=%g L=%g IN=%g RAMP=%g CODE=%s" % (MARK, cfg.amplitude, cfg.wavelength, cfg.z_in, cfg.ramp, res.digest)
     # el banner va DESPUES de las lineas ;ARQUIS iniciales (el firmware busca su marca en los primeros 512 B)
     ls = full.split("\n")
@@ -355,6 +390,8 @@ def _analyze(cfg: WarpConfig, f, st: Dict, layer_z: List[float]) -> List[npe.Fin
     lim = cfg.eff_max_slope_deg
     if slope > lim:
         F.append(npe.Finding("ERROR", "WARP_PENDIENTE", "Pendiente de la superficie ondulada %.1f deg > limite %.1f deg (min(max_slope %.1f, cono %.1f - margen %.1f))." % (slope, lim, cfg.max_slope_deg, cfg.head.nozzle_clearance_deg, cfg.head.safety_margin_deg)))
+    if cfg.z_out is not None and cfg.z_out < cfg.z_in + 2 * cfg.ramp - 1e-9:
+        F.append(npe.Finding("WARN", "WARP_RAMPAS", "La rampa de entrada (hasta Z %.1f) y la de salida (desde Z %.1f) se solapan: la onda no llega a su amplitud completa." % (cfg.z_in + cfg.ramp, cfg.z_out - cfg.ramp)))
     # espesor de capa: t = h + (rampa(z) - rampa(z-h)) f
     t_lo, t_hi = max(0.05, 0.4 * min(0.2, cfg.nozzle_d)), 0.75 * cfg.nozzle_d
     tmin, tmax = 1e9, -1e9
@@ -507,7 +544,7 @@ def render_warp_preview(res: WarpResult, text_in: Optional[str] = None) -> str:
     cfg, st = res.cfg, res.stats
     f = make_f(cfg)
     x0, x1, y0, y1 = st["x_min"], st["x_max"], st["y_min"], st["y_max"]
-    W, H = 1020, 640
+    W, H = 1100, 640
     out = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" font-family="sans-serif" font-size="12">' % (W, H), '<rect width="100%" height="100%" fill="#0f1620"/>',
            '<text x="16" y="24" fill="#ffb020" font-size="15" font-weight="bold">ARQUIS Non-Planar EXPERIMENTAL - ondulado (vista previa; NO probado en la impresora)</text>',
            '<text x="16" y="44" fill="#cfd8e3">Codigo de vista previa: %s   funcion=%s  A=%g mm  L=%g mm  z_in=%g  rampa=%g</text>' % (res.digest, npe._esc(cfg.function), cfg.amplitude, cfg.wavelength, cfg.z_in, cfg.ramp)]
@@ -525,19 +562,21 @@ def render_warp_preview(res: WarpResult, text_in: Optional[str] = None) -> str:
             out.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"/>' % (ox + (a - x0) * sc, oy + (y1 - b - cell) * sc, cell * sc + 0.4, cell * sc + 0.4, col))
             b += cell
         a += cell
-    # perfil lateral: z' a lo largo de X para varias alturas
-    px, py, pw, ph = 560, 90, 430, 230
-    zt = st["z_max"] + 0.5
-    out.append('<text x="%d" y="%d" fill="#9fb3c8">Perfil a lo largo de X (y = centro de la pieza), Z exagerado</text>' % (px, py - 10))
+    # perfil: DESPLAZAMIENTO de Z (z' - z) a lo largo de X, en 7 alturas repartidas entre z_in y la Z maxima, AMPLIADO para que se vea
+    px, py, pw, ph = 560, 90, 430, 250
+    zt = st["z_max"]
     yc = (y0 + y1) / 2
-    for zl in [cfg.z_in + k * (zt - cfg.z_in) / 6.0 for k in range(7)]:
-        pts = []
-        for i in range(101):
-            xx = x0 + (x1 - x0) * i / 100.0
-            zz = zl + ramp_at(cfg, zl) * f(xx, yc)
-            pts.append("%.1f,%.1f" % (px + pw * i / 100.0, py + ph - (zz / max(zt, 1e-6)) * ph))
-        out.append('<polyline points="%s" fill="none" stroke="#4aa3ff" stroke-width="1"/>' % " ".join(pts))
-    out.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#666"/>' % (px, py + ph, px + pw, py + ph))
+    rows = 7
+    band = ph / rows
+    sc = (band * 0.42) / max(cfg.amplitude / 2.0, 1e-9)
+    out.append('<text x="%d" y="%d" fill="#9fb3c8">Desplazamiento de Z (z\' - z) a lo largo de X en %d alturas; 1 mm = %.0f px (ampliado)</text>' % (px, py - 10, rows, sc))
+    for k in range(rows):
+        zl = cfg.z_in + k * (zt - cfg.z_in) / (rows - 1)
+        base = py + band * (k + 0.5)
+        out.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="#2a3441"/>' % (px, base, px + pw, base))
+        pts = " ".join("%.1f,%.1f" % (px + pw * i / 100.0, base - ramp_at(cfg, zl) * f(x0 + (x1 - x0) * i / 100.0, yc) * sc) for i in range(101))
+        out.append('<polyline points="%s" fill="none" stroke="#4aa3ff" stroke-width="1.4"/>' % pts)
+        out.append('<text x="%d" y="%.1f" fill="#9fb3c8" font-size="10">Z %.1f (rampa %.2f)</text>' % (px + pw + 4, base + 3, zl, ramp_at(cfg, zl)))
     y = 360
     lines = ["pendiente de la superficie %.1f deg (limite efectivo %.1f)   espesor de capa %.3f..%.3f mm   multiplicador de E %.2f..%.2f   segmentos %d -> %d" %
              (st.get("pend_superficie_deg", 0), cfg.eff_max_slope_deg, st.get("espesor_min", 0), st.get("espesor_max", 0), st["mult_min"], st["mult_max"], st["mov_entrada"], st["mov_salida"]),
@@ -552,3 +591,47 @@ def render_warp_preview(res: WarpResult, text_in: Optional[str] = None) -> str:
             break
     out.append('</svg>')
     return "\n".join(out)
+
+
+# ---------------------------------------------------------------- uso desde el script de post-procesado de Cura
+@dataclass
+class CuraOutcome:
+    text: str                  # G-code a devolver a Cura (el ORIGINAL si no se aplica el ondulado)
+    applied: bool
+    level: str                 # "none" | "info" | "warning" | "error"
+    message: str
+    code: str = ""
+
+
+def apply_for_cura(text: str, s: dict, head_path: str, out_dir: str) -> CuraOutcome:
+    """Reproduce DENTRO de Cura las barreras de la linea de comandos. El ondulado solo se aplica si: el ajuste esta activado (apagado por defecto),
+    no hay errores, el cabezal esta confirmado y el usuario ha escrito el CODIGO de la vista previa (que esta funcion escribe en ``out_dir``).
+    En cualquier otro caso devuelve el G-code ORIGINAL sin tocar y explica por que."""
+    if not s.get("warp_on"):
+        return CuraOutcome(text, False, "none", "")
+    try:
+        with open(head_path, encoding="utf-8") as f:
+            head = json.load(f)["head"]
+        cfg = warp_config_from_dict({"enabled": True, "amplitude": float(s["amplitude"]), "wavelength": float(s["wavelength"]), "function": str(s["function"]).strip() or "wave",
+                                     "z_in": float(s["z_in"]), "ramp": float(s["ramp"]), "flat_top": bool(s["flat_top"]), "head": head})
+        res = warp_gcode(text, cfg)
+    except (WarpRefused, npe.NotEnabled) as e:
+        return CuraOutcome(text, False, "error", "Ondulado NO aplicado (el G-code se exporta sin cambios): %s" % e)
+    except Exception as e:                                           # nunca romper la exportacion
+        return CuraOutcome(text, False, "error", "Ondulado NO aplicado (error interno; el G-code se exporta sin cambios): %s" % e)
+    svg_path = os.path.join(out_dir, "arquis_nonplanar_vista.svg")
+    try:
+        with open(svg_path, "w", encoding="utf-8") as f:
+            f.write(render_warp_preview(res))
+    except OSError:
+        svg_path = "(no se pudo escribir la vista previa)"
+    if not res.ok:
+        return CuraOutcome(text, False, "error", "Ondulado NO aplicado (el G-code se exporta sin cambios): " + "; ".join("%s: %s" % (f.code, f.msg) for f in res.findings if f.level == "ERROR") +
+                           "\nVista previa: %s" % svg_path, res.digest)
+    if not cfg.head.confirmed:
+        return CuraOutcome(text, False, "error", "Ondulado NO aplicado: el cabezal no esta confirmado.", res.digest)
+    if str(s.get("accept_code", "")).strip().upper() != res.digest:
+        return CuraOutcome(text, False, "warning", "Ondulado NO aplicado todavia (el G-code se exporta sin cambios). 1) Abre y revisa la vista previa: %s  2) Si estas de acuerdo, escribe el codigo %s en el ajuste "
+                           "'Codigo de vista previa aceptado' y exporta de nuevo. El codigo cambia si cambia la pieza o cualquier ajuste." % (svg_path, res.digest), res.digest)
+    warns = [f.msg for f in res.findings if f.level == "WARN"]
+    return CuraOutcome(res.text, True, "warning" if warns else "info", "Ondulado APLICADO (experimental, sin pruebas fisicas). " + " | ".join(warns) + "\nVista previa: %s" % svg_path, res.digest)

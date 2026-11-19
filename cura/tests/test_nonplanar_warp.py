@@ -67,12 +67,15 @@ def errs(r):
 
 
 # ---------------------------------------------------------------- desactivado y expresiones seguras
-def test_disabled_by_default_and_never_wired_into_cura():
+def test_disabled_by_default_and_only_the_cura_script_uses_it():
     assert nw.WarpConfig().enabled is False
     with pytest.raises(npe.NotEnabled):
         nw.warp_gcode(cura_like(), nw.WarpConfig())
-    for path in glob.glob(os.path.join(ROOT, "cura", "scripts", "*.py")) + glob.glob(os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "*.py")):
-        assert "nonplanar_warp" not in open(path, encoding="utf-8").read(), path
+    users = [p for p in glob.glob(os.path.join(ROOT, "cura", "scripts", "*.py")) + glob.glob(os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "*.py")) + glob.glob(os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "ui", "*"))
+             if os.path.isfile(p) and "nonplanar_warp" in open(p, encoding="utf-8", errors="ignore").read()]
+    assert [os.path.basename(p) for p in users] == ["ARQUIS_NonPlanar.py"]                              # el plugin principal y la interfaz NO lo importan
+    sd = json.loads(open(os.path.join(ROOT, "cura", "scripts", "ARQUIS_NonPlanar.py"), encoding="utf-8").read().split('getSettingDataString(self):\n        return """')[1].split('"""')[0])
+    assert sd["settings"]["warp_on"]["default_value"] is False                                          # apagado por defecto en Cura
 
 
 @pytest.mark.parametrize("bad", ["__import__('os').system('x')", "x.__class__", "open('/etc/passwd')", "(lambda: 1)()", "[1,2][0]", "x if y else 1", "A*sin(x)+foo(2)", "'a'*3",
@@ -292,12 +295,27 @@ def test_real_cura_gcode_six_gears_warps_safely():
     assert len("\n".join(r.text.splitlines()[:3])) < 512
 
 
-def test_example_profile_loads_and_is_unconfirmed():
+def test_example_profile_loads_confirmed_by_the_owner_and_matches_the_plugin_copy():
     with open(os.path.join(ROOT, "cura", "profiles", "nonplanar_warp_arquis_volcano.json"), encoding="utf-8") as f:
         d = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
     d["enabled"] = True
     cfg = nw.warp_config_from_dict(d)
-    assert cfg.head.confirmed is False and cfg.amplitude == 1.0 and cfg.center_x == 150.0
+    assert cfg.head.confirmed is True and cfg.head.nozzle_clearance_deg == 35.0 and cfg.amplitude == 1.0 and cfg.center_x == 150.0
+    with open(os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "nonplanar_head.json"), encoding="utf-8") as f:
+        plugin_head = json.load(f)["head"]
+    with open(os.path.join(ROOT, "cura", "profiles", "nonplanar_arquis_volcano.json"), encoding="utf-8") as f:
+        assert plugin_head == json.load(f)["head"]                                                              # la copia del plugin no puede divergir del perfil
     r = nw.warp_gcode(cura_like(layers=40), cfg)
+    assert r.ok
+    unconf = nw.warp_gcode(cura_like(layers=40), nw.warp_config_from_dict({**d, "head": {**d["head"], "confirmed": False}}))
     with pytest.raises(npe.ExportRefused, match="cabezal"):
-        nw.export_warped(r, r.digest)
+        nw.export_warped(unconf, unconf.digest)                                                                 # la barrera sigue funcionando si se desconfirma
+
+
+def test_the_code_is_bound_to_the_exact_exported_text():
+    r = nw.warp_gcode(cura_like(), wcfg(amplitude=1.0, z_in=0.6, ramp=2.0))
+    again = nw.warp_gcode(cura_like(), wcfg(amplitude=1.0, z_in=0.6, ramp=2.0))
+    assert r.digest == again.digest and r.text == again.text                                             # determinista
+    import hashlib
+    tampered = r.text.replace("G0 Z", "G0 Z ", 1)
+    assert hashlib.sha256(tampered.encode()).hexdigest() != hashlib.sha256(r.text.encode()).hexdigest()

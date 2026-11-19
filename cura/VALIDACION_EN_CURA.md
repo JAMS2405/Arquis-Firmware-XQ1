@@ -70,3 +70,16 @@ Evidencia: `cura/tests/data/real_cura_5_11_captura_6_pinones.json` (volcado hech
 | Orientación física (ORG=FL) | **Confirmada por el propietario (2026-11-19)** por observación de la impresión de 6 piezas; no se imprimió la prueba formal de 5 piezas |
 
 Nota: la validación cubre la API y los datos que usa el plugin con una escena de 6 copias y un perfil `creality_cr10max` renombrado «Arquis XQ1» con cama 300 × 300. No cubre rotaciones, grupos, modelos muy pequeños ni otras versiones de Cura.
+
+## Script ARQUIS Ondulado no planar (EXPERIMENTAL) — pendiente de validar en Cura real
+
+**Estado: NO validado en Cura real.** Solo probado con un `Script` falso. Pasos (≈ 10 min):
+1. Copia `cura/plugins/ARQUISPlugin` (con `nonplanar_head.json`) a `plugins` y `cura/scripts/ARQUIS_NonPlanar.py` a `scripts`; reinicia Cura. Si Cura se cierra o el script no aparece, guarda `cura.log` y el informe de errores (las líneas «ARQUIS»).
+2. Post-procesado → Añadir script → **ARQUIS M486** y luego **ARQUIS Ondulado no planar**. Comprueba que el ondulado aparece **apagado**.
+3. Con el ondulado **apagado**, exporta: el G-code debe ser idéntico al de antes (no hay mensaje ni archivo de vista previa).
+4. Activa el ondulado, deja el código vacío y exporta: debe salir un mensaje «Ondulado NO aplicado todavía…» con un **código de 12 caracteres** y la ruta `~/arquis_nonplanar_vista.svg`. El G-code exportado **no** debe estar ondulado.
+5. Abre la vista previa, escribe el código en «Código de vista previa aceptado» y exporta de nuevo: mensaje «Ondulado APLICADO». En el archivo, la **tercera línea** debe empezar por `;ARQUIS_NP_WARP` con el mismo código.
+6. Cambia la amplitud y exporta con el código antiguo: debe volver a decir «NO aplicado todavía» con un código nuevo.
+7. Prueba un caso inaceptable (amplitud 4, rampa 0,5): mensaje de error y G-code original.
+Devuélveme el resultado de cada paso, el mensaje que muestra Cura y, si falla, `cura.log`.
+

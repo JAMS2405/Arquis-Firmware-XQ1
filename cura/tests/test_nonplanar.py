@@ -41,14 +41,16 @@ def errors(plan):
 
 
 # ---------------------------------------------------------------- desactivado por defecto
-def test_disabled_by_default_and_never_wired_into_cura():
+def test_disabled_by_default_and_the_planar_test_engine_is_never_wired_into_cura():
     assert npe.ENABLED_BY_DEFAULT is False and npe.NPConfig().enabled is False
     with pytest.raises(npe.NotEnabled):
         npe.build_plan(npe.NPConfig())
+    # El motor de la pieza de prueba y la lamina en espiral NO estan conectados a Cura. (Solo el ondulado, desactivado por defecto, lo esta: ver test_nonplanar_warp.py.)
     for path in glob.glob(os.path.join(ROOT, "cura", "scripts", "*.py")) + glob.glob(os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "*.py")) + \
             glob.glob(os.path.join(ROOT, "cura", "plugins", "ARQUISPlugin", "ui", "*")):
         if os.path.isfile(path):
-            assert "nonplanar" not in open(path, encoding="utf-8", errors="ignore").read().lower(), "el motor no planar no debe estar conectado a Cura: " + path
+            txt = open(path, encoding="utf-8", errors="ignore").read().lower()
+            assert "nonplanar_engine" not in txt and "nonplanar_sheet" not in txt and "nonplanar_surface" not in txt, "no debe estar conectado a Cura: " + path
 
 
 def test_firmware_is_untouched_by_this_stage():
@@ -289,13 +291,13 @@ def test_printing_beside_a_taller_wall_is_not_a_collision_but_plowing_through_it
     assert "COLISION_PUNTA" in codes_of(through, "ERROR")
 
 
-def test_volcano_head_profile_loads_but_cannot_export_until_confirmed():
+def test_volcano_head_profile_is_confirmed_by_the_owner_but_material_is_still_required():
     path = os.path.join(ROOT, "cura", "profiles", "nonplanar_arquis_volcano.json")
     with open(path, encoding="utf-8") as f:
         d = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
     d["enabled"] = True
     cfg = npe.config_from_dict(d)
-    assert cfg.head.confirmed is False and cfg.bed_temp is None                                                  # no se confirma ni se elige material por el usuario
+    assert cfg.head.confirmed is True and cfg.head.nozzle_clearance_deg == 35.0 and cfg.bed_temp is None       # confirmado por delegacion del propietario (con el cono mas prudente); el material lo elige el usuario
     names = {n: (r, h) for n, r, h in cfg.head.envelopes}
     block = next(v for n, v in names.items() if n.startswith("bloque calefactor Volcano"))
     duct = next(v for n, v in names.items() if n.startswith("ducto de ventilacion"))
@@ -303,7 +305,7 @@ def test_volcano_head_profile_loads_but_cannot_export_until_confirmed():
     assert duct[1] == 7.3 and duct[0] >= 11.5                                                                   # ductos a la altura del bloque; radio conservador
     assert round(math.hypot(10.0, 5.75), 1) == 11.5                                                             # media diagonal del bloque (orientacion desconocida)
     plan = npe.build_plan(cfg)
-    with pytest.raises(npe.ExportRefused):
+    with pytest.raises(npe.ExportRefused, match="bed_temp"):                                                    # sin temperaturas explicitas no se exporta
         npe.export_gcode(plan, plan.digest)
 
 

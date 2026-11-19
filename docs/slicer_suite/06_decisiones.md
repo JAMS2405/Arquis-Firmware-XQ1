@@ -27,3 +27,10 @@ Estas decisiones **no están pendientes**. Cualquier documento que las presente 
 - **Etapa 3 cerrada por el propietario.** Orientación `ORG=FL` **confirmada** por observación de la impresión de 6 piezas (no se imprimió la prueba formal de 5 piezas). La cancelación real **no se ha probado** y queda diferida; `ARQ_OBJ_VISUAL_CANCEL_VALIDATED` **sigue en 0** (cancelación visual con manifiesto bloqueada).
 - **Etapa 4 (Calibration Suite) aplazada** por el propietario.
 - **Etapa 5 (Non-Planar Engine) autorizada.** Debe quedar desactivada por defecto, sin tocar el núcleo de Marlin y sin exportar G-code de una impresión completa sin vista previa y validación. Ver `09_etapa5_nonplanar.md`.
+
+## Ondulado no planar: autorizaciones (2026-11-19)
+- El objetivo del propietario con la impresión no planar es **crear volumen con capas onduladas para que las piezas sean más rígidas** (técnica de `makertum/non-planar-layer-fdm`; implementación propia, sin copiar su código AGPL). La rigidez **no está demostrada**: hace falta ensayar probetas.
+- **El propietario autoriza que Claude ponga `head.confirmed: true`** (hecho, con la tolerancia del cono en 35°; las estimaciones que quedan están listadas en `09_etapa5_nonplanar.md` §15).
+- **Autoriza la probeta de 30 mm** (la vista previa la acepta el propietario tecleando el código al exportar) y la **primera ejecución en seco**.
+- **Autoriza integrarlo en Cura como script del plugin**, apagado por defecto y con el código de aceptación dentro de Cura. Pendiente de validar en Cura real.
+

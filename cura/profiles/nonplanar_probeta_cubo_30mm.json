@@ -1,0 +1,24 @@
+{
+  "_leeme": "EXPERIMENTAL. Configuracion del ondulado para la probeta de cubo de 30 mm (cura/tools/make_probe_cube.py). Amplitud prudente de 1 mm pico a pico, longitud de onda 20 mm, onda desde 0,8 mm con 5 mm de rampa y cara superior plana. El cabezal es el de nonplanar_arquis_volcano.json (confirmado por delegacion del propietario).",
+  "amplitude": 1.0,
+  "wavelength": 20.0,
+  "function": "wave",
+  "center_x": 150.0,
+  "center_y": 150.0,
+  "z_in": 0.8,
+  "ramp": 5.0,
+  "flat_top": true,
+  "max_seg": 1.0,
+  "nozzle_d": 0.4,
+  "max_slope_deg": 15.0,
+  "head": {
+    "nozzle_clearance_deg": 35.0,
+    "safety_margin_deg": 5.0,
+    "envelopes": [
+      ["hexagono de la boquilla", 3.5, 2.5],
+      ["bloque calefactor Volcano 20x11.5 (7.3 mm medido)", 11.5, 7.3],
+      ["ducto de ventilacion (a la altura del bloque; radio conservador)", 25.0, 7.3]
+    ],
+    "confirmed": true
+  }
+}

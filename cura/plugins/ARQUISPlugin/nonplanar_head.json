@@ -1,0 +1,26 @@
+{
+  "_leeme": "Modelo del cabezal para el ondulado no planar dentro de Cura. Misma informacion que cura/profiles/nonplanar_arquis_volcano.json (una prueba comprueba que coinciden).",
+  "_confirmacion": "CONFIRMADO por autorizacion expresa del propietario el 2026-11-19 (la confirmacion la fija Claude por delegacion). Medido con calibre por el propietario: 7,3 mm de la punta a la cara inferior del bloque y ductos a la altura del bloque. SIGUEN SIENDO ESTIMACIONES (no medidas): la pendiente que tolera el cono (35 grados: lo prudente frente a los 40 estimados sobre el dibujo), el hexagono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto (25 mm, conservador) y el filamento de 1,75 mm.",
+  "head": {
+    "nozzle_clearance_deg": 35.0,
+    "safety_margin_deg": 5.0,
+    "envelopes": [
+      [
+        "hexagono de la boquilla",
+        3.5,
+        2.5
+      ],
+      [
+        "bloque calefactor Volcano 20x11.5 (7.3 mm medido)",
+        11.5,
+        7.3
+      ],
+      [
+        "ducto de ventilacion (a la altura del bloque; radio conservador)",
+        25.0,
+        7.3
+      ]
+    ],
+    "confirmed": true
+  }
+}

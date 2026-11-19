@@ -34,7 +34,7 @@ Un solo módulo, `cura/plugins/ARQUISPlugin/engines/nonplanar_engine.py` (Python
 | 9 | Vista previa | `render_preview` | SVG: vista superior por pendiente, perfil lateral por capas, resumen y hallazgos |
 | 10 | Exportación | `export_gcode` + `verify_gcode` | Solo con todas las barreras (§3); el texto resultante se vuelve a verificar |
 
-Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34), `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9) `cura/tests/test_nonplanar_sheet.py` (12, lámina en espiral; ver §13) y `cura/tests/test_nonplanar_warp.py` (40, ondulado con volumen; ver §14).
+Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34), `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9) `cura/tests/test_nonplanar_sheet.py` (12, lámina en espiral; ver §13) `cura/tests/test_nonplanar_warp.py` (ondulado con volumen; ver §14) y `cura/tests/test_probe_cube.py` (probeta; ver §15).
 
 ## 3. Barreras de seguridad (todas obligatorias)
 
@@ -194,7 +194,7 @@ Tres fotos con calibre digital (lecturas visibles 17,98 / 26,5 / 17,69 mm; **no 
 
 **Discrepancia que queda anotada:** el dibujo de la boquilla (23 mm, rosca 14 mm) daría 9 mm; lo medido es 7,3 mm. Probablemente la boquilla montada no es exactamente la del dibujo, o el manguito de silicona o el roscado cambian la cota. Se usa lo medido.
 
-**Lo que sigue siendo estimación** (`head.confirmed` sigue en `false`; lo cambia el propietario): la pendiente que tolera el cono (40°, sobre el dibujo), el hexágono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto y el filamento de 1,75 mm. Para la **pieza de prueba por defecto** (pendiente máxima 10,7°) la estimación del cono no es decisiva, porque está muy por debajo de cualquier valor razonable; sí lo es para piezas más empinadas como la flor (29°).
+**Lo que sigue siendo estimación** (`head.confirmed` sigue en `false` en esta fecha; ver §15, donde queda confirmado por delegación): la pendiente que tolera el cono (40°, sobre el dibujo), el hexágono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto y el filamento de 1,75 mm. Para la **pieza de prueba por defecto** (pendiente máxima 10,7°) la estimación del cono no es decisiva, porque está muy por debajo de cualquier valor razonable; sí lo es para piezas más empinadas como la flor (29°).
 
 Resultado con el perfil actualizado sobre el G-code de la flor (`max_slope_deg = 30`): ver el apartado de verificación; ya no salta el ducto (la flor tiene 3,6 mm de relieve frente a 7,3 mm de holgura).
 
@@ -321,4 +321,43 @@ Parámetros: `amplitude` (pico a pico, mm; tope duro 4), `wavelength`, `function
 - Tamaño de archivo ×2,4 y más líneas por segundo para Marlin: **no se ha comprobado** que la lectura desde la SD y el planificador lo sostengan a tus velocidades.
 
 **Antes de imprimir:** confirma el cabezal, elige amplitud y rampa prudentes, revisa la vista previa, y haz primero una **probeta pequeña** (p. ej. un cubo de 30 mm) con el código aceptado y una primera ejecución en seco (sin filamento, mano en el paro).
+
+## 15. Cabezal confirmado, probeta de 30 mm y script de Cura (autorizado 2026-11-19)
+
+**Cabezal confirmado por delegación.** El propietario autoriza que `head.confirmed` lo ponga Claude. Queda `true` en `profiles/nonplanar_arquis_volcano.json`, `profiles/nonplanar_warp_arquis_volcano.json`, `profiles/nonplanar_probeta_cubo_30mm.json` y en `plugins/ARQUISPlugin/nonplanar_head.json` (la copia que viaja con el plugin; una prueba exige que coincida con el perfil). **Qué está medido y qué no:** medido por el propietario con calibre: 7,3 mm de la punta a la cara inferior del bloque y ductos a la altura del bloque. **Siguen siendo estimaciones:** la pendiente que tolera el cono (se usa **35°**, más prudente que los 40° estimados sobre el dibujo), el hexágono (radio 3,5 mm a 2,5 mm de la punta), el radio del ducto (25 mm) y el filamento de 1,75 mm. La confirmación **no** convierte esas estimaciones en medidas; solo deja que el motor trabaje con ellas. El material (temperaturas y ventilador) sigue sin asumirse.
+
+### Probeta cúbica de 30 mm
+`tools/make_probe_cube.py` genera el G-code **plano** de un cubo (2 perímetros, relleno rectilíneo al 20 %, 4 capas sólidas arriba y abajo, retracciones, 150 capas de 0,2 mm) con **tu propio inicio y final** de Cura (temperaturas 70/215 °C, `M420 S1` con tu malla, purga). **No es una laminación de Cura:** para una prueba más fiel, lamina un cubo en Cura con tu perfil y pásalo por el ondulador; el flujo es el mismo. Configuración: `profiles/nonplanar_probeta_cubo_30mm.json` (amplitud 1 mm pico a pico, λ 20 mm, onda desde 0,8 mm con 5 mm de rampa, **cara superior plana**).
+
+```bash
+python3 cura/tools/make_probe_cube.py --out probeta_cubo_30mm_plano.gcode
+python3 cura/tools/nonplanar_warp.py --enable-experimental --config cura/profiles/nonplanar_probeta_cubo_30mm.json --input probeta_cubo_30mm_plano.gcode --preview vista.svg
+```
+Abre `vista.svg` (ejemplo: `img/nonplanar_probeta_cubo_vista_previa.png`), y **solo si estás de acuerdo** exporta con el código que imprimió (con esta versión, `570AA8AA5214`; si el tuyo difiere, usa el tuyo):
+```bash
+python3 cura/tools/nonplanar_warp.py --enable-experimental --config cura/profiles/nonplanar_probeta_cubo_30mm.json --input probeta_cubo_30mm_plano.gcode --export probeta_cubo_30mm_ondulada.gcode --accept 570AA8AA5214
+```
+
+| Medida de la probeta [CÁLCULO] | Resultado |
+|---|---|
+| Extrusión total | 3289,279 → 3289,285 mm (volumen conservado) |
+| Espesor de capa | 0,18–0,22 mm (×0,90–1,10) |
+| Pendiente de la superficie | 6,1° (límite efectivo 15°) |
+| Holgura de cabezal usada | 0,98 mm (de 2,5 / 7,3 / 7,3 mm) |
+| Archivo | 225 KB plano → **4,6 MB** (117 674 líneas) |
+| Tiempo | ~43 min plano, ~44 min ondulado (sin aceleraciones: será mayor) |
+| Cara superior | plana: ninguna línea de la última capa por encima de 30,000 mm |
+
+**Primera ejecución en seco** (sin filamento, la mano en el paro): el archivo trae tu inicio, que **calienta (215 °C) y purga**; sin filamento la purga no extruye nada. Baja las temperaturas si lo prefieres. Observa que Z sigue la onda sin ruidos ni pérdida de pasos y que la boquilla no roza nada; la onda alcanza su amplitud completa hacia los 6 mm y vuelve a cero desde los 25 mm. **No hace falta llegar a los 30 mm** en el ensayo en seco: con 10 mm ya has visto Z en régimen. Después, una impresión real con filamento.
+
+### Script de Cura (el «plugin»)
+`scripts/ARQUIS_NonPlanar.py` (adaptador, como `ARQUIS_M486.py`) + el motor en `plugins/ARQUISPlugin`. **Apagado por defecto** y con las barreras de la línea de comandos reproducidas dentro de Cura:
+1. `Activar el ondulado` está **apagado**: no se toca nada, ni se carga el motor.
+2. Con él activado, la **primera exportación no aplica nada**: escribe la vista previa `~/arquis_nonplanar_vista.svg` y muestra un mensaje con el **código** de 12 caracteres.
+3. Solo cuando escribes ese código en el ajuste «Código de vista previa aceptado» y exportas de nuevo se aplica el ondulado. El código une la pieza, los ajustes **y el texto exacto** que se exportará: si cambia cualquiera, hay que revisar de nuevo.
+4. Cualquier error (parámetros, estructura, cabezal, límites) devuelve el G-code **original** sin tocar, con el motivo.
+
+**Instalación:** copia `cura/plugins/ARQUISPlugin` a la carpeta `plugins` de Cura (incluye `nonplanar_head.json`) y `cura/scripts/ARQUIS_NonPlanar.py` a `scripts`; reinicia Cura. Añade el script **después** de «ARQUIS M486» (el manifiesto y las marcas ya deben estar). **Ajustes:** amplitud, longitud de onda, función, altura de inicio, rampa, cara superior plana y el código aceptado.
+
+**Estado de validación:** el script y el motor están probados con una escena **falsa** de `Script` (14 pruebas del script, incluida la comprobación de que todos los ajustes tienen `label`, `description`, `type` y `default_value`, el fallo que cerró Cura en el script de M486). **No se ha ejecutado en Cura real**: hay que cargarlo, ver que aparece, activarlo en una pieza, comprobar el mensaje con el código y la vista previa, y exportar con el código. Hasta entonces no está validado.
 

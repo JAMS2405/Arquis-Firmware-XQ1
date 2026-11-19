@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import os
+import re
 import sys
 import types
 
@@ -105,3 +106,89 @@ def test_m486_script_emits_manifest_and_omits_it_when_the_cura_bed_is_not_the_fi
         assert ";ARQUIS_OBJECTS_BEGIN" not in "".join(m.ARQUIS_M486().execute(make_gcode(objs)))
     finally:
         FakeScript.settings = {}
+
+
+# ---------------------------------------------------------------- ARQUIS_NonPlanar (ondulado)
+def _np_setup(monkeypatch, tmp_path, **settings):
+    monkeypatch.setenv("ARQUIS_PLUGIN_PATH", PLUGIN)
+    monkeypatch.setenv("HOME", str(tmp_path)); monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    m = load_script("ARQUIS_NonPlanar")
+    sc = m.ARQUIS_NonPlanar()
+    sc.settings = dict(settings)
+    notes = []
+    m._notify = lambda text, level: notes.append((level, text))
+    return m, sc, notes
+
+
+def _cura_chunks(layers=24):
+    sys.path.insert(0, os.path.dirname(__file__))
+    from test_nonplanar_warp import cura_like
+    return [c + "\n" for c in cura_like(layers=layers).rstrip("\n").split("\n")]
+
+
+def test_nonplanar_script_is_off_by_default_and_does_not_touch_anything(monkeypatch, tmp_path):
+    m, sc, notes = _np_setup(monkeypatch, tmp_path)
+    data = _cura_chunks()
+    assert json.loads(sc.getSettingDataString())["settings"]["warp_on"]["default_value"] is False
+    assert sc.execute(data) is data and notes == []                                      # el mismo objeto: ni se copia
+    assert not (tmp_path / "arquis_nonplanar_vista.svg").exists()
+
+
+def test_nonplanar_script_first_export_only_writes_the_preview_and_the_code(monkeypatch, tmp_path):
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    data = _cura_chunks()
+    out = sc.execute(data)
+    assert out is data                                                                   # G-code ORIGINAL: no se aplica nada sin el codigo
+    assert (tmp_path / "arquis_nonplanar_vista.svg").read_text().startswith("<svg")
+    lvl, msg = notes[-1]
+    code = re.search(r"escribe el codigo ([0-9A-F]{12})", msg).group(1)
+    assert lvl == "warning" and "NO aplicado todavia" in msg and "arquis_nonplanar_vista.svg" in msg and code
+
+
+def test_nonplanar_script_applies_only_with_the_right_code_and_keeps_the_header(monkeypatch, tmp_path):
+    data = _cura_chunks()
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    sc.execute(data)
+    code = re.search(r"escribe el codigo ([0-9A-F]{12})", notes[-1][1]).group(1)
+    m, bad, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code="AAAAAAAAAAAA")
+    assert bad.execute(data) is data                                                     # codigo equivocado: nada
+    m, ok, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code.lower())
+    out = ok.execute(data)
+    assert out is not data and len(out) == 1 and notes[-1][0] in ("info", "warning") and "APLICADO" in notes[-1][1]
+    lines = out[0].splitlines()
+    assert lines[0].startswith(";ARQUIS_M486") and lines[1].startswith(";ARQUIS_OBJECTS=1") and lines[2].startswith(";ARQUIS_NP_WARP") and code in lines[2]
+    # cualquier cambio de ajuste invalida el codigo aceptado
+    m, changed, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code, amplitude=1.2)
+    assert changed.execute(data) is data and "NO aplicado todavia" in notes[-1][1]
+
+
+def test_nonplanar_script_returns_the_original_gcode_on_errors(monkeypatch, tmp_path):
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, amplitude=3.9, ramp=0.5)          # ondulado inaceptable: espesor y pendiente
+    data = _cura_chunks()
+    assert sc.execute(data) is data and notes[-1][0] == "error" and "NO aplicado" in notes[-1][1]
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, function="__import__('os').system('x')")
+    assert sc.execute(data) is data and notes[-1][0] == "error" and "no permitida" in notes[-1][1].lower()
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    other = ["G28\n", "G1 X10 Y10 E1\n"]                                                 # sin ;LAYER: ni ;TIME_ELAPSED: de Cura
+    assert sc.execute(other) is other and notes[-1][0] == "error" and "LAYER" in notes[-1][1]
+    monkeypatch.setenv("ARQUIS_PLUGIN_PATH", str(tmp_path / "no_existe"))
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    monkeypatch.setenv("ARQUIS_PLUGIN_PATH", str(tmp_path / "no_existe"))
+    assert sc.execute(data) is data and "no esta instalado" in notes[-1][1]
+
+
+def test_nonplanar_script_refuses_when_the_head_is_not_confirmed(monkeypatch, tmp_path):
+    import shutil
+    plug = tmp_path / "plug"
+    shutil.copytree(PLUGIN, plug, ignore=shutil.ignore_patterns("__pycache__"))
+    h = json.loads((plug / "nonplanar_head.json").read_text())
+    h["head"]["confirmed"] = False
+    (plug / "nonplanar_head.json").write_text(json.dumps(h))
+    monkeypatch.setenv("ARQUIS_PLUGIN_PATH", str(plug))
+    monkeypatch.setenv("HOME", str(tmp_path)); monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    sys.modules.pop("arquis_bootstrap", None)
+    m = load_script("ARQUIS_NonPlanar")
+    sc = m.ARQUIS_NonPlanar(); sc.settings = {"warp_on": True}
+    notes = []; m._notify = lambda t, l: notes.append((l, t))
+    data = _cura_chunks()
+    assert sc.execute(data) is data and "no esta confirmado" in notes[-1][1]
