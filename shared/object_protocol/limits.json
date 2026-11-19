@@ -1,0 +1,10 @@
+{
+  "protocol": "ARQUIS_OBJECTS",
+  "version": 1,
+  "target_capacity": 64,
+  "legacy_firmware_capacity": 32,
+  "max_protocol_index": 127,
+  "name_max_bytes": 20,
+  "coord_unit_mm": 0.1,
+  "notes": "target_capacity = indices M486 S0..S63 (decision del propietario). max_protocol_index = limite de los contadores int8_t de Marlin. Cura y el firmware deben leer estos valores."
+}

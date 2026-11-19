@@ -1,8 +1,11 @@
 # ARQUIS Slicer Suite — Etapa 0: auditoría
 
-Rama `claude/dreamy-allen-gc05as` (desde `main`, intacta). **No se ha modificado ningún archivo de código.** Este documento es lo único que se añade al repositorio del firmware; el plugin de Cura irá en el repositorio independiente `ARQUIS-Cura` (todavía no creado).
+Rama `claude/dreamy-allen-gc05as` (desde `main`, intacta). **No se ha modificado ningún archivo de código.** Este documento es lo único que se añade al repositorio del firmware; el plugin de Cura irá en `cura/` dentro de este mismo repositorio (ver Enmienda 1).
 
 Todo lo marcado **[VERIFICADO]** se comprobó leyendo o ejecutando el código real (rutas y líneas indicadas). Lo marcado **[NO VERIFICADO]** es una hipótesis que hay que confirmar con G-code real o con la impresora.
+
+> **ENMIENDA 1 (decisiones del propietario, posteriores a este informe).** (1) **No habrá un repositorio `ARQUIS-Cura`**: el módulo de Cura vive en este mismo repositorio, en `cura/`, separado del firmware (ver `01_arquitectura_repositorio.md`). Donde este informe dice "ARQUIS-Cura", léase `cura/`. (2) **La capacidad objetivo es 64 objetos, no 256** (el uso habitual es ≈ 40 piezas). Donde dice `CAP=256` o "256", léase 64; el estudio de viabilidad está en `02_capacidad_64.md`. Las decisiones 1 (manifiesto al final + marcador en cabecera) y 3 (licencia) siguen pendientes; el resto del informe sigue vigente.
+
 
 ## 0. Resumen ejecutivo
 
@@ -91,7 +94,7 @@ Por `gcode.cpp:185-192`, un `G0/G1 X Y Z` dentro de un tramo omitido no mueve **
 Se mantiene la propuesta del enunciado con dos ajustes: (1) el núcleo son **motores Python puros, sin importar Cura** (se prueban con `pytest` sin Cura); (2) `ARQUIS_M486.py` es un script fino que llama a esos mismos motores (no duplica lógica).
 
 ```
-ARQUIS-Cura/
+cura/            (antes: ARQUIS-Cura/; ver Enmienda 1)
 ├── plugins/ARQUISPlugin/            # Extension de Cura (API 8)
 │   ├── plugin.json  __init__.py  ARQUISPlugin.py
 │   ├── adapters/                    # ÚNICA capa que importa UM.* / cura.*
@@ -149,7 +152,7 @@ Razón: `;simage:` debe seguir dentro de los primeros 512 B, y tras la miniatura
 ;ARQUIS_OBJECTS=1 PID=3FA9C21B N=50                 ← cabecera, ≤ 40 B, DENTRO de los 512 B iniciales (detección rápida)
 ...
 ;ARQUIS_OBJECTS_BEGIN
-;ARQ:H V=1 PID=3FA9C21B N=50 BED=3000,3000 MIN=0,0 ORG=FL U=0.1mm CAP=256
+;ARQ:H V=1 PID=3FA9C21B N=50 BED=3000,3000 MIN=0,0 ORG=FL U=0.1mm CAP=64
 ;ARQ:M 0 Llavero                                    ← tabla de nombres (≤ 24 B, UTF‑8)
 ;ARQ:M 1 Soporte
 ;ARQ:O 0 0 0 350 420 185 240 0 R 1500             ← id nombre inst cx cy ancho prof rot tipo ztop
@@ -180,7 +183,7 @@ Razón: `;simage:` debe seguir dentro de los primeros 512 B, y tras la miniatura
 
 | Capacidad | Hoy | Propuesta |
 |---|---|---|
-| Motor Marlin (cancelar) | 32 (`uint32_t`), `int8_t`, defecto ≥128 | `CANCEL_OBJECTS_MAX` configurable (propuesta **256**), máscara `uint8_t[N/8]` (32 B), índices `int16_t`; **rechazar** (no envolver) todo índice fuera de rango y avisar |
+| Motor Marlin (cancelar) | 32 (`uint32_t`), `int8_t`, defecto ≥128 | `CANCEL_OBJECTS_MAX` configurable (decisión: **64**), máscara de 64 bits (8 B), índices `int16_t`; **rechazar** (no envolver) todo índice fuera de rango y avisar |
 | Metadatos (manifiesto) | no existe | tabla en RAM: 12 B/obj + 16 nombres×24 B ≈ **3 KB para 200** (estimación; se medirá) |
 | Visualización | 16 (fichas 4×4) | todos los de la tabla: mapa (un solo `design_cb`, sin widget por objeto) + **lista virtualizada** (solo filas visibles, 5‑6) |
 | Selección | por pulsación en ficha/rect | por ID (lista) y por toque en mapa con tolerancia; zoom ×1/×2/×4 con desplazamiento; objetos solapados se seleccionan desde la lista |
