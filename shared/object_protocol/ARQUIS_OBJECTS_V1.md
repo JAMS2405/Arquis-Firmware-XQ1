@@ -1,6 +1,6 @@
 # ARQUIS_OBJECTS_V1 — manifiesto de objetos (especificación)
 
-Estado: **implementado en Cura** (generador, lector y validador de referencia, Etapa 2) · **pendiente en el firmware** (parser y pantalla, Etapa 3). Capacidad de diseño: **30 objetos, IDs 0–29**. Todos los límites vienen de `limits.json`; esta especificación los cita pero **no los define**.
+Estado: **implementado en Cura** (generador, lector y validador de referencia, Etapa 2) · **lector del firmware implementado y probado en el PC** (`Marlin/src/lcd/extui/mks_ui/arquis_objects.cpp`, Etapa 3; sin probar en la placa). Capacidad de diseño: **30 objetos, IDs 0–29**. Todos los límites vienen de `limits.json`; esta especificación los cita pero **no los define**.
 
 ## 1. Transporte
 Comentarios del propio G-code (autosuficiente: un solo archivo). Líneas ≤ 80 B (medido: 70 B), ASCII salvo los nombres (UTF-8). Fin de línea `\n` **o `\r\n`** (Cura en Windows exporta CRLF: los dos G-code reales aportados lo traen). Marlin ignora los comentarios, igual que ya hace con `;gimage:`.
@@ -55,6 +55,8 @@ Objetos con `id ≥ capacidad` **no se publican** (la pantalla no inventa objeto
 
 ## 5. Validaciones obligatorias (Cura y firmware; mismo resultado en `test_vectors/manifest_v1.json`, 26 casos)
 Versión desconocida · `N` ≠ filas · IDs duplicados / fuera de rango / ≥ capacidad · coordenadas fuera de cama · tamaño ≤ 0 · `z0 > ztop` · rotación > 359 · nombre > 20 B o índice inexistente · órdenes que no son permutación · `CAP` > techo · CRC · trailer (CRC/PID/N) · cabecera ≠ bloque · cama del manifiesto ≠ cama de la máquina. **Cualquier fallo ⇒ sin mapa ni cancelación visual; la impresión normal no se ve afectada.** Sin manifiesto (G-code antiguo) no es un error.
+**Orden y rangos (obligatorios, añadidos en la Etapa 3 para que el lector del firmware sea exacto con memoria fija):** las líneas van en el orden `H`, `M…`, `O…` (una `M` tras una `O`, o `M`/`O` antes de la `H`, es `E_MANIFEST_FORMAT`); toda línea del bloque mide ≤ 95 B; los valores deben caber en su campo de almacenamiento: `cx`, `cy`, `MIN` en `int16`; `ancho`, `prof`, `z0`, `ztop`, `BED` en `uint16` (0–65 535, es decir hasta 6 553,5 mm / 3 276,7 mm en coordenadas) e `inst` ≤ 255 (si no, `E_MANIFEST_FORMAT`); un índice de nombre ≥ `design_capacity` es `E_NAME_INDEX`. La conformidad exacta (mismo `ok` y mismo conjunto de errores) se exige hasta 32 objetos; con más ya es inválido por `E_OVER_CAPACITY`.
+
 Verificación en ejecución (Etapa 3, coste cero en el camino caliente): `N` = el `M486 T` recibido, y la caja XY aprendida de cada objeto (`note_extrusion`) dentro de la del manifiesto (+ margen); si no, `UNTRUSTED`.
 
 ## 6. Compatibilidad

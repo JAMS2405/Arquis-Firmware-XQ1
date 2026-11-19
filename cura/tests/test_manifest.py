@@ -203,7 +203,7 @@ def test_roundtrip_equals(good):
 def test_semantic_validations(good):
     assert "E_ID_DUPLICATE" in codes(mutated(good, lambda m: setattr(m.objects[1], "id", 0)))
     assert "E_ID_RANGE" in codes(mutated(good, lambda m: setattr(m.objects[3], "id", 9)))
-    assert "E_OUTSIDE_BED" in codes(mutated(good, lambda m: setattr(m.objects[0], "cx", 99999)))
+    assert "E_OUTSIDE_BED" in codes(mutated(good, lambda m: setattr(m.objects[0], "cx", 20000)))
     assert "E_SIZE" in codes(mutated(good, lambda m: setattr(m.objects[0], "w", 0)))
     assert "E_Z" in codes(mutated(good, lambda m: setattr(m.objects[0], "z0", m.objects[0].ztop + 5)))
     assert "E_ROT" in codes(mutated(good, lambda m: setattr(m.objects[0], "rot", 400)))

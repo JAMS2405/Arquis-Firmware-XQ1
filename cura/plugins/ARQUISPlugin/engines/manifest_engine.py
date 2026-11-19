@@ -164,6 +164,15 @@ def _err(ps: List[Problem], code: str, msg: str) -> None:
     ps.append(Problem(code, ERROR, msg))
 
 
+# Rangos de almacenamiento del firmware (arquis_objects.h): un valor que no cabe en su campo hace que la linea sea invalida.
+I16 = (-32768, 32767)
+U16 = (0, 65535)
+
+
+def _fits(*pairs) -> bool:
+    return all(lo <= v <= hi for v, (lo, hi) in pairs)
+
+
 def parse_text(text: str, bed_check: Optional[Tuple[int, int]] = None) -> ParseResult:
     """Lee el manifiesto de un G-code completo (texto). Busca el bloque SOLO en los ultimos TAIL_WINDOW bytes y la cabecera SOLO en
     los primeros HEADER_WINDOW bytes, como el firmware. ``bed_check``: (ancho, prof) en 0,1 mm de la maquina, si se quiere comprobar."""
@@ -211,12 +220,17 @@ def parse_regions(head: str, tail: str, bed_check: Optional[Tuple[int, int]] = N
             m.version, m.pid, n_decl = int(mm.group(1)), int(mm.group(2), 16), int(mm.group(3))
             m.bed_w, m.bed_d, m.min_x, m.min_y, m.origin, m.seq, m.cap = (int(mm.group(4)), int(mm.group(5)), int(mm.group(6)),
                                                                           int(mm.group(7)), mm.group(8), int(mm.group(9)), int(mm.group(10)))
+            if not _fits((m.bed_w, U16), (m.bed_d, U16), (m.min_x, I16), (m.min_y, I16)):
+                _err(ps, "E_MANIFEST_FORMAT", "valor de la linea H fuera del rango de almacenamiento")
+                return ParseResult(None, ps, hdr is not None, True)
         elif l.startswith(";ARQ:M "):
             mm = re.match(r"^;ARQ:M (\d+) (.+)$", l)
-            if not mm:
-                _err(ps, "E_MANIFEST_FORMAT", "linea M mal formada: %r" % l)
+            if not mm or not h_seen or objs:
+                _err(ps, "E_MANIFEST_FORMAT", "linea M mal formada o fuera de orden (H, luego M, luego O): %r" % l)
                 return ParseResult(None, ps, hdr is not None, True)
             idx, nm = int(mm.group(1)), mm.group(2)
+            if idx >= limits.DESIGN_CAPACITY:
+                _err(ps, "E_NAME_INDEX", "indice de nombre fuera de 0..%d: %d" % (limits.DESIGN_CAPACITY - 1, idx))
             if idx in names:
                 _err(ps, "E_NAME_DUPLICATE", "indice de nombre repetido: %d" % idx)
             if len(nm.encode("utf-8")) > limits.NAME_MAX_BYTES:
@@ -224,10 +238,13 @@ def parse_regions(head: str, tail: str, bed_check: Optional[Tuple[int, int]] = N
             names[idx] = nm
         elif l.startswith(";ARQ:O "):
             mm = re.match(r"^;ARQ:O (\d+) (\d+) (\d+) (-?\d+) (-?\d+) (\d+) (\d+) (\d+) ([CSR]) (-?\d+) (-?\d+) (\d+)$", l)
-            if not mm:
-                _err(ps, "E_MANIFEST_FORMAT", "linea O mal formada: %r" % l)
+            if not mm or not h_seen:
+                _err(ps, "E_MANIFEST_FORMAT", "linea O mal formada o antes de la H: %r" % l)
                 return ParseResult(None, ps, hdr is not None, True)
             g = mm.groups()
+            if not _fits((int(g[2]), (0, 255)), (int(g[3]), I16), (int(g[4]), I16), (int(g[5]), U16), (int(g[6]), U16), (int(g[9]), U16), (int(g[10]), U16)):
+                _err(ps, "E_MANIFEST_FORMAT", "valor de la linea O fuera del rango de almacenamiento: %r" % l)
+                return ParseResult(None, ps, hdr is not None, True)
             objs.append(ManifestObject(int(g[0]), int(g[1]), int(g[2]), int(g[3]), int(g[4]), int(g[5]), int(g[6]), int(g[7]), g[8],
                                        int(g[9]), int(g[10]), int(g[11])))
         else:

@@ -102,7 +102,7 @@ def manifest_vectors():
     add("bad_trailer_pid", good.replace("PID=%08X N=30\n" % g30.pid, "PID=DEADBEEF N=30\n"))
     add("bad_header_mismatch", good.replace("N=30\n", "N=29\n", 1))
     for name, fn in (("dup_id", lambda m: setattr(m.objects[1], "id", 0)), ("id_range", lambda m: setattr(m.objects[29], "id", 40)),
-                     ("outside_bed", lambda m: setattr(m.objects[0], "cx", 99999)), ("size_zero", lambda m: setattr(m.objects[0], "w", 0)),
+                     ("outside_bed", lambda m: setattr(m.objects[0], "cx", 20000)), ("size_zero", lambda m: setattr(m.objects[0], "w", 0)),
                      ("z0_above_ztop", lambda m: setattr(m.objects[0], "z0", 999)), ("rotation", lambda m: setattr(m.objects[0], "rot", 400)),
                      ("name_index", lambda m: setattr(m.objects[0], "name_idx", 9)), ("name_too_long", lambda m: m.names.__setitem__(0, "x" * 40)),
                      ("order", lambda m: setattr(m.objects[0], "order", 5)), ("cap_above_ceiling", lambda m: setattr(m, "cap", 33)),
@@ -110,6 +110,39 @@ def manifest_vectors():
         m = make(30, ["Llavero", "Soporte", "Tapa"]); fn(m); m.pid = me._pid(m, me.body_lines(m, with_pid=False)[1:])
         h, b = render(m); add("bad_" + name, h + head + b)
     m = make(31, ["Llavero"]); h, b = render(m); add("bad_over_capacity_31", h + head + b, note="31 objetos > 30")
+
+    # ---- casos de robustez del parser del firmware (orden de lineas, rangos de almacenamiento, lineas largas, varios bloques) ----
+    def block_from(body_lines, pid=None, n=None):
+        """Bloque con CRC y trailer CORRECTOS para un cuerpo arbitrario (para probar errores de formato, no de integridad)."""
+        crc = me.crc32_lines(body_lines)
+        pid = pid if pid is not None else g30.pid
+        n = n if n is not None else 30
+        txt = "\n".join([me.BEGIN] + body_lines + ["%s CRC=%08X" % (me.END, crc)]) + "\n"
+        return txt + "%s CRC=%08X PID=%08X N=%d\n" % (me.TRAILER, crc, pid, n)
+    gb = me.body_lines(g30)
+    H, Ms, Os = gb[0], [l for l in gb if l.startswith(";ARQ:M ")], [l for l in gb if l.startswith(";ARQ:O ")]
+    hdr = "%s1 PID=%08X N=30\n" % (me.HEADER, g30.pid)
+    add("valid_same_body_rebuilt", hdr + head + block_from(gb), note="el cuerpo reconstruido con el generador de casos es valido (control)")
+    add("bad_o_before_h", hdr + head + block_from(Os[:1] + [H] + Ms + Os[1:]), note="orden H, M, O obligatorio")
+    add("bad_m_after_o", hdr + head + block_from([H] + Ms[:2] + Os[:1] + Ms[2:] + Os[1:]), note="las lineas M van antes que las O")
+    add("bad_h_twice", hdr + head + block_from([H, H] + Ms + Os))
+    add("bad_unknown_line", hdr + head + block_from(gb + [";ARQ:X 1"]))
+    add("bad_overlong_line", hdr + head + block_from(gb + [";ARQ:M 5 " + "y" * 150]), note="linea de 150 B: mas larga que el buffer del firmware")
+    add("bad_range_cx_int16", hdr + head + block_from([H] + Ms + [Os[0].replace(" 200 200 300 300", " 40000 200 300 300", 1)] + Os[1:]), note="cx no cabe en int16")
+    add("bad_range_width_uint16", hdr + head + block_from([H] + Ms + [Os[0].replace(" 200 200 300 300", " 200 200 70000 300", 1)] + Os[1:]), note="ancho no cabe en uint16")
+    add("bad_range_instance_uint8", hdr + head + block_from([H] + Ms + [Os[0].replace("O 0 0 0 ", "O 0 0 300 ", 1)] + Os[1:]), note="numero de copia > 255")
+    add("bad_range_bed_uint16", hdr + head + block_from([H.replace("BED=3000,3000", "BED=70000,3000")] + Ms + Os))
+    add("bad_name_idx_30", hdr + head + block_from([H] + Ms + [";ARQ:M 30 Extra"] + Os), note="indice de nombre fuera de 0..29")
+    add("bad_name_duplicate_index", hdr + head + block_from([H] + Ms + [";ARQ:M 1 Otro"] + Os))
+    add("bad_name_gap", hdr + head + block_from([H] + [l for l in Ms if not l.startswith(";ARQ:M 1 ")] + Os), note="indices de nombre no contiguos")
+    add("valid_last_block_wins", hdr + head + good[good.index(me.BEGIN):].replace("ORG=FL", "ORG=FL", 1).replace(";ARQ:O 0 0 0", ";ARQ:O 0 0 1", 1) + good[good.index(me.BEGIN):],
+        note="dos bloques: gana el ULTIMO (el primero esta corrupto y se ignora)")
+    add("bad_last_block_truncated", hdr + head + good[good.index(me.BEGIN):] + me.BEGIN + "\n;ARQ:H V=1\n", note="el ultimo BEGIN no tiene END: manda el ultimo")
+    add("valid_bed_tolerance_edge", hdr + head + good, (3010, 3000), note="1,0 mm de diferencia = tolerancia (no es error)")
+    add("bad_bed_tolerance_exceeded", hdr + head + good, (3011, 3000), note="mas de 1,0 mm de diferencia")
+    add("valid_header_absent_block_ok", head + good[good.index(me.BEGIN):], note="sin marca de cabecera (p. ej. otro script la quito): el bloque basta")
+    add("bad_header_pid_mismatch", "%s1 PID=DEADBEEF N=30\n" % me.HEADER + head + good[good.index(me.BEGIN):])
+    add("valid_double_cr_lines", good.replace("\n", "\r\r\n"), note="\\r\\r\\n: se quitan todos los CR finales de la linea")
     return {"version": 1, "tail_window": me.TAIL_WINDOW, "header_window": me.HEADER_WINDOW,
             "comment": "El firmware debe dar el mismo ok/errores/warnings que el parser de referencia para cada texto.", "cases": V}
 
