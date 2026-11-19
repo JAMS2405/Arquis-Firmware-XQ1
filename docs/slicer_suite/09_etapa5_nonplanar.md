@@ -34,7 +34,7 @@ Un solo módulo, `cura/plugins/ARQUISPlugin/engines/nonplanar_engine.py` (Python
 | 9 | Vista previa | `render_preview` | SVG: vista superior por pendiente, perfil lateral por capas, resumen y hallazgos |
 | 10 | Exportación | `export_gcode` + `verify_gcode` | Solo con todas las barreras (§3); el texto resultante se vuelve a verificar |
 
-Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (17).
+Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (17) y `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9).
 
 ## 3. Barreras de seguridad (todas obligatorias)
 
@@ -113,3 +113,29 @@ python3 cura/tools/nonplanar_demo.py --enable-experimental --config nonplanar.js
 3. **Referencia visual:** el PROMPT MAESTRO menciona una pieza impresa con trayectorias curvas y capas no horizontales como referencia. **No tengo esa imagen**: la onda senoidal es un ejemplo mío. Si la pieza de referencia es otra geometría (superficie superior ondulada, cúpula, etc.), dímelo o pásame una foto y adapto el campo de alturas.
 4. **Siguiente paso técnico** (no iniciado, requiere autorización): leer superficies desde un modelo real (STL/escena de Cura). Eso exige validar la API de Cura en el programa real, como en la Etapa 3.
 5. Prueba física en seco y, si procede, impresión de la pieza (§7 paso 5), con su resultado documentado aquí.
+
+## 9. Actualización 2026-11-19 (2): pieza de referencia, tu boquilla y lectura de superficies
+
+**Pieza de referencia** (`img/nonplanar_referencia_anillo.webp`): un anillo con agujero cuya superficie ondula; en las pendientes se ven líneas paralelas a los bordes. Es el objetivo real, y es distinto de mi ejemplo (placa con onda en una sola dirección). Dos diferencias que el motor **todavía no cubre**: (1) el **agujero** obliga a interrumpir las trayectorias, retraer y saltar; (2) las zonas altas de una pieza así no se pueden imprimir en el aire: hay que saber **cómo se imprime** (¿una lámina que crece desde una base plana? ¿el anillo se apoya en algo?). Necesito el **STL** de la pieza y cómo la imprimes para decidir el esquema de capas.
+
+**Tu boquilla** (`img/boquilla_volcano_propietario.webp`): estilo Volcano, con bloque calefactor Volcano. La boquilla sobresale más que en un V6 y el bloque es mayor, así que **no sirven los valores por defecto** del modelo de cabezal. No asumo ninguna cota: hay que medirlas con calibre (§ tabla).
+
+| Medida (con calibre, en mm) | Parámetro del motor |
+|---|---|
+| Altura del cono visible, de la punta al hexágono | pendiente máxima: `head.nozzle_clearance_deg` (ángulo del cono respecto a la vertical → pendiente tolerable = 90° − ese ángulo) |
+| Distancia de la punta a la cara inferior del bloque calefactor | `head.envelopes[0]` altura sobre la punta |
+| Radio (o semiancho) del bloque calefactor | `head.envelopes[0]` radio |
+| Altura sobre la punta y radio del ducto de ventilación | `head.envelopes[1]` |
+| Diámetro real del filamento | `filament_d` |
+
+**Lectura de superficies desde un modelo (autorizada).** Nuevo módulo `engines/nonplanar_surface.py` y opción `--analyze-stl` de la herramienta: lee un STL (binario o ASCII), proyecta sus triángulos sobre una rejilla XY y obtiene la altura de la cara superior e inferior por celda, mide pendiente, relieve y espesor, detecta **agujeros** y avisa si la pieza **no es una superficie 2,5D** (voladizos o piezas apiladas). Genera una vista previa en SVG. **Solo analiza: no genera trayectorias ni G-code desde el modelo.**
+
+```bash
+python3 cura/tools/nonplanar_demo.py --enable-experimental --analyze-stl anillo.stl --preview analisis.svg
+```
+- **Pruebas** (`test_nonplanar_surface.py`, 12): STL binario y ASCII equivalentes; archivos truncados, vacíos o con valores no finitos se rechazan; un anillo ondulado **generado en la prueba** (no es tu pieza) se mide con la geometría correcta (área, relieve, pendiente, espesor, agujero central); una superficie demasiado inclinada o con relieve excesivo da ERROR; placas apiladas se detectan como no 2,5D. Son pruebas de cálculo.
+- **Limitaciones:** solo STL (no 3MF), en milímetros y tal como está (no lo coloca en la cama); resolución limitada por la celda (por defecto 1 mm, la pendiente puede quedar subestimada con celdas grandes).
+- **Lectura desde la escena de Cura: no implementada.** Exige validar en Cura real la API de la malla (`getMeshData`, vértices e índices, transformación al mundo), como en la Etapa 3: primero un volcado de diagnóstico ejecutado por ti dentro de Cura. Hasta entonces, el camino es exportar el STL.
+
+**Siguiente paso técnico (no iniciado):** generar capas conformes y trayectorias desde la superficie leída, con agujeros (viajes, retracción y salto en Z). Antes necesito tu STL y cómo se imprime la pieza.
+
