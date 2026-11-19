@@ -8,4 +8,5 @@
 | [`04_cambio_capacidad_30.md`](04_cambio_capacidad_30.md) | Revisión de la Etapa 1, cambios por el nuevo límite y hallazgos con G-code real de Cura |
 | [`03_etapa1_m486.md`](03_etapa1_m486.md) | Etapa 1: motor M486 en Cura — reglas, pruebas, limitaciones, cómo validarlo con Cura real |
 | [`05_etapa2_manifiesto.md`](05_etapa2_manifiesto.md) | Etapa 2: gestor de objetos, mapa de cama y manifiesto — qué hay, pruebas, limitaciones, validación |
+| [`06_decisiones.md`](06_decisiones.md) | Decisiones confirmadas del propietario (manifiesto, licencia, capacidad, repositorio, orientación provisional, política de cancelación visual) |
 | [`../../shared/object_protocol/ARQUIS_OBJECTS_V1.md`](../../shared/object_protocol/ARQUIS_OBJECTS_V1.md) | Especificación normativa del manifiesto y del mapa |

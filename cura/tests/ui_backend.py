@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Carga ui/backend.py (necesita PyQt6) con los mismos nombres de paquete que usa el plugin."""
 import importlib.util
 import os

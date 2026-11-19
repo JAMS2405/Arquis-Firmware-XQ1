@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """R5: si la correspondencia no es segura, el G-code no se toca (salvo un comentario) y se explica por que."""
 import pytest
 

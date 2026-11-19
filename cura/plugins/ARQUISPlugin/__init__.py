@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 # ARQUIS Slicer Suite - plugin de Cura 5.11 (API 8). Licencia: ver LICENSE del repositorio.
 from . import ARQUISPlugin
 

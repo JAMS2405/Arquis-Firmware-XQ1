@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Modelo de vista del Gestor de objetos: lista + mapa de cama, SINCRONIZADOS (una sola fuente de datos y un unico indice de seleccion).
 
 Es Python puro: lo consume la interfaz de Cura (QML) y las pruebas. Toda la geometria sale de ``bed_map_engine`` (la misma que

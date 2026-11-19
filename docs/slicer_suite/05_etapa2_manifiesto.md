@@ -2,7 +2,7 @@
 
 Estado: **implementado y probado en el PC** (G-code real de Cura 5.11 incluido). **No probado dentro de Cura** (la ventana del gestor y la API de escena) **ni en la impresora**. No se ha tocado `Marlin/`, `platformio.ini` ni `ini/`. Capacidad de diseño: 30 objetos (`04_cambio_capacidad_30.md`).
 
-Supuestos que tomé por defecto (las dos decisiones que quedaron sin responder en la auditoría): **manifiesto al final del archivo con marca en la cabecera** (con G-code real se comprobó que Cura añade después su `;SETTING_3`, de ahí la ventana de 16 KB) y licencia **sin decidir** (no se ha añadido ningún archivo de licencia).
+Decisiones **confirmadas por el propietario** (ver `06_decisiones.md`): manifiesto **al final del archivo con marca corta en la cabecera** (con G-code real se comprobó que Cura añade después su `;SETTING_3`, de ahí la ventana de 16 KB) y licencia **LGPL-3.0-or-later** para el módulo de Cura.
 
 ## 1. Qué hay
 | Pieza | Archivo | Función |

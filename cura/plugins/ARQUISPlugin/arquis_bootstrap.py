@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Carga los paquetes internos con nombres unicos (``arquis_engines``, ``arquis_adapters``) tanto desde el plugin de Cura como
 desde un script de post-procesado o desde las pruebas. Asi todos usan exactamente el mismo codigo y ninguna ruta relativa depende
 de como cargue Cura el plugin."""

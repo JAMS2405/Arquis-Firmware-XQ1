@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Mapa proporcional de la cama: coordenadas del manifiesto -> pixeles, tamano y forma de los marcadores, seleccion y estados.
 
 Aritmetica ENTERA (unidades de 0,1 mm y pixeles) para que el firmware (C++) pueda reproducir cada resultado bit a bit: los

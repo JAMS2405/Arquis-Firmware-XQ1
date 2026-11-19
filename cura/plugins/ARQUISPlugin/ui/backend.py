@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Backend Qt del Gestor de objetos: expone a QML el modelo de vista (lista + mapa sincronizados). No conoce Cura: recibe instancias y cama."""
 from typing import Optional, Sequence, Tuple
 

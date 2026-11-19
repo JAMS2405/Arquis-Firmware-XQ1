@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Comprueba un G-code YA EXPORTADO por Cura: cancelacion de objetos (M486) y manifiesto, tal como los vera el firmware.
 Lee el manifiesto con la misma ventana de busqueda que el firmware (cabecera: 512 B iniciales; bloque: 16 KB finales) y lo contrasta
 con el G-code. Uso: python3 cura/tools/arquis_check.py archivo.gcode [--bed 300x300] [--capacity 30]. Codigo de salida 0 = todo correcto."""

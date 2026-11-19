@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Modelo de instancias de la escena y asignacion de IDs ARQUIS.
 
 Una *hoja* (``SceneInstance``) es una malla de la escena de Cura (lo que CuraEngine etiqueta con ``;MESH:<nombre>``).

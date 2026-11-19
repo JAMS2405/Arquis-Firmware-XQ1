@@ -2,6 +2,8 @@
 
 Módulo independiente (no se compila con el firmware) del repositorio ARQUIS. Cura 5.11.0, Python 3.12, plugin API 8.
 
+**Licencia: LGPL-3.0-or-later** (`LICENSE` en esta carpeta; el firmware del repositorio sigue bajo GPL-3.0, ver `../LICENSE`). Cada archivo fuente lleva `SPDX-License-Identifier: LGPL-3.0-or-later`.
+
 - `plugins/ARQUISPlugin/engines/` — motores en Python puro (no importan Cura): escaneo del G-code, correspondencia instancia↔tramo, M486, validación, modelo de Marlin para pruebas.
 - `plugins/ARQUISPlugin/adapters/` — **única** capa que conoce la API de Cura/Uranium.
 - `scripts/` — scripts de post-procesado de Cura (`ARQUIS_M486.py`, `ARQUIS_Validation.py`); solo adaptan los motores.

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Comportamiento del motor de cancelacion de Marlin (modelo) y compatibilidad con el firmware ACTUAL (mascara uint32_t)."""
 import pytest
 

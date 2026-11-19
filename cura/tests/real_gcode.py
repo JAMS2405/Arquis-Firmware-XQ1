@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Carga G-code REAL de CuraEngine (tests/data) y deriva una 'escena' a partir de el.
 
 OJO: la escena derivada sale del propio G-code (union de las cajas de cada tramo + margen), asi que NO prueba la correspondencia

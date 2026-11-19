@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Escena de Cura -> lista de ``SceneInstance`` en coordenadas del G-code.
 
 API de Cura 5.11.0 / Uranium usadas (todas leidas en el codigo fuente, tag 5.11.0):

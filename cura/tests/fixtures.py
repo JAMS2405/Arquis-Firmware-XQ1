@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Generador de G-code SINTETICO con la forma de la salida de CuraEngine 5.11 (leida en LayerPlan.cpp / gcodeExport.cpp).
 
 No es G-code real de Cura: reproduce las propiedades que importan a ARQUIS (ver docs/slicer_suite/03_etapa1_m486.md):

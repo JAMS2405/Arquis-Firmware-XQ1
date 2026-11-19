@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """ARQUIS M486 Engine: inserta ``M486 T``/``M486 S`` en el G-code de Cura con correspondencia verificada.
 
 Semantica de Marlin 2.1.2.10 en la que se basa (feature/cancel_object.cpp, gcode/feature/cancel/M486.cpp, gcode/gcode.cpp):

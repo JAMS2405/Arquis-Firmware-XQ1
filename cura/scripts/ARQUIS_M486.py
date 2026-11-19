@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 # ARQUIS M486 - script de post-procesado para Cura 5.11 (se copia a la carpeta "scripts" de Cura; ver docs/slicer_suite/installation.md).
 # Toda la logica vive en el plugin ARQUISPlugin (motores sin dependencia de Cura); este archivo solo es el adaptador.
 import os

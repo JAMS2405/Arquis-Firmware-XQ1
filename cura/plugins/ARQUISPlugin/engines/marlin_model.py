@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Modelo ejecutable de la semantica de cancelacion de Marlin 2.1.2.10, para PROBAR el G-code generado sin impresora.
 
 Reproduce solo lo que importa (cada punto cita el codigo real del firmware):

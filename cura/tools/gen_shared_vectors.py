@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Genera los VECTORES DE PRUEBA compartidos del protocolo ARQUIS_OBJECTS_V1 en shared/object_protocol/test_vectors/:
    - bed_map_v1.json     entradas y salidas EXACTAS (enteros) de las funciones del mapa de cama
    - manifest_v1.json    textos de G-code (cabecera + cola) con el resultado esperado del parser

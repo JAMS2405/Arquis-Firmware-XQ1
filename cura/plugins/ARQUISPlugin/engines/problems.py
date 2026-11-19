@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Hallazgos (errores y avisos) comunes a todos los motores. Cada codigo es estable y esta documentado en docs/slicer_suite."""
 from dataclasses import dataclass
 from typing import List

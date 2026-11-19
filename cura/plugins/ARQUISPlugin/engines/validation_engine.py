@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Validador independiente del G-code ya procesado (no reutiliza el escaner del motor para sus decisiones de contexto).
 
 Comprueba las invariantes que hacen segura la cancelacion; el motor la ejecuta sobre su propia salida antes de entregarla y

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Etapa 2: manifiesto ARQUIS_OBJECTS_V1 — generacion, lectura, validacion y sincronizacion con el G-code."""
 import re
 import zlib

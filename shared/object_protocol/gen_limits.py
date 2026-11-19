@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Genera, a partir de limits.json (UNICA fuente de limites y constantes), los archivos que consumen Cura y el firmware:
    - cura/plugins/ARQUISPlugin/engines/protocol_limits.py
    - shared/object_protocol/generated/arquis_object_limits.h
@@ -23,7 +24,8 @@ def load():
 
 
 def render_py(j):
-    return '''# ARCHIVO GENERADO por shared/object_protocol/gen_limits.py a partir de shared/object_protocol/limits.json. NO EDITAR A MANO.
+    return '''# SPDX-License-Identifier: LGPL-3.0-or-later
+# ARCHIVO GENERADO por shared/object_protocol/gen_limits.py a partir de shared/object_protocol/limits.json. NO EDITAR A MANO.
 """Constantes del protocolo ARQUIS_OBJECTS_V1 (la fuente es shared/object_protocol/limits.json)."""
 
 PROTOCOL_NAME = %(protocol)r
@@ -40,7 +42,8 @@ COORD_UNIT_MM = %(coord_unit_mm)r                    # el manifiesto usa enteros
 
 
 def render_h(j):
-    return '''// ARCHIVO GENERADO por shared/object_protocol/gen_limits.py a partir de shared/object_protocol/limits.json. NO EDITAR A MANO.
+    return '''// SPDX-License-Identifier: LGPL-3.0-or-later
+// ARCHIVO GENERADO por shared/object_protocol/gen_limits.py a partir de shared/object_protocol/limits.json. NO EDITAR A MANO.
 #pragma once
 // ARQUIS_OBJECTS_V%(version)d: limites y constantes compartidos entre Cura y el firmware.
 #define ARQ_OBJ_PROTOCOL_VERSION   %(version)d

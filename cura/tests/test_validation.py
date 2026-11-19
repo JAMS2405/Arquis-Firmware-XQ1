@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """El validador debe detectar cada tipo de G-code inseguro (mutaciones de una salida correcta)."""
 import pytest
 

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """G-code REAL de Cura 5.11.0 (aportado por el propietario): 3 modelos distintos y 4 copias del mismo STL."""
 import re
 

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Analisis del G-code de CuraEngine 5.11: tramos ``;MESH:``, cajas XY de extrusion y marcadores de capa.
 
 Formato que se asume (leido en CuraEngine 5.11.0, ``LayerPlan.cpp`` / ``gcodeExport.cpp``):

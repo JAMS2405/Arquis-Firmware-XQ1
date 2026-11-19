@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Prueba de orientacion fisica: 5 piezas en las zonas de la cama que el mapa debe reproducir.
 
 Se imprime, se mira la cama DE FRENTE y se compara con el mapa de la pantalla (o de Cura):

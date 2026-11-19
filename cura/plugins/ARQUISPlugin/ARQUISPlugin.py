@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Extension de Cura: menu ARQUIS > Gestor de objetos (lista + mapa de la cama, sincronizados) y carga de los motores para los scripts de
 post-procesado (``scripts/ARQUIS_M486.py``, ``scripts/ARQUIS_Validation.py``). Toda la logica esta en ``engines/`` y ``adapters/``."""
 import os

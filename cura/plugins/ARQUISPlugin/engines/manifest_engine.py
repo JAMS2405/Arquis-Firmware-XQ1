@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """ARQUIS Object Manifest (ARQUIS_OBJECTS_V1): generacion, serializacion, lectura y validacion. Especificacion: shared/object_protocol/ARQUIS_OBJECTS_V1.md
 
 Texto del bloque (comentarios del G-code, ASCII salvo los nombres, UTF-8). Fin de linea "\\n" o "\\r\\n" (Cura en Windows escribe CRLF):

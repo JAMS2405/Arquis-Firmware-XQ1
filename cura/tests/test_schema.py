@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """El esquema JSON describe exactamente lo que produce y acepta el motor (validador minimo del subconjunto de JSON Schema que usa el esquema)."""
 import json
 import os

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Los scripts de post-procesado se cargan como los carga Cura (modulo dentro de un paquete con ``Script``) y se ejecutan con una escena falsa."""
 import importlib.util
 import json

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """El motor de cancelacion REAL de Marlin (cancel_object.cpp + M486.cpp, compilados sin modificar con tests/capacity) frente al modelo en Python.
 
 Valida el comportamiento real del motor M486 para los 30 objetos de diseno (IDs 0-29) ejecutando el G-code generado por ARQUIS,

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Vectores compartidos (shared/object_protocol/test_vectors): estan al dia y describen lo que dice la especificacion."""
 import json
 import os

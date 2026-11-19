@@ -4,7 +4,9 @@ Rama `claude/dreamy-allen-gc05as` (desde `main`, intacta). **No se ha modificado
 
 Todo lo marcado **[VERIFICADO]** se comprobó leyendo o ejecutando el código real (rutas y líneas indicadas). Lo marcado **[NO VERIFICADO]** es una hipótesis que hay que confirmar con G-code real o con la impresora.
 
-> **ENMIENDA 1 (decisiones del propietario, posteriores a este informe).** (1) **No habrá un repositorio `ARQUIS-Cura`**: el módulo de Cura vive en este mismo repositorio, en `cura/`, separado del firmware (ver `01_arquitectura_repositorio.md`). Donde este informe dice "ARQUIS-Cura", léase `cura/`. (2) **La capacidad objetivo es 64 objetos, no 256** (el uso habitual es ≈ 40 piezas). Donde dice `CAP=256` o "256", léase 64; el estudio de viabilidad está en `02_capacidad_64.md`. Las decisiones 1 (manifiesto al final + marcador en cabecera) y 3 (licencia) siguen pendientes; el resto del informe sigue vigente.
+> **ENMIENDA 3 (decisiones confirmadas; sustituyen a las preguntas de §12).** (1) Manifiesto `ARQUIS_OBJECTS_V1`: **al final del G-code con marcador corto en la cabecera**. (2) Licencia del módulo de Cura: **LGPL-3.0-or-later**. (3) Capacidad de diseño: **30 objetos** (IDs 0–29; ver `04_cambio_capacidad_30.md`). (4) **Un único repositorio ARQUIS**, con Cura como módulo independiente en `cura/`. Resumen y cómo se aplican: `06_decisiones.md`. Las preguntas de §12 quedan **resueltas**, no pendientes.
+>
+> **ENMIENDA 1 (decisiones del propietario, posteriores a este informe).** (1) **No habrá un repositorio `ARQUIS-Cura`**: el módulo de Cura vive en este mismo repositorio, en `cura/`, separado del firmware (ver `01_arquitectura_repositorio.md`). Donde este informe dice "ARQUIS-Cura", léase `cura/`. (2) **La capacidad objetivo es 64 objetos, no 256** (el uso habitual es ≈ 40 piezas). Donde dice `CAP=256` o "256", léase 64; el estudio de viabilidad está en `02_capacidad_64.md`. Las decisiones 1 (manifiesto) y 3 (licencia) se resolvieron en la Enmienda 3; el resto del informe sigue vigente.
 
 
 > **ENMIENDA 2.** La capacidad de diseño definitiva es **30 objetos (IDs 0–29)**, no 64 (ver `02_capacidad_30.md`, que sustituye al estudio de 64). Además, con G-code real de Cura 5.11 se comprobó que **Cura renombra las copias en la escena** (`pinon.stl`, `pinon.stl(1)`, `(2)`…; `ObjectsModel._renameNodes`), por lo que lo que §3.1 afirma sobre copias con el mismo nombre es solo un caso límite (nombres no renombrados todavía); la verificación geométrica se mantiene como defensa. Detalle en `04_cambio_capacidad_30.md`.
@@ -232,7 +234,7 @@ LVGL: se conservan los 6 objetos fijos (+2 botones de zoom/desplazamiento); heap
 5. Pruebas de §10 con fixtures sintéticos + los G‑code reales que aportes.
 **Qué necesito de ti para validar la Etapa 1:** (a) un G‑code real de Cura 5.11 con 3 objetos distintos; (b) otro con 4 copias del mismo STL + brim/soporte/torre si los usas; (c) tu perfil de máquina de Cura (`.curaprofile`/definición) y cómo está orientada físicamente la cama.
 
-## 12. Decisiones que necesito de ti
+## 12. Decisiones (RESUELTAS — ver Enmienda 3 y `06_decisiones.md`)
 
 1. **Ubicación del manifiesto:** ¿bloque al final + marcador en cabecera (recomendado) o tras la miniatura?
 2. **Capacidad de cancelación en Marlin:** ¿256 (recomendado; ≈ 40 B de RAM) u otro valor?

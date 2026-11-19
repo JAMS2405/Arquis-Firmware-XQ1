@@ -1,5 +1,7 @@
 # Protocolo ARQUIS_OBJECTS (contrato Cura ↔ firmware)
 
+Licencia de los archivos de esta carpeta: **LGPL-3.0-or-later** (se incluyen en el módulo de Cura; el texto está en `../../cura/LICENSE`). La cabecera C++ generada se puede incluir en el firmware (GPL-3.0): la LGPL-3.0 lo permite.
+
 - `limits.json` — **única fuente** de límites y constantes (capacidad de diseño 30 = IDs 0–29, techo actual del motor 32, límite del protocolo 128, unidades).
 - `gen_limits.py` — genera de `limits.json` el módulo de Cura (`protocol_limits.py`) y `generated/arquis_object_limits.h` (para el firmware, Etapa 3). `--check` falla si algo está desactualizado (lo ejecuta una prueba).
 - `ARQUIS_OBJECTS_V1.md` — especificación (borrador; la implementan la Etapa 2 en Cura y la Etapa 3 en el firmware).

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 # ARQUIS Validation - comprueba el G-code ya procesado (ultimo paso del post-procesado). No modifica el G-code.
 import os
 import sys

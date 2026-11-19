@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Escribe el G-code de la prueba de orientacion fisica (5 piezas) con M486 y manifiesto ARQUIS.
 Uso: python3 cura/tools/make_orientation_gcode.py [--bed 300x300] [--nozzle 200] [--bedtemp 60] [--out prueba_orientacion.gcode]"""
 import argparse

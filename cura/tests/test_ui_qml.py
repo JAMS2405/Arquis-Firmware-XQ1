@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Gestor de objetos: el QML se carga SIN avisos con Qt real (PyQt6, sin pantalla), lista y mapa estan sincronizados y se genera una imagen.
 
 No prueba ObjectManager.qml (UM.Dialog necesita Cura) ni el menu de la extension: ver docs/slicer_suite/05_etapa2_manifiesto.md.

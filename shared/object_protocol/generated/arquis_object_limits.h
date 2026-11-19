@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 // ARCHIVO GENERADO por shared/object_protocol/gen_limits.py a partir de shared/object_protocol/limits.json. NO EDITAR A MANO.
 #pragma once
 // ARQUIS_OBJECTS_V1: limites y constantes compartidos entre Cura y el firmware.

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Correspondencia tramo ``;MESH:`` <-> instancia de la escena de Cura.
 
 Las copias de un modelo comparten nombre, asi que el nombre NO identifica la instancia. Se identifica por geometria: la caja XY de

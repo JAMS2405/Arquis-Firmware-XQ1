@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Mapa proporcional de la cama: posicion fiel, orientacion, tamano minimo, zoom, seleccion y estados (aritmetica entera, paridad con el firmware)."""
 import pytest
 
