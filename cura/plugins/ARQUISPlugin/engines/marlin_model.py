@@ -21,7 +21,7 @@ def _to_int8(v: int) -> int:
 
 
 class MarlinCancel:
-    def __init__(self, capacity: int = 64, legacy: bool = False):
+    def __init__(self, capacity: int = 30, legacy: bool = False):
         self.capacity = 32 if legacy else capacity
         self.legacy = legacy
         self.canceled: Set[int] = set()
@@ -115,7 +115,7 @@ class Trace:
     overflow: bool = False
 
 
-def simulate(chunks: Iterable[str], cancel: Iterable[int] = (), capacity: int = 64, legacy: bool = False,
+def simulate(chunks: Iterable[str], cancel: Iterable[int] = (), capacity: int = 30, legacy: bool = False,
              cancel_at_start: bool = True) -> Trace:
     """Ejecuta el G-code con los objetos ``cancel`` cancelados desde el principio (equivale a P<i> tras M486 T)."""
     cancel = list(cancel)

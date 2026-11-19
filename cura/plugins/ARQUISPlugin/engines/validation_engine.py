@@ -93,15 +93,17 @@ def validate_m486(chunks: Sequence[str], capacity: int, objects: Optional[Sequen
                 e = w["E"] if e_abs else (e or 0.0) + w["E"]
             nx = (w["X"] if abs_xyz else (x or 0.0) + w["X"]) if "X" in w else x
             ny = (w["Y"] if abs_xyz else (y or 0.0) + w["Y"]) if "Y" in w else y
-            extruding = has_e and has_xy and de > 1e-9
+            extruding = n != "G0" and has_e and has_xy and de > 1e-9
             if active >= 0:
                 if not in_object_section:
                     once("V_OBJECT_IN_NONMESH", ERROR, "linea %d: movimiento bajo el objeto %d fuera de un tramo ;MESH: (inicio/fin de capa o G-code final)" % (lineno + 1, active))
-                if has_z and not (has_e and has_xy):
+                if has_z and not (extruding and has_xy):
                     once("V_Z_IN_OBJECT", ERROR, "linea %d: movimiento con Z dentro del objeto %d (un objeto cancelado perderia la altura)" % (lineno + 1, active))
                 if has_e and not has_xy:
                     once("V_E_ONLY_IN_OBJECT", ERROR, "linea %d: movimiento de filamento dentro del objeto %d (descompensaria la retraccion)" % (lineno + 1, active))
-                if has_z and has_e and has_xy:
+                if has_e and has_xy and not extruding:
+                    once("V_E_IN_TRAVEL_IN_OBJECT", ERROR, "linea %d: viaje con filamento (G0 con E o retraccion en movimiento) dentro del objeto %d: un objeto cancelado perderia la retraccion" % (lineno + 1, active))
+                if has_z and has_e and has_xy and extruding:
                     once("V_Z_EXTRUDING", WARNING, "linea %d: extrusion con Z dentro del objeto %d" % (lineno + 1, active))
                 if extruding:
                     ids_with_extrusion.add(active)

@@ -59,7 +59,7 @@ def test_copies_keep_same_name_and_distinct_scene_index_and_positions():
     inst = adapters.instances_from_nodes(nodes, 300, 300, False, 0)
     assert [i.name for i in inst] == ["Llavero"] * 4
     assert len({i.scene_index for i in inst}) == 4 and len({i.x0 for i in inst}) == 4
-    objs = build_objects(inst, 64)
+    objs = build_objects(inst, 30)
     assert [(o.name, o.instance, o.id) for o in objs] == [("Llavero", k, k) for k in range(4)]
 
 
@@ -69,4 +69,4 @@ def test_group_children_share_group():
     b = Node("b", Box(20, 30, 10, 0), parent=g)
     inst = adapters.instances_from_nodes([g, a, b], 300, 300, False, 0)
     assert len(inst) == 2 and inst[0].group == inst[1].group == 0 and inst[0].group_name == "Grupo"
-    assert len(build_objects(inst, 64)) == 1
+    assert len(build_objects(inst, 30)) == 1

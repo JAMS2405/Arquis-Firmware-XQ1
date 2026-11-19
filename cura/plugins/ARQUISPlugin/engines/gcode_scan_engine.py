@@ -74,6 +74,7 @@ class Section:
     z_moves: int = 0
     z_extrude_moves: int = 0        # G1 con X/Y, Z y E>0 a la vez (modo jarron / no planar)
     filament_only_moves: int = 0
+    travel_e_moves: int = 0         # viaje XY con E (retraccion/preparacion mientras se viaja)
     z_first: Optional[float] = None
 
 
@@ -190,7 +191,8 @@ def scan_gcode(chunks: Sequence[str]) -> ScanResult:
                     else:
                         de = w["E"]
                         e = (e if e is not None else 0.0) + w["E"]
-                extruding = has_e and has_xy and de > 1e-9
+                # G0 con E (CuraEngine 5.11 lo usa para 'retraer/preparar mientras se viaja') NO es extrusion: es viaje con filamento
+                extruding = n != "G0" and has_e and has_xy and de > 1e-9
                 if in_model and not abs_xyz and has_xy and cur.kind == "mesh" and cur.mesh is not None:
                     rel_xy_model = True
                 if n in ("G2", "G3") and extruding and cur.kind == "mesh":
@@ -212,6 +214,8 @@ def scan_gcode(chunks: Sequence[str]) -> ScanResult:
                         cur.z_moves += 1
                     if has_e and not has_xy:
                         cur.filament_only_moves += 1
+                    elif has_e and has_xy:
+                        cur.travel_e_moves += 1
                 if has_z and cur.z_first is None:
                     cur.z_first = nz
                 x, y, z = nx, ny, nz

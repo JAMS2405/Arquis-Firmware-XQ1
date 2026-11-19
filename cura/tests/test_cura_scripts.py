@@ -46,7 +46,7 @@ def test_scripts_settings_are_valid_json_and_have_key_equal_to_class_name():
         m = load_script(name)
         s = getattr(m, name)()
         d = json.loads(s.getSettingDataString())
-        assert d["key"] == name and "name" in d and d["settings"]["capacity"]["default_value"] == 64
+        assert d["key"] == name and "name" in d and d["settings"]["capacity"]["default_value"] == 30
 
 
 def test_m486_script_end_to_end_with_fake_scene(monkeypatch):
@@ -56,7 +56,7 @@ def test_m486_script_end_to_end_with_fake_scene(monkeypatch):
     monkeypatch.setattr(scene, "capture_scene", lambda: instances_from(objs))
     out = m.ARQUIS_M486().execute(make_gcode(objs))
     text = "\n".join(out)
-    assert text.startswith(";ARQUIS_M486 V=1 N=6 CAP=64 STATUS=OK") and "M486 T6" in text
+    assert text.startswith(";ARQUIS_M486 V=1 N=6 CAP=30 STATUS=OK") and "M486 T6" in text
 
 
 def test_m486_script_never_breaks_export_when_scene_fails(monkeypatch):

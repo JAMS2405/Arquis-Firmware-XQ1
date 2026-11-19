@@ -18,7 +18,7 @@ def m486_lines(chunks):
     return [l for l in flat(chunks) if l.startswith("M486")]
 
 
-def check_cancel_k(out_chunks: Sequence[str], k: int, capacity: int = 64, legacy: bool = False, eps: float = 1e-6):
+def check_cancel_k(out_chunks: Sequence[str], k: int, capacity: int = 30, legacy: bool = False, eps: float = 1e-6):
     """Cancela el objeto k desde el principio y compara con la ejecucion normal.
 
     Garantias comprobadas (todas con el modelo de Marlin, no con el motor ARQUIS):

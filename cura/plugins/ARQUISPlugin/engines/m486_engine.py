@@ -6,8 +6,9 @@ Semantica de Marlin 2.1.2.10 en la que se basa (feature/cancel_object.cpp, gcode
     planificador descarta el movimiento de E (``position.e = target.e``).
 De ahi las reglas de este motor (cada una tiene prueba en cura/tests):
   R1  Los movimientos que SOLO tocan Z, o filamento (E sin X/Y), se ejecutan SIEMPRE: van en contexto ``S-1``. Un G0/G1 que mezcla
-      XY y Z se parte en "Z (en S-1)" + "XY (en el objeto)". Asi un objeto cancelado no puede dejar la boquilla a una altura
-      equivocada ni descompensar retracciones.
+      XY con Z o con E que no es extrusion (CuraEngine 5.11 escribe ``G0 X.. Y.. E<retraido>`` para retraer mientras viaja) se
+      parte en "Z/E (en S-1)" + "XY (en el objeto)". Asi un objeto cancelado no puede dejar la boquilla a una altura equivocada
+      ni descompensar retracciones (hallazgo con G-code REAL: sin esto quedaban 0,8 mm de filamento de mas por retraccion).
   R2  Todo lo que no sea un tramo de objeto verificado (prologo, inicio de capa, fin de capa, G-code final) va en ``S-1``; el
       G-code final de la maquina nunca se omite aunque el ultimo objeto este cancelado.
   R3  Un G1 que extruye con X/Y y Z a la vez (modo jarron, no planar) no se parte: se avisa.
@@ -26,21 +27,22 @@ from .problems import ERROR, WARNING, Problem, has_errors
 
 MARKER = ";ARQUIS_M486"
 _NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)"
-_Z_WORD = re.compile(r"\s*\b(Z\s*" + _NUM + r")", re.IGNORECASE)
-_F_WORD = re.compile(r"\b(F\s*" + _NUM + r")", re.IGNORECASE)
 
 
 @dataclass
 class M486Options:
-    capacity: int = limits.TARGET_CAPACITY      # objetos cancelables del firmware destino (indices 0..capacity-1)
+    capacity: int = limits.DESIGN_CAPACITY      # objetos cancelables del firmware destino (indices 0..capacity-1)
     tolerance_mm: float = 1.0                   # holgura al comprobar que un tramo cae dentro de su instancia
     protect_z: bool = True                      # R1 para Z
     protect_filament: bool = True               # R1 para movimientos de filamento sin XY
     id_order: str = "scene"                     # "scene" | "position"
+    ceiling: int = limits.CAPACITY_CEILING      # mayor capacidad admitida (limits.json). Solo se cambia al ampliar el firmware.
 
     def __post_init__(self):
-        if not 1 <= self.capacity <= limits.MAX_PROTOCOL_INDEX + 1:
-            raise ValueError("capacity fuera de rango (1..%d): %r" % (limits.MAX_PROTOCOL_INDEX + 1, self.capacity))
+        if not 1 <= self.ceiling <= limits.PROTOCOL_MAX_OBJECTS:
+            raise ValueError("ceiling fuera de rango (1..%d): %r" % (limits.PROTOCOL_MAX_OBJECTS, self.ceiling))
+        if not 1 <= self.capacity <= self.ceiling:
+            raise ValueError("capacity fuera de rango (1..%d): %r" % (self.ceiling, self.capacity))
 
 
 @dataclass
@@ -137,12 +139,25 @@ def _is_xy(w: Dict[str, float]) -> bool:
     return "X" in w or "Y" in w
 
 
+def _strip(code: str, *letters: str) -> str:
+    """Quita de una linea de codigo las palabras de los ejes indicados (conserva el resto, F incluido)."""
+    for l in letters:
+        code = re.sub(r"\s*\b" + l + r"\s*" + _NUM, "", code, count=1, flags=re.IGNORECASE)
+    return code
+
+
+def _token(code: str, letter: str) -> str:
+    m = re.search(r"\b(" + letter + r"\s*" + _NUM + r")", code, re.IGNORECASE)
+    return m.group(1).replace(" ", "") if m else ""
+
+
 def _rewrite(chunks: List[str], scan: ScanResult, match: MatchResult, n_cancel: int, opt: M486Options) -> Tuple[List[str], Dict[str, int]]:
-    stats = {"m486_lines": 0, "z_splits": 0, "z_protected": 0, "filament_protected": 0}
+    stats = {"m486_lines": 0, "z_splits": 0, "z_protected": 0, "filament_protected": 0, "travel_e_splits": 0}
     out_chunks: List[str] = []
     active = -1                                   # contexto M486 vigente en el G-code emitido (tras M486 T es -1)
     want = -1                                     # contexto del tramo actual
     t_done = False
+    e_abs, e_cur = True, None                     # estado de E para distinguir extrusion de retraccion
 
     for ci, chunk in enumerate(chunks):
         out: List[str] = []
@@ -173,6 +188,19 @@ def _rewrite(chunks: List[str], scan: ScanResult, match: MatchResult, n_cancel: 
                 continue
             n, w = cmd.name, cmd.words
 
+            # estado de E (igual que el escaner)
+            de = 0.0
+            if n == "M82": e_abs = True
+            elif n == "M83": e_abs = False
+            elif n == "G92" and "E" in w: e_cur = w["E"]
+            elif n in MOVE_CMDS and "E" in w:
+                if e_abs:
+                    de = w["E"] - (e_cur if e_cur is not None else w["E"])
+                    e_cur = w["E"]
+                else:
+                    de = w["E"]
+                    e_cur = (e_cur or 0.0) + w["E"]
+
             if n in FILAMENT_CMDS:
                 if opt.protect_filament and want >= 0:
                     stats["filament_protected"] += 1
@@ -192,37 +220,45 @@ def _rewrite(chunks: List[str], scan: ScanResult, match: MatchResult, n_cancel: 
             if not (has_xy or has_z or has_e):     # p. ej. "G0 F6000": no mueve nada, el contexto da igual
                 out.append(line)
                 continue
-            if has_z and opt.protect_z:
-                if (has_e and has_xy) or n in ("G2", "G3"):   # R3: extrusion con Z (jarron / no planar) o arco helicoidal: sin partir
-                    emit_ctx(want)
-                    out.append(line)
-                    continue
-                code, comment = split_code(line)
-                rest = _Z_WORD.sub("", code, count=1)
-                rest_cmd = parse_cmd(rest)
-                if rest_cmd is not None and (_is_xy(rest_cmd.words) or "E" in rest_cmd.words):   # R1: partir
-                    ftok, ztok = _F_WORD.search(code), _Z_WORD.search(code)
-                    zline = n + ((" " + ftok.group(1).replace(" ", "")) if ftok else "") + " " + ztok.group(1).replace(" ", "") + " ;ARQ_Z"
-                    emit_ctx(-1)
-                    out.append(zline)
-                    stats["z_splits"] += 1
-                    if has_e and not has_xy:       # Z + E sin XY: el resto es movimiento de filamento
-                        emit_ctx(-1)
-                    else:
-                        emit_ctx(want)
-                    out.append(rest + ((" " + comment) if comment else ""))
-                else:                              # solo Z (y quiza F): la linea completa va en S-1
-                    emit_ctx(-1)
-                    out.append(line)
-                    stats["z_protected"] += 1
-                continue
-            if has_e and not has_xy and not has_z and opt.protect_filament:
-                emit_ctx(-1)                       # R1: retraccion / des-retraccion
+            extruding = n != "G0" and has_xy and has_e and de > 1e-9
+            if extruding or n in ("G2", "G3"):     # extrusion del objeto (R3: con Z no se parte; los arcos tampoco)
+                emit_ctx(want)
                 out.append(line)
-                stats["filament_protected"] += 1
                 continue
-            emit_ctx(want)                         # extrusion o viaje XY del objeto
-            out.append(line)
+
+            # Viaje / movimiento de eje o filamento dentro de un objeto: lo que no debe omitirse (Z, E) va en S-1 (R1)
+            prot = []
+            if has_z and opt.protect_z:
+                prot.append("Z")
+            if has_e and opt.protect_filament:
+                prot.append("E")
+            if not prot:
+                emit_ctx(want)
+                out.append(line)
+                continue
+            code, comment = split_code(line)
+            rest = _strip(code, *prot)
+            rest_cmd = parse_cmd(rest)
+            has_rest_xy = rest_cmd is not None and _is_xy(rest_cmd.words)
+            if not has_rest_xy:                    # solo Z y/o E (y quiza F): la linea completa va en S-1
+                emit_ctx(-1)
+                out.append(line)
+                stats["z_protected" if "Z" in prot else "filament_protected"] += 1
+                continue
+            ptoks = [t for t in (_token(code, l) for l in prot) if t]
+            fl = _token(code, "F")
+            pline = ("G1" if "E" in prot else n) + ((" " + fl) if fl else "") + " " + " ".join(ptoks) + " ;ARQ_" + "".join(prot)
+            rline = rest + ((" " + comment) if comment else "")
+            xy_first = prot == ["E"] and de > 1e-9           # "preparar mientras se viaja": primero el viaje, luego el filamento
+            if "Z" in prot:
+                stats["z_splits"] += 1
+            if "E" in prot:
+                stats["travel_e_splits"] += 1
+            if xy_first:
+                emit_ctx(want); out.append(rline)
+                emit_ctx(-1); out.append(pline)
+            else:
+                emit_ctx(-1); out.append(pline)
+                emit_ctx(want); out.append(rline)
         out_chunks.append("\n".join(out))
     return out_chunks, stats
-

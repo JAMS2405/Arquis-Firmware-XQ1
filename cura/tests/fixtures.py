@@ -64,6 +64,16 @@ class _G:
         self.w("G1 F%d X%.3f Y%.3f E%.5f" % (f, x, y, de if self.e_mode == "rel" else self.e))
         self.x, self.y = x, y
 
+    def travel_e(self, x: Optional[float], y: Optional[float], z: Optional[float], delta: float, f: int = 6000) -> None:
+        """G0 con XY (y quiza Z) Y con E: asi escribe CuraEngine 5.11 'retraer/preparar mientras se viaja' (visto en G-code real)."""
+        self.e += delta
+        parts = ["G0"]
+        if x is not None: parts.append("X%.3f" % x); self.x = x
+        if y is not None: parts.append("Y%.3f" % y); self.y = y
+        if z is not None: parts.append("Z%.3f" % z); self.z = z
+        parts.append("E%.5f" % (delta if self.e_mode == "rel" else self.e))
+        self.w(" ".join(parts))
+
     def travel(self, x: Optional[float] = None, y: Optional[float] = None, z: Optional[float] = None, f: int = 6000) -> None:
         parts = ["G0 F%d" % f]
         if x is not None: parts.append("X%.3f" % x); self.x = x
@@ -77,7 +87,7 @@ def make_gcode(objs: Sequence[Obj], layer_h: float = 0.2, first_h: float = 0.3, 
                final_z_in_last_mesh: bool = True, g92_each_layer: bool = True, zhop: float = 0.4,
                order: Optional[Callable[[int, List[int]], List[int]]] = None, one_at_a_time: bool = False,
                mesh_name_of: Optional[Callable[[int], str]] = None, header_extra: str = "",
-               travel_in: str = "mesh") -> List[str]:
+               travel_in: str = "mesh", travel_e: str = "none") -> List[str]:
     """Devuelve la lista de trozos como ``scene.gcode_dict``: [cabecera, inicio, capa0, capa1, ..., final, ';SETTING_3']."""
     mesh_name_of = mesh_name_of or (lambda i: objs[i].name)
     g = _G(e_mode)
@@ -110,15 +120,21 @@ def make_gcode(objs: Sequence[Obj], layer_h: float = 0.2, first_h: float = 0.3, 
                 g.e_move(1.0)
         else:                                                           # variante: el viaje de entrada pertenece al objeto
             g.w(";MESH:%s" % mesh_name_of(i))
-            if not first_in_layer or layer > 0:
-                g.e_move(-1.0)                                          # retraccion (pertenece al tramo entrante)
-            if first_in_layer:
-                g.travel(sx, sy, z)                                     # cambio de capa: XY y Z en el mismo G0
+            need_retract = not first_in_layer or layer > 0
+            zt = z if first_in_layer else z + zhop
+            if travel_e != "none" and need_retract:
+                g.travel_e(sx, sy, zt, -1.0)                            # G0 X Y [Z] E<retraido>
             else:
-                g.travel(sx, sy, z + zhop)                              # z-hop
+                if need_retract:
+                    g.e_move(-1.0)                                      # retraccion (pertenece al tramo entrante)
+                g.travel(sx, sy, zt)                                    # cambio de capa: XY y Z en el mismo G0 / z-hop
+            if not first_in_layer:
                 g.travel(z=z, f=600)
-            if not first_in_layer or layer > 0:
-                g.e_move(1.0)
+            if need_retract:
+                if travel_e == "both":
+                    g.travel_e(sx, sy, None, +1.0)                      # G0 X Y E<repuesto>: preparar "mientras se viaja"
+                else:
+                    g.e_move(1.0)
         g.w(";TYPE:WALL-OUTER")
         for x, y in ((o.x1 - 0.2, o.y0 + 0.2), (o.x1 - 0.2, o.y1 - 0.2), (o.x0 + 0.2, o.y1 - 0.2), (o.x0 + 0.2, o.y0 + 0.2)):
             g.line_to(x, y, 1200)

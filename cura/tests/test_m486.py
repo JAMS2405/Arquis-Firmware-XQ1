@@ -34,16 +34,35 @@ def test_ten_objects_mixed_heights():
         check_cancel_k(res.chunks, k)
 
 
-def test_fifty_identical_objects_are_independent():
-    objs = grid_objects(50, "Llavero", w=20, d=20, gap=6, bed=300)
-    chunks = make_gcode(objs)
-    res = _ok(run(objs, chunks))
-    assert len(res.objects) == 50 and [o.id for o in res.objects] == list(range(50))
-    assert [o.instance for o in res.objects] == list(range(50))            # Llavero_01..Llavero_50
-    ml = m486_lines(res.chunks)
-    assert ml.count("M486 T50") == 1
-    for k in (0, 1, 17, 31, 32, 33, 49):
+def test_thirty_identical_objects_are_independent_and_all_cancelable():
+    """Capacidad de diseno: 30 copias del mismo modelo (mismo nombre), IDs 0-29, cada una cancelable por separado."""
+    objs = grid_objects(30, "Llavero", w=20, d=20, gap=6, bed=300)
+    res = _ok(run(objs, make_gcode(objs)))
+    assert [o.id for o in res.objects] == list(range(30)) and [o.instance for o in res.objects] == list(range(30))
+    assert m486_lines(res.chunks).count("M486 T30") == 1
+    for k in range(30):
         check_cancel_k(res.chunks, k)
+
+
+def test_fifty_identical_objects_by_default_only_30_are_cancelable():
+    objs = grid_objects(50, "Llavero", w=20, d=20, gap=6, bed=300)
+    res = _ok(run(objs, make_gcode(objs)))
+    assert any(p.code == "W_OVER_CAPACITY" for p in res.problems)
+    assert res.stats["cancelable"] == 30 and "M486 T30" in m486_lines(res.chunks)
+    assert [o.id for o in res.objects][:30] == list(range(30)) and all(o.id == -1 for o in res.objects[30:])
+    for k in (0, 17, 29):
+        check_cancel_k(res.chunks, k)
+    assert not any(m.skipped for m in simulate(res.chunks, []).moves)         # los 20 sobrantes se imprimen siempre
+
+
+def test_fifty_identical_objects_expansion_path_needs_only_limits_not_code():
+    """Ampliar en el futuro: basta subir el techo (limits.json + firmware); el motor no cambia."""
+    objs = grid_objects(50, "Llavero", w=20, d=20, gap=6, bed=300)
+    res = _ok(run(objs, make_gcode(objs), capacity=50, ceiling=64))
+    assert len(res.objects) == 50 and [o.id for o in res.objects] == list(range(50))
+    assert m486_lines(res.chunks).count("M486 T50") == 1
+    for k in (0, 1, 17, 31, 32, 33, 49):
+        check_cancel_k(res.chunks, k, capacity=64)
 
 
 def test_scene_order_is_not_gcode_order_each_id_is_the_object_at_that_position():
@@ -72,18 +91,18 @@ def test_hundred_objects_over_capacity_are_printed_but_not_cancelable():
     objs = grid_objects(100, "Pieza", w=15, d=15, gap=4, height=1.0)
     res = _ok(run(objs, make_gcode(objs, final_z_in_last_mesh=True)))
     assert any(p.code == "W_OVER_CAPACITY" for p in res.problems)
-    assert res.stats["cancelable"] == 64
-    assert "M486 T64" in m486_lines(res.chunks)
+    assert res.stats["cancelable"] == 30
+    assert "M486 T30" in m486_lines(res.chunks)
     ids = {int(l.split("S")[1]) for l in m486_lines(res.chunks) if " S" in l}
-    assert max(ids) == 63 and -1 in ids and all(i < 64 for i in ids)
-    for k in (0, 31, 32, 63):
+    assert max(ids) == 29 and -1 in ids and all(i < 30 for i in ids)
+    for k in (0, 15, 29):
         check_cancel_k(res.chunks, k)
     # los 36 restantes se imprimen siempre: nada se omite sin cancelar
     base = simulate(res.chunks, [])
     assert not any(m.skipped for m in base.moves)
 
 
-def test_capacity_option_32():
+def test_capacity_option_up_to_ceiling_32():
     objs = grid_objects(40, "Pieza", height=1.0)
     res = _ok(run(objs, make_gcode(objs), capacity=32))
     assert res.stats["cancelable"] == 32 and "M486 T32" in m486_lines(res.chunks)
@@ -91,10 +110,14 @@ def test_capacity_option_32():
 
 
 def test_capacity_out_of_range_rejected():
+    import arquis_engines.protocol_limits as L
+    assert M486Options().capacity == L.DESIGN_CAPACITY == 30
+    for bad in (0, -1, 33, 64, 129):
+        with pytest.raises(ValueError):
+            M486Options(capacity=bad)                            # por encima del techo actual (32) no se acepta
+    M486Options(capacity=64, ceiling=64)                          # ampliacion futura: el techo se sube a proposito
     with pytest.raises(ValueError):
-        M486Options(capacity=0)
-    with pytest.raises(ValueError):
-        M486Options(capacity=129)
+        M486Options(capacity=64, ceiling=129)                     # y nunca por encima del limite del protocolo (int8_t)
 
 
 def test_prime_tower_skirt_and_support_are_never_cancelable():
@@ -129,7 +152,7 @@ def test_naive_per_mesh_insertion_loses_z_and_filament_the_model_detects_it():
     # id por tramo, el mismo que usa el motor
     from arquis_engines.matching_engine import match_sections
     from arquis_engines.object_engine import build_objects
-    mt = match_sections(sc, build_objects(instances_from(objs), 64), 1.0)
+    mt = match_sections(sc, build_objects(instances_from(objs), 30), 1.0)
     naive, first_layer = [], False
     for ci, chunk in enumerate(chunks):
         out = []
@@ -202,29 +225,34 @@ def test_idempotent_second_pass_is_skipped_and_unchanged():
     assert again.status == "skipped" and again.chunks == first.chunks
 
 
-def test_original_print_commands_are_preserved():
-    """Solo se anaden lineas M486 y la marca; las lineas originales siguen ahi (las partidas por Z se reconstruyen)."""
+def _tokens(line):
+    code = line.split(";", 1)[0].split()
+    return code[0], sorted(code[1:])
+
+
+@pytest.mark.parametrize("travel_e", ["none", "retract", "both"])
+def test_original_print_commands_are_preserved(travel_e):
+    """Solo se anaden lineas M486 y la marca; las lineas originales siguen ahi. Las partidas (Z/E) se recomponen y deben dar las mismas palabras."""
     objs = grid_objects(5, "A", height=1.5)
-    chunks = make_gcode(objs)
+    chunks = make_gcode(objs, travel_e=travel_e)
     res = _ok(run(objs, chunks))
-    out = flat(res.chunks)
-    rebuilt, i = [], 0
-    while i < len(out):
-        l = out[i]
-        if l.startswith("M486 ") or l.startswith(";ARQUIS_M486"):
-            i += 1
+    kept = [l for l in flat(res.chunks) if not (l.startswith("M486 ") or l.startswith(";ARQUIS_M486"))]
+    orig = flat(chunks)
+    p = 0
+    for o in orig:
+        l1 = kept[p]
+        if o.startswith(";") or not o.strip() or l1 == o:
+            assert l1 == o, (l1, o)
+            p += 1
             continue
-        if l.endswith(" ;ARQ_Z"):
-            ztok = [t for t in l.split() if t.startswith("Z")][0]
-            j = i + 1
-            while out[j].startswith("M486 "):
-                j += 1
-            rebuilt.append(out[j] + " " + ztok)                     # resto XY + Z original
-            i = j + 1
+        if _tokens(l1)[1] == sorted(_tokens(o)[1]) and ";ARQ_" not in l1:        # linea sin partir (los tokens coinciden)
+            p += 1
             continue
-        rebuilt.append(l)
-        i += 1
-    assert rebuilt == flat(chunks)
+        l2 = kept[p + 1]                                                          # linea partida: dos lineas, una marcada ;ARQ_
+        assert (";ARQ_" in l1) != (";ARQ_" in l2), (l1, l2, o)
+        assert sorted(set(_tokens(l1)[1]) | set(_tokens(l2)[1])) == sorted(set(_tokens(o)[1])), (l1, l2, o)
+        p += 2
+    assert p == len(kept)
 
 
 def test_tolerance_allows_small_scene_offset_with_warning():
@@ -238,7 +266,7 @@ def test_tolerance_allows_small_scene_offset_with_warning():
 
 
 def test_lines_inserted_overhead_is_reported():
-    objs = grid_objects(64, "A", w=15, d=15, gap=4, height=2.0)
+    objs = grid_objects(30, "A", w=15, d=15, gap=4, height=2.0)
     chunks = make_gcode(objs)
     res = _ok(run(objs, chunks))
     before = sum(len(c) for c in chunks)
@@ -247,11 +275,12 @@ def test_lines_inserted_overhead_is_reported():
     assert res.stats["m486_lines"] > 0
 
 
+@pytest.mark.parametrize("travel_e", ["none", "retract", "both"])
 @pytest.mark.parametrize("travel_in", ["mesh", "nonmesh"])
 @pytest.mark.parametrize("e_mode", ["abs", "rel"])
-def test_both_travel_layouts(travel_in, e_mode):
+def test_both_travel_layouts(travel_in, e_mode, travel_e):
     objs = grid_objects(5, "A", height=1.5)
-    res = _ok(run(objs, make_gcode(objs, travel_in=travel_in, e_mode=e_mode)))
+    res = _ok(run(objs, make_gcode(objs, travel_in=travel_in, e_mode=e_mode, travel_e=travel_e)))
     for k in range(5):
         check_cancel_k(res.chunks, k)
 
@@ -269,7 +298,7 @@ def test_randomized_scenes_cancel_any_object_safely(seed):
         w, d = rnd.uniform(8, 30), rnd.uniform(8, 30)
         x0, y0 = 10 + cx * 45 + rnd.uniform(0, 10), 10 + cy * 45 + rnd.uniform(0, 10)
         objs.append(Obj(rnd.choice(names), x0, y0, x0 + w, y0 + d, rnd.choice([0.7, 1.1, 1.5, 2.3])))
-    chunks = make_gcode(objs, e_mode=rnd.choice(["abs", "rel"]), travel_in=rnd.choice(["mesh", "nonmesh"]),
+    chunks = make_gcode(objs, e_mode=rnd.choice(["abs", "rel"]), travel_in=rnd.choice(["mesh", "nonmesh"]), travel_e=rnd.choice(["none", "retract", "both"]),
                         final_z_in_last_mesh=rnd.random() < 0.7, skirt=rnd.random() < 0.5,
                         tower=(280, 280, 295, 295) if rnd.random() < 0.4 else None, one_at_a_time=rnd.random() < 0.2,
                         order=(lambda layer, ids, r=rnd: r.sample(ids, len(ids))) if rnd.random() < 0.5 else None)

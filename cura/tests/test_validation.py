@@ -15,7 +15,7 @@ def good():
 
 
 def codes(chunks, objects):
-    return {p.code for p in validate_m486(chunks, 64, objects) if p.severity == "error"}
+    return {p.code for p in validate_m486(chunks, 30, objects) if p.severity == "error"}
 
 
 def mutate(good, fn):
@@ -40,7 +40,7 @@ def test_two_t(good):
 
 
 def test_t_over_capacity(good):
-    assert "V_T_OVER_CAPACITY" in {p.code for p in validate_m486(mutate(good, lambda t: t.replace("M486 T4", "M486 T65")), 64, good.objects)}
+    assert "V_T_OVER_CAPACITY" in {p.code for p in validate_m486(mutate(good, lambda t: t.replace("M486 T4", "M486 T31")), 30, good.objects)}
 
 
 def test_z_inside_object(good):
