@@ -15,4 +15,16 @@ python -m pytest tests
 ```
 Instalación en Cura y validación: ver `docs/slicer_suite/03_etapa1_m486.md` §7. Contrato con el firmware: `shared/object_protocol/`. Organización del repositorio: `docs/slicer_suite/01_arquitectura_repositorio.md`.
 
-Estado: **Etapa 1** (M486 Engine). Etapas 2 (gestor de objetos y manifiesto), 4 (calibración) y 5 (no planar) pendientes.
+Estado: **Etapas 1 y 2** (motor M486; gestor de objetos y manifiesto). Pendientes: 3 (firmware y TFT), 4 (calibración), 5 (no planar).
+
+## Instalación en Cura 5.11
+1. Copia la carpeta `plugins/ARQUISPlugin/` a la carpeta de plugins de Cura (`%APPDATA%\cura\5.11\plugins\`, `~/.local/share/cura/5.11/plugins/` o `~/Library/Application Support/cura/5.11/plugins/`).
+2. Copia `scripts/ARQUIS_M486.py` (y `ARQUIS_Validation.py`) a `…/cura/5.11/scripts/`. Reinicia Cura.
+3. *Extensiones ▸ Post-procesado ▸ Modificar G-code ▸ Añadir un script ▸ **ARQUIS M486***; después **ARQUIS Validación**. *Extensiones ▸ ARQUIS ▸ Gestor de objetos…* abre el mapa y la lista.
+
+## Herramientas (sin Cura)
+- `tools/arquis_check.py archivo.gcode --bed 300x300` — comprueba un G-code exportado (M486 + manifiesto) como lo vería el firmware.
+- `tools/make_orientation_gcode.py` — G-code de la prueba de orientación física (5 piezas).
+- `tools/gen_shared_vectors.py [--check]` — regenera los vectores de `shared/object_protocol/test_vectors/`.
+
+Pruebas de interfaz (opcional): `pip install PyQt6`; en Linux sin pantalla hacen falta `libegl1 libgl1` (usan Qt `offscreen`).

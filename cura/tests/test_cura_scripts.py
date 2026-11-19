@@ -54,6 +54,7 @@ def test_m486_script_end_to_end_with_fake_scene(monkeypatch):
     objs = grid_objects(6, "Llavero", height=1.0)
     _, scene = m._load_arquis()
     monkeypatch.setattr(scene, "capture_scene", lambda: instances_from(objs))
+    monkeypatch.setattr(scene, "capture_bed", lambda: (0.0, 0.0, 300.0, 300.0))
     out = m.ARQUIS_M486().execute(make_gcode(objs))
     text = "\n".join(out)
     assert text.startswith(";ARQUIS_M486 V=1 N=6 CAP=30 STATUS=OK") and "M486 T6" in text
@@ -76,6 +77,7 @@ def test_m486_script_blocks_and_leaves_gcode_without_m486(monkeypatch):
     objs = grid_objects(3, "A", height=1.0)
     wrong = [Obj(o.name, o.x0 + 20, o.y0, o.x1 + 20, o.y1, o.height) for o in objs]
     monkeypatch.setattr(scene, "capture_scene", lambda: instances_from(wrong))
+    monkeypatch.setattr(scene, "capture_bed", lambda: (0.0, 0.0, 300.0, 300.0))
     out = "\n".join(m.ARQUIS_M486().execute(make_gcode(objs)))
     assert "STATUS=BLOCKED" in out and "\nM486 " not in out
 
@@ -84,3 +86,21 @@ def test_validation_script_does_not_modify_gcode():
     m = load_script("ARQUIS_Validation")
     data = make_gcode(grid_objects(2, "A", height=1.0))
     assert m.ARQUIS_Validation().execute(list(data)) == data
+
+
+def test_m486_script_emits_manifest_and_omits_it_when_the_cura_bed_is_not_the_firmware_bed(monkeypatch):
+    m = load_script("ARQUIS_M486")
+    objs = grid_objects(5, "Llavero", height=1.0)
+    _, scene = m._load_arquis()
+    monkeypatch.setattr(scene, "capture_scene", lambda: instances_from(objs))
+    monkeypatch.setattr(scene, "capture_bed", lambda: (0.0, 0.0, 300.0, 300.0))
+    text = "".join(m.ARQUIS_M486().execute(make_gcode(objs)))
+    assert ";ARQUIS_OBJECTS_BEGIN" in text and ";ARQUIS_TRAILER" in text
+    monkeypatch.setattr(scene, "capture_bed", lambda: (0.0, 0.0, 450.0, 450.0))        # perfil de Cura CR-10 Max, firmware 300x300
+    text2 = "".join(m.ARQUIS_M486().execute(make_gcode(objs)))
+    assert "M486 T5" in text2 and ";ARQUIS_OBJECTS_BEGIN" not in text2                   # M486 si, mapa no
+    FakeScript.settings = {"emit_manifest": False}
+    try:
+        assert ";ARQUIS_OBJECTS_BEGIN" not in "".join(m.ARQUIS_M486().execute(make_gcode(objs)))
+    finally:
+        FakeScript.settings = {}

@@ -8,8 +8,8 @@ import arquis_adapters.cura_scene_adapter as adapters  # noqa: E402
 
 
 class Box:
-    def __init__(self, left, right, front, back):
-        self.left, self.right, self.front, self.back = left, right, front, back
+    def __init__(self, left, right, front, back, top=10.0):
+        self.left, self.right, self.front, self.back, self.top = left, right, front, back, top
 
 
 class Node:
@@ -70,3 +70,44 @@ def test_group_children_share_group():
     inst = adapters.instances_from_nodes([g, a, b], 300, 300, False, 0)
     assert len(inst) == 2 and inst[0].group == inst[1].group == 0 and inst[0].group_name == "Grupo"
     assert len(build_objects(inst, 30)) == 1
+
+
+class Q:
+    def __init__(self, deg):
+        import math
+        h = math.radians(deg) / 2
+        self.x, self.y, self.z, self.w = 0.0, math.sin(h), 0.0, math.cos(h)
+
+
+class Hull:
+    def __init__(self, pts):
+        self._p = pts
+
+    def getPoints(self):
+        return self._p
+
+
+def test_rotation_shape_and_top_height_are_captured():
+    import math
+    circ = [(10 * math.cos(2 * math.pi * i / 24), 10 * math.sin(2 * math.pi * i / 24)) for i in range(24)]
+    n = Node("Disco", Box(-10, 10, 10, -10, top=7.5), {"getConvexHull": Hull(circ)})
+    n.getWorldOrientation = lambda: Q(90)
+    [i] = adapters.instances_from_nodes([n], 300, 300, False, 0)
+    assert i.shape == "C" and i.rot == 90 and i.z1 == 7.5
+    r = Node("Barra", Box(-30, 30, 5, -5), {"getConvexHull": Hull([(-30, -5), (30, -5), (30, 5), (-30, 5)])})
+    r.getWorldOrientation = lambda: Q(-30)
+    [j] = adapters.instances_from_nodes([r], 300, 300, False, 0)
+    assert j.shape == "R" and j.rot == 330
+
+
+def test_shape_falls_back_to_the_box_when_cura_gives_no_hull_and_never_fails():
+    sq = Node("Cubo", Box(-10, 10, 10, -10))
+    [i] = adapters.instances_from_nodes([sq], 300, 300, False, 0)
+    assert i.shape == "S" and i.rot == 0                                  # sin orientacion ni huella: valores neutros
+    bar = Node("Barra", Box(-40, 40, 5, -5))
+    assert adapters.instances_from_nodes([bar], 300, 300, False, 0)[0].shape == "R"
+
+
+def test_bed_in_gcode_frame():
+    assert adapters.bed_from_machine(300, 300, False) == (0.0, 0.0, 300, 300)
+    assert adapters.bed_from_machine(300, 200, True) == (-150.0, -100.0, 300, 200)

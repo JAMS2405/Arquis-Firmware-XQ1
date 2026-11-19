@@ -18,9 +18,9 @@ Leyenda: **[MEDIDO]** ejecutado con código real o prototipo (`tests/capacity/ru
 | 2 | Máscara y macros de bits | `uint32_t` + `TEST/SBI/CBI` (`1 << b`, `int` de 32 bits): con índices ≤ 29 no hay desplazamiento a signo ni UB | [MEDIDO] prototipo + lectura de `core/macros.h:115-122` |
 | 3 | Contadores | `object_count`/`active_object` `int8_t` (−1…127): 30 cabe con holgura | lectura de código |
 | 4 | Rechazo de índices fuera de rango | **Motor actual: NO** (S256 → objeto 0). Prototipo con rango validado y máscara `uint32_t`: 0 errores sobre los 65 536 valores de `int16_t` (196 608 comprobaciones) | [MEDIDO] |
-| 5 | Estructuras | Registro de objeto 12 B; tabla de 30 objetos + 30 nombres = **994 B**; el estado del motor (260 B) **no cambia** | [MEDIDO] `sizeof` |
-| 6 | RAM de la MKS Robin Nano V3.1 | ≈ **+1,0 KB** (0,8 % de 128 KB) en el peor caso; antes 62,8 % → ≈ 63,6 % | [CALCULADO] sobre [REFERENCIA]; medición real [PENDIENTE] |
-| 7 | Manifiesto `ARQUIS_OBJECTS_V1` | **2 498 B** en el peor caso (30 nombres de 20 B); **1 606 B** con 3 nombres; línea máx. 72 B | [MEDIDO] |
+| 5 | Estructuras | Registro de objeto 14 B; tabla de 30 objetos + 30 nombres = **1 054 B**; el estado del motor (260 B) **no cambia** | [MEDIDO] `sizeof` |
+| 6 | RAM de la MKS Robin Nano V3.1 | ≈ **+1,05 KB** (0,8 % de 128 KB) en el peor caso; antes 62,8 % → ≈ 63,6 % | [CALCULADO] sobre [REFERENCIA]; medición real [PENDIENTE] |
+| 7 | Manifiesto `ARQUIS_OBJECTS_V1` | **2 719 B** en el peor caso (30 nombres de 20 B); **1 827 B** con 3 nombres; línea máx. 70 B | [MEDIDO] |
 | 8 | LVGL (TS35) | Δ de heap = 0 B al dibujar N marcadores en un único objeto (N = 0…128); heap de la pantalla = sus 6 objetos fijos | [MEDIDO] (resultado abajo) |
 | 9 | G-code real de Cura | Los dos G-code reales procesados: +0,45 % y +0,84 % de tamaño; cancelar cualquier objeto es seguro | [MEDIDO] `cura/tests/test_real_gcode.py` |
 
@@ -49,15 +49,15 @@ MOTOR REAL (Marlin 2.1.2.10):
 
 ## 3. Estructuras y RAM (optimizadas para 30)
 ```
-ArqObjRec  { int16 cx, cy; uint16 w, d, ztop; uint8 name_idx, type; }       = 12 B   (0,1 mm; la rotación del manifiesto no se guarda)
-ArqObjStore{ n, n_names, flags; ArqObjRec[30]; char names[30][21]; }         =  994 B  (peor caso: 30 nombres distintos)
+ArqObjRec  { int16 cx, cy; uint16 w, d, z0, ztop; uint8 name_idx, type_order; } = 14 B   (0,1 mm; la rotación del manifiesto no se guarda)
+ArqObjStore{ n, n_names, flags; ArqObjRec[30]; char names[30][21]; }         = 1 054 B  (peor caso: 30 nombres distintos)
 Motor: máscara uint32 + cajas aprendidas [32]                                =  260 B  (sin cambios)
 ```
-Optimizaciones respecto al estudio de 64: registro de 14 → 12 B (se descarta la rotación: el marcador es un rectángulo alineado con los ejes), nombres de 21 B en vez de 24, y **ninguna ampliación del motor** (−2,7 KB → +1,0 KB). Todo estático, sin asignación dinámica.
-[REFERENCIA] Etapa 6: RAM 82 372 B = 62,8 %; Flash 85,6 % (68 KB libres); heap LVGL ≥ 9,2 KB libres en el peor caso. [CALCULADO] +994 B ⇒ ≈ 63,6 %; Flash del parser + CRC + vista estimado en 4–6 KB (≈ 86,5–87 %). **Criterio de parada de la Etapa 3:** Flash < 90 %, RAM < 70 %, heap LVGL libre ≥ 8 KB en el peor caso, medidos compilando; si no se cumple, no se integra.
+Optimizaciones respecto al estudio de 64: se descarta la rotación y se empaqueta tipo+orden en un byte (el registro incluye `z0` y `orden` para los estados), nombres de 21 B en vez de 24, y **ninguna ampliación del motor** (−2,7 KB → +1,05 KB). Todo estático, sin asignación dinámica.
+[REFERENCIA] Etapa 6: RAM 82 370 B = 62,8 %; Flash 85,6 % (68 KB libres); heap LVGL ≥ 9,2 KB libres en el peor caso. [CALCULADO] +1 054 B ⇒ ≈ 63,6 %; Flash del parser + CRC + vista estimado en 4–6 KB (≈ 86,5–87 %). **Criterio de parada de la Etapa 3:** Flash < 90 %, RAM < 70 %, heap LVGL libre ≥ 8 KB en el peor caso, medidos compilando; si no se cumple, no se integra.
 
 ## 4. Manifiesto (`tests/capacity/manifest_size.py`)
-Peor caso 2 498 B (30 objetos con 30 nombres de 20 B); típico 1 606 B; línea más larga 72 B. Lectura en streaming con el `public_buf[513]` existente y 96 B de línea: 0 B de RAM adicional aparte de la tabla.
+Peor caso 2 719 B (30 objetos con 30 nombres de 20 B) con el formato final; típico 1 827 B; línea más larga 70 B. Lectura en streaming con el `public_buf[513]` existente y 96 B de línea: 0 B de RAM adicional aparte de la tabla.
 
 ## 5. LVGL (TS35, 480×320) — mapa y lista sincronizados con memoria constante
 `tests/capacity/run_lvgl.sh` (LVGL 6.1.1-MKS real, host de 64 bits → conservador): un solo objeto con `design_cb` que dibuja N rectángulos + etiquetas; 40 redibujados completos por caso.
