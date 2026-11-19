@@ -1,0 +1,9 @@
+[project]
+name = "arquis-cura"
+version = "0.1.0"
+description = "ARQUIS Slicer Suite: modulo de Cura 5.11 (cancelar objeto con correspondencia verificada)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
