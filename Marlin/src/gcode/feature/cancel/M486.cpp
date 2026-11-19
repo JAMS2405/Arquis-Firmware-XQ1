@@ -39,19 +39,21 @@
  */
 void GcodeSuite::M486() {
 
+  // Arquis: los indices se leen como int32_t (value_long) y se validan ANTES de estrechar: con value_int()/int8_t, S256 activaba el
+  // objeto 0 y P256 lo cancelaba. Fuera de 0..29 no se hace nada salvo marcar 'overflow' (ver cancel_object.cpp).
   if (parser.seen('T')) {
     cancelable.reset();
-    cancelable.object_count = parser.intval('T', 1);
+    cancelable.set_object_count(parser.longval('T', 1));
   }
 
   if (parser.seenval('S'))
-    cancelable.set_active_object(parser.value_int());
+    cancelable.set_active_object(parser.value_long());
 
   if (parser.seen('C')) cancelable.cancel_active_object();
 
-  if (parser.seenval('P')) cancelable.cancel_object(parser.value_int());
+  if (parser.seenval('P')) cancelable.cancel_object(parser.value_long());
 
-  if (parser.seenval('U')) cancelable.uncancel_object(parser.value_int());
+  if (parser.seenval('U')) cancelable.uncancel_object(parser.value_long());
 }
 
 #endif // CANCEL_OBJECTS

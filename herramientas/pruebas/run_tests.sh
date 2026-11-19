@@ -12,8 +12,10 @@ for j in range(i,len(src)):
     if d==0: break
 open('fill_body.inc','w').write(src[a:j+1])
 PY
-cp $SRC/feature/cancel_object.h stub/feature/
+mkdir -p stub/feature
+cp ../../shared/object_protocol/generated/arquis_object_limits.h stub/
+sed 's#"../../../shared/object_protocol/generated/arquis_object_limits.h"#"arquis_object_limits.h"#' $SRC/feature/cancel_object.h > stub/feature/cancel_object.h
 sed 's#"../gcode/gcode.h"#"gcode/gcode.h"#;s#"../lcd/marlinui.h"#"lcd/marlinui.h"#;s#"cancel_object.h"#"feature/cancel_object.h"#;s#"../inc/MarlinConfig.h"#"prelude.h"#' $SRC/feature/cancel_object.cpp > co.cpp
 g++ -std=c++17 -O1 -I. fill_test.cpp -o fill_test && ./fill_test
 g++ -std=c++17 -include stub/prelude.h -Istub -I. co_test.cpp -o co_test && ./co_test
-rm -f fill_test co_test co.cpp fill_body.inc stub/feature/cancel_object.h
+rm -f fill_test co_test co.cpp fill_body.inc stub/feature/cancel_object.h stub/arquis_object_limits.h

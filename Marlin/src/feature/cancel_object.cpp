@@ -34,13 +34,16 @@ int8_t CancelObject::object_count, // = 0
        CancelObject::active_object = -1;
 uint32_t CancelObject::canceled; // = 0x0000
 bool CancelObject::skipping; // = false
+bool CancelObject::overflow; // = false
 uint32_t CancelObject::bbox_valid; // = 0x0000
-int16_t CancelObject::bbox_x0[32], CancelObject::bbox_y0[32], CancelObject::bbox_x1[32], CancelObject::bbox_y1[32];
+int16_t CancelObject::bbox_x0[ARQ_OBJ_DESIGN_CAPACITY], CancelObject::bbox_y0[ARQ_OBJ_DESIGN_CAPACITY],
+        CancelObject::bbox_x1[ARQ_OBJ_DESIGN_CAPACITY], CancelObject::bbox_y1[ARQ_OBJ_DESIGN_CAPACITY];
+uint16_t CancelObject::z_print; // = 0
 
 // Llamado desde G0/G1 con extrusion: ensancha el rectangulo del objeto activo
 void CancelObject::note_extrusion(const float x, const float y) {
   const int8_t o = active_object;
-  if (!WITHIN(o, 0, 31)) return;
+  if (!in_range(o)) return;
   const int16_t xi = (int16_t)x, yi = (int16_t)y;
   if (!TEST(bbox_valid, o)) {
     SBI(bbox_valid, o);
@@ -52,14 +55,31 @@ void CancelObject::note_extrusion(const float x, const float y) {
   if (yi < bbox_y0[o]) bbox_y0[o] = yi; else if (yi > bbox_y1[o]) bbox_y1[o] = yi;
 }
 
-void CancelObject::set_active_object(const int8_t obj) {
-  active_object = obj;
-  if (WITHIN(obj, 0, 31)) {
-    if (obj >= object_count) object_count = obj + 1;
+// Z (0,1 mm) de la ultima extrusion; satura en 0..65535 (6553,5 mm)
+void CancelObject::note_z(const float z) {
+  const int32_t zi = (int32_t)(z * 10.0f + 0.5f);
+  z_print = zi < 0 ? 0 : (zi > 65535 ? 65535 : (uint16_t)zi);
+}
+
+// M486 T<n>: n fuera de 0..ARQ_OBJ_DESIGN_CAPACITY se acota y se marca 'overflow'; los indices >= capacidad no seran cancelables
+void CancelObject::set_object_count(const int32_t n) {
+  if (n < 0 || n > ARQ_OBJ_DESIGN_CAPACITY) overflow = true;
+  object_count = n < 0 ? 0 : (n > ARQ_OBJ_DESIGN_CAPACITY ? ARQ_OBJ_DESIGN_CAPACITY : (int8_t)n);
+}
+
+// S-1 = no es un objeto (brim, torre...), siempre se imprime. Un indice fuera de rango NO se estrecha ni se enmascara: se trata como
+// "no es un objeto" (se imprime) y se marca 'overflow'; asi nunca activa ni cancela OTRO objeto.
+void CancelObject::set_active_object(const int32_t obj) {
+  if (in_range(obj)) {
+    active_object = (int8_t)obj;
+    if (obj >= object_count) object_count = (int8_t)(obj + 1);
     skipping = TEST(canceled, obj);
   }
-  else
+  else {
+    if (obj != -1) overflow = true;
+    active_object = -1;
     skipping = false;
+  }
 
   #if ALL(HAS_STATUS_MESSAGE, CANCEL_OBJECTS_REPORTING)
     if (active_object >= 0)
@@ -69,23 +89,27 @@ void CancelObject::set_active_object(const int8_t obj) {
   #endif
 }
 
-void CancelObject::cancel_object(const int8_t obj) {
-  if (WITHIN(obj, 0, 31)) {
+void CancelObject::cancel_object(const int32_t obj) {
+  if (in_range(obj)) {
     SBI(canceled, obj);
     if (obj == active_object) skipping = true;
   }
+  else overflow = true;
 }
 
-void CancelObject::uncancel_object(const int8_t obj) {
-  if (WITHIN(obj, 0, 31)) {
+void CancelObject::uncancel_object(const int32_t obj) {
+  if (in_range(obj)) {
     CBI(canceled, obj);
     if (obj == active_object) skipping = false;
   }
+  else overflow = true;
 }
 
 void CancelObject::report() {
   if (active_object >= 0)
     SERIAL_ECHO_MSG("Active Object: ", active_object);
+
+  if (overflow) SERIAL_ECHO_MSG("Object index out of range ignored");
 
   if (canceled) {
     SERIAL_ECHO_START();

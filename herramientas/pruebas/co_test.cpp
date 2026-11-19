@@ -21,9 +21,16 @@ int main(){ int fails=0;
   cancelable.cancel_object(1); CHECK(cancelable.is_canceled(1)); CHECK(cancelable.skipping);
   cancelable.uncancel_object(1); CHECK(!cancelable.is_canceled(1)); CHECK(!cancelable.skipping);
   cancelable.cancel_object(0); cancelable.set_active_object(0); CHECK(cancelable.skipping);
-  // limites: objeto 31 ok, 32 y -1 ignorados sin romper
-  cancelable.set_active_object(31); cancelable.note_extrusion(1,2); CHECK(cancelable.has_bbox(31)); CHECK(cancelable.object_count==32);
-  cancelable.note_extrusion(1000,-50); cancelable.set_active_object(32); cancelable.note_extrusion(9,9); CHECK(!cancelable.has_bbox(32));
+  // limites (Etapa 3): capacidad de diseno 30 (IDs 0..29); 30, 31, 32, 256 y -2 se rechazan sin romper ni tocar otro objeto
+  cancelable.set_active_object(29); cancelable.note_extrusion(1,2); CHECK(cancelable.has_bbox(29)); CHECK(cancelable.object_count==30); CHECK(!cancelable.overflow);
+  cancelable.note_extrusion(1000,-50);
+  const int32_t bad[]={30,31,32,256,300,-2,65536,2147483647};
+  for(int32_t v:bad){ cancelable.set_active_object(v); CHECK(cancelable.active_object==-1&&!cancelable.skipping); cancelable.note_extrusion(9,9); CHECK(!cancelable.has_bbox(v)); CHECK(cancelable.overflow);
+    cancelable.overflow=false; uint32_t before=cancelable.canceled; cancelable.cancel_object(v); cancelable.uncancel_object(v); CHECK(cancelable.canceled==before); CHECK(cancelable.overflow); cancelable.overflow=false; }
+  cancelable.set_active_object(-1); CHECK(!cancelable.overflow);                 // S-1 es valido (no es un objeto)
+  cancelable.set_object_count(200); CHECK(cancelable.object_count==30&&cancelable.overflow); cancelable.overflow=false;
+  cancelable.set_object_count(-4); CHECK(cancelable.object_count==0&&cancelable.overflow); cancelable.overflow=false;
+  cancelable.note_z(0.2f); CHECK(cancelable.z_print==2); cancelable.note_z(12.34f); CHECK(cancelable.z_print==123); cancelable.note_z(-5); CHECK(cancelable.z_print==0); cancelable.note_z(99999); CHECK(cancelable.z_print==65535);
   // nueva impresion (M486 T): reset limpia todo, incluidas las cajas
-  cancelable.reset(); CHECK(!cancelable.has_bbox(0)&&!cancelable.has_bbox(1)&&!cancelable.has_bbox(31)); CHECK(cancelable.object_count==0&&cancelable.canceled==0);
+  cancelable.reset(); CHECK(!cancelable.has_bbox(0)&&!cancelable.has_bbox(1)&&!cancelable.has_bbox(29)&&!cancelable.overflow&&cancelable.z_print==0); CHECK(cancelable.object_count==0&&cancelable.canceled==0);
   printf(fails? "CANCEL OBJECT: %d fallas\n":"CANCEL OBJECT: OK (cajas XY, entrelazado, cancelar/restaurar, limites, reset)\n",fails); return fails!=0; }

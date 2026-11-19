@@ -66,8 +66,10 @@ void GcodeSuite::G0_G1(TERN_(HAS_FAST_MOVES, const bool fast_move/*=false*/)) {
 
   #if ENABLED(CANCEL_OBJECTS)
     // Arquis: aprender la posicion XY de cada objeto (para el mapa de cancelar objetos)
-    if (cancelable.active_object >= 0 && parser.seen('E') && (parser.seen('X') || parser.seen('Y')))
+    if (cancelable.active_object >= 0 && parser.seen('E') && (parser.seen('X') || parser.seen('Y'))) {
       cancelable.note_extrusion(destination.x, destination.y);
+      if (parser.codenum == 1) cancelable.note_z(destination.z);   // Z de la ultima extrusion (G1; los G0 con E de Cura son viajes con retraccion)
+    }
   #endif
 
   #ifdef G0_FEEDRATE

@@ -9,6 +9,8 @@ struct Parser {
   bool seen(char c) const { return has[c - 'A']; }
   bool seenval(char c) { if (has[c - 'A'] && hasv[c - 'A']) { last = c; return true; } return false; }
   int16_t value_int() const { return int16_t(val[last - 'A']); }
+  int32_t value_long() const { const long v = val[last - 'A']; return v > 2147483647L ? 2147483647 : (v < -2147483647L - 1 ? int32_t(-2147483647 - 1) : int32_t(v)); }   // strtol de 32 bits satura
+  int32_t longval(char c, int32_t dval = 0) { return seenval(c) ? value_long() : dval; }
   int16_t intval(char c, int16_t dval = 0) { return seenval(c) ? value_int() : dval; }
 };
 extern Parser parser;

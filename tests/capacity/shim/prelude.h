@@ -12,7 +12,7 @@
 #define ENABLED(x) 1
 #define ALL(...) 0
 #define TERN_(a,b)
-#define SERIAL_ECHO_MSG(...)
+#define SERIAL_ECHO_MSG(...) ((void)0)
 #define SERIAL_ECHO_START()
 #define SERIAL_ECHOPGM(x)
 #define SERIAL_ECHO(x)
