@@ -1,0 +1,23 @@
+{
+  "_leeme": "EXPERIMENTAL. Cabezal ARQUIS con bloque Volcano y boquilla de laton M6x1 de 23 mm, DERIVADO de los dibujos del fabricante (ver docs/slicer_suite/09_etapa5_nonplanar.md apartado 10). NO esta medido con calibre: head.confirmed sigue en false. Para exportar G-code hay que medir (1) la distancia de la punta a la cara inferior del bloque y (2) el ducto de ventilacion, corregir esos valores y poner head.confirmed=true.",
+  "_derivacion": {
+    "boquilla": "laton M6x1, largo total 23 mm, rosca 14 mm, hexagono de 6 mm (entre caras), salida 0,4 mm. Sin rosca quedan 23 - 14 = 9 mm (hexagono + cono). El dibujo tambien rotula 'cuerpo 15 mm', que no suma con 14 + 9: confirmar con calibre.",
+    "bloque": "Volcano 20 x 20 x 11.5 mm (alto 20 mm segun el dibujo). Orientacion de 20 y 11.5 en X/Y desconocida: radio = media diagonal = sqrt(10^2 + 5.75^2) = 11.5 mm (conservador).",
+    "sobresale": "9 mm si la rosca (14 mm) queda entera dentro del bloque y el hexagono apoya en su cara inferior. Si la boquilla no esta enroscada a fondo, sobresale mas.",
+    "cono": "pendiente tolerable estimada en 40 grados: cono de ~3 mm de alto desde la salida hasta el hexagono (radio de esquina 3,46 mm). Estimacion sobre el dibujo, no medida.",
+    "ducto": "NO derivable de los dibujos: valores por defecto sin medir."
+  },
+  "head": {
+    "nozzle_clearance_deg": 40.0,
+    "safety_margin_deg": 5.0,
+    "envelopes": [
+      ["hexagono de la boquilla", 3.5, 2.5],
+      ["bloque calefactor Volcano 20x11.5", 11.5, 9.0],
+      ["ducto de ventilacion (SIN MEDIR)", 25.0, 2.0]
+    ],
+    "confirmed": false
+  },
+  "filament_d": 1.75,
+  "bed_temp": null,
+  "nozzle_temp": null
+}

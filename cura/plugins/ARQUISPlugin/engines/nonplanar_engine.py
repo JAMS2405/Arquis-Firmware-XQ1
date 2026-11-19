@@ -31,6 +31,7 @@ EXPERIMENTAL = True
 ENABLED_BY_DEFAULT = False
 MARKER = ";ARQUIS_NONPLANAR EXPERIMENTAL"
 ALLOWED_CMDS = ("G0", "G1", "G28", "G29", "G90", "G92", "M82", "M84", "M104", "M106", "M107", "M109", "M140", "M190", "M420")
+SMALL_ENVELOPE_MM = 6.0          # volumenes del cabezal de hasta este radio se comprueban con la rejilla fina
 HARD_MAX_Z_DEV_MM = 2.0          # tope absoluto de desviacion en Z, aunque el usuario pida mas
 
 
@@ -427,45 +428,73 @@ def verify_limits(segs: List[Seg], cfg: NPConfig, an: Analysis, zones: Zones, fi
 
 
 # ---------------------------------------------------------------- 8. colisiones
+_DISKS: Dict[Tuple[float, float], List[Tuple[int, int]]] = {}
+
+
+def _disk(rad: float, cell: float) -> List[Tuple[int, int]]:
+    key = (rad, cell)
+    if key not in _DISKS:
+        n = int(math.ceil(rad / cell)) + 1
+        _DISKS[key] = [(i, j) for i in range(-n, n + 1) for j in range(-n, n + 1) if math.hypot(i * cell, j * cell) <= rad + cell * 0.7071]
+    return _DISKS[key]
+
+
 def detect_collisions(segs: List[Seg], cfg: NPConfig, findings: List[Finding]) -> Dict[str, float]:
-    """Mapa de alturas de lo YA impreso (celdas de grid_mm) en orden de impresion. Para cada punto de la punta:
-      * la punta no debe quedar por debajo del material impreso en su celda (con una tolerancia de un espesor + la pendiente de la celda);
-      * cada volumen del cabezal (radio r, altura h sobre la punta) no debe contener material impreso mas alto que punta + h.
-    Coste O(muestras x celdas impresas): valido para la pieza pequena de prueba, no para una impresion completa."""
-    g = cfg.grid_mm
+    """Mapa de alturas de lo YA impreso, en orden de impresion, con DOS rejillas:
+      * gruesa (grid_mm): para los volumenes del cabezal (radio r, altura h sobre la punta): ningun material impreso dentro de r puede
+        estar mas alto que punta + h. Conservadora (suma media diagonal de celda).
+      * fina (0,5 mm): para la punta: no puede quedar por debajo del material impreso JUSTO debajo de ella (con tolerancia de dos
+        espesores + la pendiente de la celda). Imprimir junto a una pared mas alta NO es colision.
+    Los segmentos se marcan a lo largo de todo su recorrido (no solo en los extremos). Coste O(muestras x celdas impresas): valido para
+    una pieza pequena de prueba, no para una impresion completa."""
+    g, fg = cfg.grid_mm, 0.5
     printed: Dict[Tuple[int, int], float] = {}
-    tol = cfg.layer_h * 2 + g * math.tan(math.radians(cfg.eff_max_slope_deg))
+    fine: Dict[Tuple[int, int], float] = {}
+    tol = cfg.layer_h * 2 + fg * math.tan(math.radians(max(cfg.eff_max_slope_deg, 0.0)))
     half_diag = g * 0.7071
+    r = cfg.line_w / 2
     worst_dive = 0.0
     n_checked = 0
     bad: Dict[str, Tuple[float, float, float]] = {}
     for idx, s in enumerate(segs):
-        if s.printing and idx % 2 == 0:
-            tip = (s.x1, s.y1, s.z1)
+        if not s.printing:
+            continue
+        tip = (s.x1, s.y1, s.z1)
+        if idx % 2 == 0:
             n_checked += 1
-            cell = (int(tip[0] // g), int(tip[1] // g))
-            under = printed.get(cell, 0.0) - tip[2]
+            under = fine.get((int(tip[0] // fg), int(tip[1] // fg)), 0.0) - tip[2]
             worst_dive = max(worst_dive, under)
             if under > tol and "TIP" not in bad:
                 bad["TIP"] = (tip[0], tip[1], under)
-            for name, r, hgt in cfg.head.envelopes:
+            for name, rad, hgt in cfg.head.envelopes:
+                if name in bad:
+                    continue
+                if rad <= SMALL_ENVELOPE_MM:         # volumen pequeno (p. ej. el hexagono de la boquilla): rejilla fina, sin margen de celda gruesa
+                    ci, cj = int(tip[0] // fg), int(tip[1] // fg)
+                    for di, dj in _disk(rad, fg):
+                        top = fine.get((ci + di, cj + dj))
+                        if top is not None and top > tip[2] + hgt:
+                            bad[name] = (tip[0], tip[1], top - (tip[2] + hgt))
+                            break
+                    continue
                 for (cx, cy), top in printed.items():
-                    if top <= tip[2] + hgt:
-                        continue
-                    d = math.hypot((cx + 0.5) * g - tip[0], (cy + 0.5) * g - tip[1]) - half_diag
-                    if d <= r and name not in bad:
+                    if top > tip[2] + hgt and math.hypot((cx + 0.5) * g - tip[0], (cy + 0.5) * g - tip[1]) - half_diag <= rad:
                         bad[name] = (tip[0], tip[1], top - (tip[2] + hgt))
-        if s.printing:
-            r = cfg.line_w / 2
-            for xx in (s.x0, s.x1):
-                for yy in (s.y0, s.y1):
-                    for dx in (-r, r):
-                        for dy in (-r, r):
-                            c = (int((xx + dx) // g), int((yy + dy) // g))
-                            printed[c] = max(printed.get(c, 0.0), max(s.z0, s.z1))
+                        break
+        horiz = math.hypot(s.x1 - s.x0, s.y1 - s.y0)
+        n = max(1, int(math.ceil(horiz / (fg / 2))))
+        for k in range(n + 1):
+            f = k / n
+            px, py, pz = s.x0 + (s.x1 - s.x0) * f, s.y0 + (s.y1 - s.y0) * f, s.z0 + (s.z1 - s.z0) * f
+            for dx in (-r, 0.0, r):
+                for dy in (-r, 0.0, r):
+                    c = (int((px + dx) // g), int((py + dy) // g))
+                    printed[c] = max(printed.get(c, 0.0), pz)
+                    cf = (int((px + dx) // fg), int((py + dy) // fg))
+                    fine[cf] = max(fine.get(cf, 0.0), pz)
     for name, (x, y, over) in bad.items():
         if name == "TIP":
-            findings.append(Finding("ERROR", "COLISION_PUNTA", "La punta queda %.2f mm por debajo del material impreso en (%.1f, %.1f)." % (over, x, y)))
+            findings.append(Finding("ERROR", "COLISION_PUNTA", "La punta queda %.2f mm por debajo del material impreso justo debajo de ella en (%.1f, %.1f)." % (over, x, y)))
         else:
             findings.append(Finding("ERROR", "COLISION_CABEZAL", "%s: material impreso %.2f mm por encima de su volumen en (%.1f, %.1f)." % (name, over, x, y)))
     top_part = max(printed.values()) if printed else 0.0
@@ -669,3 +698,119 @@ def verify_gcode(text: str, cfg: NPConfig, plan: Optional[Plan] = None) -> List[
         if n_print != want:
             F.append(Finding("ERROR", "G_N", "Movimientos con extrusion %d != plan %d." % (n_print, want)))
     return F
+
+
+# ---------------------------------------------------------------- analisis de un G-code EXTERNO (solo lectura)
+@dataclass
+class ExternalReport:
+    findings: List[Finding]
+    stats: Dict[str, float]
+
+    @property
+    def ok(self) -> bool:
+        return not any(f.level == "ERROR" for f in self.findings)
+
+
+def analyze_external_gcode(text: str, cfg: NPConfig) -> ExternalReport:
+    """Mide un G-code NO generado por este motor (p. ej. FullControl) contra los limites de TU firmware y el modelo de TU cabezal.
+    No lo modifica ni lo exporta. Sigue G92 X/Y (desplaza el origen), M82/M83 y G90/G91; los limites de cama se miden en coordenadas FISICAS."""
+    m = cfg.machine
+    F: List[Finding] = []
+    x = y = z = e = 0.0
+    off_x = off_y = 0.0
+    feed = 0.0
+    absxyz, abse = True, True
+    foreign: Dict[str, int] = {}
+    risky: List[str] = []
+    segs: List[Seg] = []
+    worst_slope = 0.0
+    vz_max = vx_max = vy_max = 0.0
+    n_over_travel = 0
+    phys = [1e9, -1e9, 1e9, -1e9, 1e9, -1e9]          # todos los movimientos (viajes incluidos)
+    ext = [1e9, -1e9, 1e9, -1e9, 1e9, -1e9]           # solo los que extruyen
+    for ln in text.splitlines():
+        c = parse_cmd(ln)
+        if c is None:
+            continue
+        w = c.words
+        name = c.name
+        if name not in ALLOWED_CMDS:
+            foreign[name] = foreign.get(name, 0) + 1
+        if name == "G90":
+            absxyz = True; continue
+        if name == "G91":
+            absxyz = False; risky.append("G91 (coordenadas relativas)"); continue
+        if name == "M82":
+            abse = True; continue
+        if name == "M83":
+            abse = False; continue
+        if name == "M106" and ("P" in w and w["P"] != 0):
+            risky.append("M106 P%d (ventilador auxiliar: tu firmware puede no tenerlo)" % int(w["P"]))
+        if name == "M900":
+            risky.append("M900 (cambia el Linear Advance del firmware hasta reiniciar)")
+        if name == "G92":
+            if "X" in w:
+                off_x = (x + off_x) - w["X"]; x = w["X"]
+            if "Y" in w:
+                off_y = (y + off_y) - w["Y"]; y = w["Y"]
+            if "Z" in w:
+                z = w["Z"]
+            if "X" in w or "Y" in w:
+                risky.append("G92 con X/Y (desplaza el origen: la pieza queda en otro sitio de la cama)")
+            continue
+        if name not in ("G0", "G1"):
+            continue
+        if "F" in w:
+            feed = w["F"] / 60.0
+        nx = (w["X"] if absxyz else x + w["X"]) if "X" in w else x
+        ny = (w["Y"] if absxyz else y + w["Y"]) if "Y" in w else y
+        nz = (w["Z"] if absxyz else z + w["Z"]) if "Z" in w else z
+        de = (w["E"] if not abse else w["E"] - e) if "E" in w else 0.0
+        if "E" in w and abse:
+            e = w["E"]
+        d = math.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
+        px, py = nx + off_x, ny + off_y
+        extruding = name == "G1" and de > 0 and d > 1e-9
+        for i, v in enumerate((px, py, nz)):
+            phys[2 * i] = min(phys[2 * i], v); phys[2 * i + 1] = max(phys[2 * i + 1], v)
+            if extruding:
+                ext[2 * i] = min(ext[2 * i], v); ext[2 * i + 1] = max(ext[2 * i + 1], v)
+        if d > 1e-9 and feed > 0:
+            vx, vy, vz = feed * abs(nx - x) / d, feed * abs(ny - y) / d, feed * abs(nz - z) / d
+            vz_max, vx_max, vy_max = max(vz_max, vz), max(vx_max, vx), max(vy_max, vy)
+            if vz > m.max_feedrate[2] + 1e-9 or vx > m.max_feedrate[0] + 1e-9 or vy > m.max_feedrate[1] + 1e-9:
+                n_over_travel += 1
+        if name == "G1" and de > 0 and d > 1e-9:
+            horiz = math.hypot(nx - x, ny - y)
+            if horiz > 1e-9:
+                worst_slope = max(worst_slope, math.degrees(math.atan(abs(nz - z) / horiz)))
+            segs.append(Seg("np", 0, x + off_x, y + off_y, z, px, py, nz, t=cfg.nozzle_d, feed=feed))
+        x, y, z = nx, ny, nz
+    if not segs:
+        F.append(Finding("ERROR", "EXT_VACIO", "No hay movimientos con extrusion."))
+        return ExternalReport(F, {})
+    if phys[0] < 0 or phys[1] > m.bed_x or phys[2] < 0 or phys[3] > m.bed_y or phys[4] < -1e-9 or phys[5] > m.z_max:
+        F.append(Finding("ERROR", "EXT_LIMITES", "Hay movimientos fuera de la maquina (X %.1f..%.1f, Y %.1f..%.1f, Z %.1f..%.1f; cama %gx%g, Z max %g)."
+                         % (phys[0], phys[1], phys[2], phys[3], phys[4], phys[5], m.bed_x, m.bed_y, m.z_max)))
+    if n_over_travel:
+        F.append(Finding("WARN", "EXT_VEL", "%d movimientos piden mas velocidad por eje que el firmware (max Z %.1f mm/s): Marlin los limitara, no se ejecutan como estan escritos."
+                         % (n_over_travel, m.max_feedrate[2])))
+    pz = max((s.feed * abs(s.z1 - s.z0) / s.length for s in segs if s.length), default=0.0)
+    if pz > 0.9 * m.max_feedrate[2]:
+        F.append(Finding("WARN", "EXT_VZ", "La extrusion pide hasta %.2f mm/s en Z (firmware: %.1f): sin margen." % (pz, m.max_feedrate[2])))
+    lim = cfg.eff_max_slope_deg
+    if worst_slope > lim:
+        F.append(Finding("ERROR", "EXT_PENDIENTE", "Pendiente maxima %.1f deg > limite efectivo %.1f deg (min(max_slope %.1f, cono %.1f - margen %.1f))."
+                         % (worst_slope, lim, cfg.max_slope_deg, cfg.head.nozzle_clearance_deg, cfg.head.safety_margin_deg)))
+    col: List[Finding] = []
+    detect_collisions(segs, cfg, col)
+    F += [f for f in col if f.level != "INFO"]
+    for r in sorted(set(risky)):
+        F.append(Finding("WARN", "EXT_ORDEN", "Orden delicada para tu impresora: %s" % r))
+    other = {k: v for k, v in foreign.items() if k not in ("G91", "M900", "M83")}
+    if other:
+        F.append(Finding("INFO", "EXT_OTRAS", "Ordenes fuera de la lista del motor: " + ", ".join("%s x%d" % kv for kv in sorted(other.items()))))
+    F.append(Finding("INFO", "EXT_MODELO", "Colisiones comprobadas con el MODELO del cabezal (%s)." % ("confirmado por el usuario" if cfg.head.confirmed else "SIN CONFIRMAR")))
+    stats = {"movimientos_extrusion": float(len(segs)), "x_min": ext[0], "x_max": ext[1], "y_min": ext[2], "y_max": ext[3], "z_min": ext[4], "z_max": ext[5],
+             "pendiente_max_deg": worst_slope, "vz_extrusion_mm_s": pz, "vx_max": vx_max, "vy_max": vy_max}
+    return ExternalReport(F, stats)

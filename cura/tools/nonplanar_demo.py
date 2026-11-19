@@ -45,6 +45,7 @@ def main(argv=None) -> int:
     ap.add_argument("--accept", metavar="CODIGO", help="codigo de la vista previa revisada")
     ap.add_argument("--analyze-stl", metavar="MODELO.stl", help="SOLO analiza la superficie de un STL (pendiente, relieve, agujeros); no genera G-code")
     ap.add_argument("--cell", type=float, default=1.0, help="tamano de celda del analisis (mm)")
+    ap.add_argument("--check-gcode", metavar="ARCHIVO.gcode", help="SOLO mide un G-code externo (p. ej. FullControl) contra tu firmware y tu cabezal; no lo modifica")
     a = ap.parse_args(argv)
     if a.init_config:
         with open(a.init_config, "w", encoding="utf-8") as f:
@@ -60,6 +61,15 @@ def main(argv=None) -> int:
             d = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
     d["enabled"] = True
     cfg = npe.config_from_dict(d)
+    if a.check_gcode:
+        with open(a.check_gcode, encoding="utf-8", errors="replace") as f:
+            rep = npe.analyze_external_gcode(f.read(), cfg)
+        print("G-code externo %s:" % os.path.basename(a.check_gcode))
+        for fd in rep.findings:
+            print("  [%s] %s: %s" % (fd.level, fd.code, fd.msg))
+        print("Resumen: " + ", ".join("%s=%.2f" % kv for kv in rep.stats.items()))
+        print("SOLO LECTURA: este archivo NO se ha modificado ni se considera apto para imprimir. Cabezal %s." % ("confirmado" if cfg.head.confirmed else "SIN CONFIRMAR"))
+        return 0 if rep.ok else 1
     if a.analyze_stl:
         with open(a.analyze_stl, "rb") as f:
             surf = nps.rasterize(nps.read_stl(f.read()), a.cell)

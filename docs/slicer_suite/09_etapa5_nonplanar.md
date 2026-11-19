@@ -34,7 +34,7 @@ Un solo módulo, `cura/plugins/ARQUISPlugin/engines/nonplanar_engine.py` (Python
 | 9 | Vista previa | `render_preview` | SVG: vista superior por pendiente, perfil lateral por capas, resumen y hallazgos |
 | 10 | Exportación | `export_gcode` + `verify_gcode` | Solo con todas las barreras (§3); el texto resultante se vuelve a verificar |
 
-Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (17) y `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9).
+Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (22) y `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9).
 
 ## 3. Barreras de seguridad (todas obligatorias)
 
@@ -138,4 +138,47 @@ python3 cura/tools/nonplanar_demo.py --enable-experimental --analyze-stl anillo.
 - **Lectura desde la escena de Cura: no implementada.** Exige validar en Cura real la API de la malla (`getMeshData`, vértices e índices, transformación al mundo), como en la Etapa 3: primero un volcado de diagnóstico ejecutado por ti dentro de Cura. Hasta entonces, el camino es exportar el STL.
 
 **Siguiente paso técnico (no iniciado):** generar capas conformes y trayectorias desde la superficie leída, con agujeros (viajes, retracción y salto en Z). Antes necesito tu STL y cómo se imprime la pieza.
+
+## 10. Cabezal derivado de los dibujos de la boquilla y del bloque Volcano, y análisis del G-code de la flor
+
+**Origen de los datos** (`img/boquilla_laton_m6x1_dibujo.png`, `img/bloque_volcano_dibujo.png`): dibujos del fabricante. **No son medidas con calibre de tu hotend.** Perfil resultante: `cura/profiles/nonplanar_arquis_volcano.json`, con `head.confirmed: false`.
+
+| Dato | Valor | Cómo sale |
+|---|---|---|
+| Boquilla | latón M6×1, 23 mm total, rosca 14 mm, hexágono de 6 mm, salida Ø0,4 | Dibujo |
+| Bloque | Volcano 20 × 20 × 11,5 mm (alto 20 mm) | Dibujo |
+| Parte de la boquilla sin rosca | 23 − 14 = **9 mm** (hexágono + cono) | Cálculo |
+| **Sobresale de la cara inferior del bloque** | **9 mm** | **Suposición:** rosca entera dentro del bloque y hexágono apoyado en su cara inferior. Si no está enroscada a fondo, sobresale más |
+| Volumen del bloque (cilindro equivalente) | radio **11,5 mm**, empieza **9 mm** sobre la punta | Media diagonal √(10² + 5,75²); la orientación de 20 y 11,5 en X/Y no se conoce, así que se toma lo conservador |
+| Hexágono de la boquilla | radio 3,5 mm, empieza 2,5 mm sobre la punta | Estimado sobre el dibujo (cono de ~3 mm) |
+| Pendiente tolerable del cono | **40°** (con margen de 5° → 35°) | **Estimación sobre el dibujo**, no medida |
+| Ducto de ventilación | **sin derivar** (valores por defecto: radio 25 mm, 2 mm sobre la punta) | No sale de los dibujos |
+
+**Inconsistencia en el dibujo de la boquilla:** rotula «cuerpo 15 mm» y «rosca 14 mm», pero el largo total es 23 mm (15 + 14 ≠ 23). Uso 23 y 14 (quedan 9 mm sin rosca). Si lo que sobresale del bloque fuera otro valor, **cambia el cálculo**.
+
+**Lo único imprescindible que falta medir con calibre:**
+1. **Distancia de la punta a la cara inferior del bloque** (sustituye el 9 mm supuesto).
+2. **Ducto de ventilación:** altura de su punto más bajo sobre la punta y distancia al eje de la boquilla.
+3. Diámetro real del filamento (hoy 1,75 mm sin medir).
+Con eso se corrige el perfil y se pone `head.confirmed: true`.
+
+### G-code de la flor (`Non-planar_flower.gcode`, FullControl para una Bambu)
+Solo lectura con la nueva opción `--check-gcode`; **no se modifica y no se da por apto para imprimir en tu máquina**. El archivo no se ha incorporado al repositorio (es de terceros).
+
+| Medida | Resultado |
+|---|---|
+| Extrusión no plana | 2022 movimientos, Z 0,32–3,92 mm, ~100 × 52 mm, velocidad 8,3 mm/s, extrusión constante (0,133 mm de filamento por mm de trayecto), sin retracciones |
+| Pendiente máxima | **29,1°** (media 12,6°) |
+| Velocidad en Z que pide | **4,05 mm/s** (límite del firmware: 5): cabe, con poco margen. La aceleración de Z no se ha podido evaluar |
+| Con el cabezal derivado y `max_slope_deg = 30` | Sin colisión de la punta ni del bloque ni del hexágono (modelo). Solo salta el ducto, que es el valor **sin medir** |
+| Con `max_slope_deg = 15` (por defecto) | ERROR de pendiente: esta pieza exige subir el límite de proceso a ≥ 30°, y eso depende de que el cono tolere de verdad esos 29° (estimado en 40°, sin medir) |
+
+**Órdenes del archivo que NO son para tu impresora** (el verificador las marca): `G92 X0 Y0` (desplaza el origen +20 mm: la pieza queda en X 30–130, Y 32–84), `M106 P2` (ventilador auxiliar que tu firmware puede no tener), `M900 K0` (apaga el Linear Advance de tu firmware hasta reiniciar), `G91`, `G21`, `M220`, `M221`, y viajes `G0 F8000` con Z (Marlin los limita a 5 mm/s). Además: bloque de cebado de 100 mm a Z 0,32, `M109 S210` y cama a 50 °C (material de otra máquina). **No lo imprimas tal cual.**
+
+### Correcciones del verificador hechas con este archivo
+El análisis detectó dos fallos de mi comprobación de colisiones, ya corregidos y con pruebas: (1) la punta se comparaba con celdas de 3 mm, lo que daba falsos positivos al imprimir junto a una pared más alta; ahora usa una rejilla de 0,5 mm; (2) las líneas largas solo marcaban sus extremos como impresos; ahora se marca todo el recorrido. Los volúmenes pequeños (radio ≤ 6 mm) se comprueban con la rejilla fina.
+
+```bash
+python3 cura/tools/nonplanar_demo.py --enable-experimental --config cura/profiles/nonplanar_arquis_volcano.json --check-gcode archivo.gcode
+```
 

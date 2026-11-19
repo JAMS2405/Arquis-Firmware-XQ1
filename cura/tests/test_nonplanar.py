@@ -241,3 +241,78 @@ def test_cli_requires_explicit_enable_and_every_step(tmp_path, capsys):
     assert cli.main(["--enable-experimental", "--config", cfgf, "--export", gc, "--accept", code]) == 3 and not os.path.exists(gc)
     assert cli.main(["--enable-experimental", "--config", cfgf, "--export", gc, "--accept", code2]) == 0 and os.path.exists(gc)
     assert open(gc).readline().startswith(npe.MARKER)
+
+
+# ---------------------------------------------------------------- G-code externo (solo lectura) y perfil del cabezal Volcano
+def ext(lines, **kw):
+    cfg = ok_cfg(**kw)
+    return npe.analyze_external_gcode("\n".join(["M83"] + lines) + "\n", cfg)             # M83: extrusion relativa (todo E positivo extruye)
+
+
+def codes_of(rep, level=None):
+    return {f.code for f in rep.findings if level is None or f.level == level}
+
+
+def wave_lines(z0=0.6, amp=0.4, n=40, x0=10.0, y=10.0):
+    out = ["G1 F500 X%.2f Y%.2f Z%.2f E0.1" % (x0, y, z0)]
+    for i in range(1, n + 1):
+        out.append("G1 X%.3f Y%.3f Z%.3f E0.05" % (x0 + i * 0.5, y, z0 + amp * math.sin(i / 4.0)))
+    return out
+
+
+def test_external_gcode_follows_g92_offset_relative_e_and_flags_risky_orders():
+    rep = ext(["M83", "G90", "G0 F8000 X20 Y20 Z10", "G92 X0 Y0", "M106 P2 S255", "G0 X5 Y5", "G0 F8000 Z0.3", "G91", "G90"] + wave_lines() + ["M900 K0", "G91", "G0 Z20 F8000"])
+    assert rep.ok, [f.msg for f in rep.findings if f.level == "ERROR"]
+    st = rep.stats
+    assert st["x_min"] == pytest.approx(30.0, abs=0.01) and st["x_max"] == pytest.approx(50.0, abs=0.01)         # origen desplazado +20 por G92
+    assert st["z_min"] >= 0.2 - 1e-6 and st["z_max"] < 1.1                                                      # solo cuenta la extrusion, no los viajes
+    risky = " ".join(f.msg for f in rep.findings if f.code == "EXT_ORDEN")
+    assert "G92" in risky and "M106 P2" in risky and "M900" in risky and "G91" in risky
+    assert "EXT_VEL" in codes_of(rep, "WARN")                                                                    # G0 F8000 con Z supera los 5 mm/s de Z
+
+
+def test_external_gcode_out_of_bed_and_steep_slope_are_errors():
+    far = ext(["G90", "G0 X280 Y20 Z1", "G92 X0 Y0"] + wave_lines(x0=30.0))                 # tras G92 el origen queda en 280: X fisico 310..330 > 300
+    assert "EXT_LIMITES" in codes_of(far, "ERROR")
+    steep = ext(["G90", "G1 F600 X50 Y50 Z0.3 E0.1", "G1 X51 Y50 Z0.9 E0.1", "G1 X52 Y50 Z0.3 E0.1"])            # 31 grados de subida y bajada
+    assert "EXT_PENDIENTE" in codes_of(steep, "ERROR")
+    gentle = ext(["G90", "G1 F600 X50 Y50 Z0.3 E0.1", "G1 X51 Y50 Z0.5 E0.1", "G1 X52 Y50 Z0.3 E0.1"])             # 11 grados
+    assert "EXT_PENDIENTE" not in codes_of(gentle)
+    assert not ext([]).ok and "EXT_VACIO" in codes_of(ext([]))
+
+
+def test_printing_beside_a_taller_wall_is_not_a_collision_but_plowing_through_it_is():
+    wall = ["G90", "G1 F600 X50 Y50 Z0.2 E0.1"] + ["G1 X50 Y50 Z%.2f E0.05" % (0.2 * k) for k in range(2, 12)]    # un hilo vertical de 2.2 mm
+    beside = ext(wall + ["G1 X50 Y52 Z0.2 E0.1", "G1 X60 Y52 Z0.2 E0.1"])                                          # a 2 mm del hilo, a su altura base
+    assert "COLISION_PUNTA" not in codes_of(beside)
+    through = ext(wall + ["G1 X50.0 Y50.0 Z0.2 E0.1", "G1 X50.0 Y50.1 Z0.2 E0.1"])                                  # la punta baja DENTRO del hilo
+    assert "COLISION_PUNTA" in codes_of(through, "ERROR")
+
+
+def test_volcano_head_profile_loads_but_cannot_export_until_confirmed():
+    path = os.path.join(ROOT, "cura", "profiles", "nonplanar_arquis_volcano.json")
+    with open(path, encoding="utf-8") as f:
+        d = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+    d["enabled"] = True
+    cfg = npe.config_from_dict(d)
+    assert cfg.head.confirmed is False and cfg.bed_temp is None                                                  # no se confirma ni se elige material por el usuario
+    names = {n: (r, h) for n, r, h in cfg.head.envelopes}
+    assert names["bloque calefactor Volcano 20x11.5"] == (11.5, 9.0)                                            # 23 mm de boquilla - 14 mm de rosca = 9 mm bajo el bloque
+    assert 23.0 - 14.0 == 9.0 and round(math.hypot(10.0, 5.75), 1) == 11.5                                      # derivacion documentada (media diagonal del bloque)
+    assert any("SIN MEDIR" in n for n in names)                                                                  # el ducto sigue sin medir
+    plan = npe.build_plan(cfg)
+    with pytest.raises(npe.ExportRefused):
+        npe.export_gcode(plan, plan.digest)
+
+
+def test_cli_check_gcode_is_read_only_and_needs_the_enable_flag(tmp_path, capsys):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("nonplanar_demo", os.path.join(ROOT, "cura", "tools", "nonplanar_demo.py"))
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    g = tmp_path / "ext.gcode"
+    g.write_text("\n".join(["M83", "G90"] + wave_lines()) + "\n")
+    before = g.read_text()
+    assert cli.main(["--check-gcode", str(g)]) == 2
+    assert cli.main(["--enable-experimental", "--check-gcode", str(g)]) == 0
+    assert "SOLO LECTURA" in capsys.readouterr().out and g.read_text() == before and sorted(p.name for p in tmp_path.iterdir()) == ["ext.gcode"]
