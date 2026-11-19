@@ -83,3 +83,19 @@ Nota: la validación cubre la API y los datos que usa el plugin con una escena d
 7. Prueba un caso inaceptable (amplitud 4, rampa 0,5): mensaje de error y G-code original.
 Devuélveme el resultado de cada paso, el mensaje que muestra Cura y, si falla, `cura.log`.
 
+### Registro parcial (propietario, 2026-11-19, Cura 5.11 real, pieza «adaptador de silla de ruedas», 65 mm, 271 capas)
+Evidencia: capturas (`docs/slicer_suite/img/cura_script_ondulado_mensaje.png`) y el G-code de la primera exportación.
+
+| Paso | Resultado |
+|---|---|
+| 1. Instalación y carga del script | **OK**: Cura no se cierra y el script aparece en la lista, con sus 8 ajustes |
+| 2. Aparece apagado | **No informado** (en la captura ya está activado) |
+| 4. Primera exportación con el ondulado activado y sin código | **OK**: mensaje «Ondulado NO aplicado todavía…», con el código `B0C651E6076B` y la ruta de la vista previa; el G-code exportado **no** está ondulado (sin banner `;ARQUIS_NP_WARP`), conserva las marcas `;ARQUIS`, el manifiesto y la miniatura |
+| 6. Exportar con el código aceptado → «APLICADO» | **Pendiente** |
+| 7. Cambiar un ajuste invalida el código | **Pendiente** |
+| 8. Caso inaceptable → mensaje de error y G-code original | **Pendiente** |
+| Apagado: G-code idéntico al de antes | **Pendiente** |
+
+**Riesgo abierto:** el orden de scripts del propietario es M486 → Validation → CreateThumbnail → **Ondulado**. Si la miniatura no es idéntica entre exportaciones, el código cambiará cada vez y no se podrá aceptar. Si ocurre, mover el ondulado **antes** de CreateThumbnail.
+Predicción con el motor (sobre el G-code ya exportado, que no es idéntico a la entrada del script, así que el código no coincide): sin errores, 60 048 → 126 949 movimientos, extrusión +0,003 %, espesor 0,20–0,264 mm, pendiente 6,2°.
+
