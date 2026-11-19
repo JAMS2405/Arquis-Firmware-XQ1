@@ -128,6 +128,8 @@ class WarpResult:
     digest: str = ""
     input_id: str = ""          # huella corta del G-code de ENTRADA (para saber si cambio entre dos exportaciones)
     cfg_id: str = ""            # huella corta de los AJUSTES
+    stable_code: str = ""       # codigo ESTABLE (ajustes + n.o de capas + altura): no cambia por diferencias minimas entre dos laminados de la misma pieza
+    sig: Dict[str, float] = field(default_factory=dict)   # firma de la pieza para comparar con tolerancia (caja XY, capas, altura, extrusion)
 
     @property
     def ok(self) -> bool:
@@ -160,7 +162,7 @@ def _z_top(lines: List[str], z0i: int, z1i: int) -> float:
     return top
 
 
-def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
+def warp_gcode(text: str, cfg: WarpConfig, stable: bool = False) -> WarpResult:
     if not cfg.enabled:
         raise npe.NotEnabled("El ondulador esta desactivado por defecto: activa cfg.enabled=True expresamente (experimental, sin pruebas fisicas).")
     if not (0 < cfg.amplitude <= HARD_MAX_AMPLITUDE_MM) or cfg.wavelength <= 0 or cfg.ramp <= 0 or cfg.max_seg <= 0:
@@ -344,7 +346,10 @@ def warp_gcode(text: str, cfg: WarpConfig) -> WarpResult:
     res.input_id = hashlib.sha256(text.encode()).hexdigest()[:8].upper()
     res.cfg_id = hashlib.sha256(json.dumps(asdict(cfg), sort_keys=True, default=list).encode()).hexdigest()[:8].upper()
     # El codigo une ENTRADA + AJUSTES + el TEXTO EXACTO que se exportara: si cambia el algoritmo, cambia el codigo (un codigo aceptado no vale para otro archivo).
-    res.digest = hashlib.sha256((hashlib.sha256(text.encode()).hexdigest() + json.dumps(asdict(cfg), sort_keys=True, default=list) + hashlib.sha256(full.encode()).hexdigest()).encode()).hexdigest()[:12].upper()
+    exact = hashlib.sha256((hashlib.sha256(text.encode()).hexdigest() + json.dumps(asdict(cfg), sort_keys=True, default=list) + hashlib.sha256(full.encode()).hexdigest()).encode()).hexdigest()[:12].upper()
+    res.sig = {"capas": float(len(layer_z)), "z_top": round(max(layer_z), 2), "x_min": st["x_min"], "x_max": st["x_max"], "y_min": st["y_min"], "y_max": st["y_max"], "e_in": st["e_in"]}
+    res.stable_code = hashlib.sha256((json.dumps(asdict(cfg), sort_keys=True, default=list) + "|%d|%.2f" % (len(layer_z), max(layer_z))).encode()).hexdigest()[:12].upper()
+    res.digest = res.stable_code if stable else exact
     banner = "%s A=%g L=%g IN=%g RAMP=%g CODE=%s" % (MARK, cfg.amplitude, cfg.wavelength, cfg.z_in, cfg.ramp, res.digest)
     # el banner va DESPUES de las lineas ;ARQUIS iniciales (el firmware busca su marca en los primeros 512 B)
     ls = full.split("\n")
@@ -607,6 +612,38 @@ class CuraOutcome:
     code: str = ""
 
 
+SIG_TOL_MM = 1.0        # caja XY de la pieza
+SIG_TOL_Z = 0.05        # altura de la ultima capa
+SIG_TOL_E = 0.03        # cantidad de filamento (3 %)
+
+
+def sig_mismatch(saved: Dict[str, float], cur: Dict[str, float]) -> str:
+    """'' si la pieza actual es la misma que la de la vista previa guardada (dentro de tolerancia); si no, que cambio. Dos laminados de la misma pieza
+    pueden diferir en milesimas, asi que se compara con tolerancia en vez de byte a byte."""
+    try:
+        if int(saved["capas"]) != int(cur["capas"]):
+            return "numero de capas %d -> %d" % (saved["capas"], cur["capas"])
+        if abs(saved["z_top"] - cur["z_top"]) > SIG_TOL_Z:
+            return "altura %.2f -> %.2f mm" % (saved["z_top"], cur["z_top"])
+        for k in ("x_min", "x_max", "y_min", "y_max"):
+            if abs(saved[k] - cur[k]) > SIG_TOL_MM:
+                return "posicion o tamano (%s %.1f -> %.1f mm)" % (k, saved[k], cur[k])
+        if saved["e_in"] > 0 and abs(cur["e_in"] - saved["e_in"]) / saved["e_in"] > SIG_TOL_E:
+            return "cantidad de filamento %.0f -> %.0f mm" % (saved["e_in"], cur["e_in"])
+    except (KeyError, TypeError, ValueError):
+        return "firma de la vista previa ilegible"
+    return ""
+
+
+def _read_state(path: str) -> Optional[dict]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
 def apply_for_cura(text: str, s: dict, head_path: str, out_dir: str) -> CuraOutcome:
     """Reproduce DENTRO de Cura las barreras de la linea de comandos. El ondulado solo se aplica si: el ajuste esta activado (apagado por defecto),
     no hay errores, el cabezal esta confirmado y el usuario ha escrito el CODIGO de la vista previa (que esta funcion escribe en ``out_dir``).
@@ -618,12 +655,13 @@ def apply_for_cura(text: str, s: dict, head_path: str, out_dir: str) -> CuraOutc
             head = json.load(f)["head"]
         cfg = warp_config_from_dict({"enabled": True, "amplitude": float(s["amplitude"]), "wavelength": float(s["wavelength"]), "function": str(s["function"]).strip() or "wave",
                                      "z_in": float(s["z_in"]), "ramp": float(s["ramp"]), "flat_top": bool(s["flat_top"]), "head": head})
-        res = warp_gcode(text, cfg)
+        res = warp_gcode(text, cfg, stable=True)
     except (WarpRefused, npe.NotEnabled) as e:
         return CuraOutcome(text, False, "error", "Ondulado NO aplicado (el G-code se exporta sin cambios): %s" % e)
     except Exception as e:                                           # nunca romper la exportacion
         return CuraOutcome(text, False, "error", "Ondulado NO aplicado (error interno; el G-code se exporta sin cambios): %s" % e)
     svg_path = os.path.join(out_dir, "arquis_nonplanar_vista.svg")
+    state_path = os.path.join(out_dir, "arquis_nonplanar_vista.json")
     try:
         with open(svg_path, "w", encoding="utf-8") as f:
             f.write(render_warp_preview(res))
@@ -631,12 +669,29 @@ def apply_for_cura(text: str, s: dict, head_path: str, out_dir: str) -> CuraOutc
         svg_path = "(no se pudo escribir la vista previa)"
     if not res.ok:
         return CuraOutcome(text, False, "error", "Ondulado NO aplicado (el G-code se exporta sin cambios): " + "; ".join("%s: %s" % (f.code, f.msg) for f in res.findings if f.level == "ERROR") +
-                           "\nVista previa: %s" % svg_path, res.digest)
+                           "\nVista previa: %s" % svg_path, res.stable_code)
     if not cfg.head.confirmed:
-        return CuraOutcome(text, False, "error", "Ondulado NO aplicado: el cabezal no esta confirmado.", res.digest)
-    if str(s.get("accept_code", "")).strip().upper() != res.digest:
-        return CuraOutcome(text, False, "warning", "Ondulado NO aplicado todavia (el G-code se exporta sin cambios). 1) Abre y revisa la vista previa: %s  2) Si estas de acuerdo, escribe el codigo %s en el ajuste "
-                           "'Codigo de vista previa aceptado' y exporta de nuevo SIN CAMBIAR NADA entre las dos exportaciones (ni la pieza, ni sus ajustes, ni la lista de scripts: el codigo cambia si cambia cualquier cosa).  "
-                           "Huella de la entrada: %s  |  de los ajustes: %s  (si al exportar de nuevo la huella de la entrada cambia, algo de la pieza o de los scripts cambio)." % (svg_path, res.digest, res.input_id, res.cfg_id), res.digest)
-    warns = [f.msg for f in res.findings if f.level == "WARN"]
-    return CuraOutcome(res.text, True, "warning" if warns else "info", "Ondulado APLICADO (experimental, sin pruebas fisicas). " + " | ".join(warns) + "\nVista previa: %s" % svg_path, res.digest)
+        return CuraOutcome(text, False, "error", "Ondulado NO aplicado: el cabezal no esta confirmado.", res.stable_code)
+    typed = str(s.get("accept_code", "")).strip().upper()
+    order = "" if ";ARQUIS_M486" in text else ("  AVISO DE ORDEN: este G-code aun no tiene la marca de ARQUIS M486. Si el script ARQUIS M486 va DESPUES de este, vera extrusiones con X, Y y Z a la vez y "
+                                                "avisara de que cancelar un objeto en esos tramos puede afectar a la altura (NO esta probado). Pon 'ARQUIS Ondulado no planar' el ULTIMO de la lista.")
+    why = ""
+    if typed == res.stable_code:
+        saved = _read_state(state_path)
+        if saved is None or saved.get("code") != res.stable_code:
+            why = "No hay una vista previa guardada con ese codigo (se vuelve a generar)."
+        else:
+            bad = sig_mismatch(saved.get("sig", {}), res.sig)
+            if not bad:
+                warns = [f.msg for f in res.findings if f.level == "WARN"]
+                return CuraOutcome(res.text, True, "warning" if warns else "info", "Ondulado APLICADO (experimental, sin pruebas fisicas). " + " | ".join(warns) + order + "\nVista previa: %s" % svg_path, res.stable_code)
+            why = "La pieza ha cambiado respecto a la vista previa que revisaste (%s): revisa la nueva vista previa." % bad
+    try:
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump({"code": res.stable_code, "sig": res.sig}, f)
+    except OSError:
+        pass
+    return CuraOutcome(text, False, "warning", "Ondulado NO aplicado todavia (el G-code se exporta sin cambios). %s1) Abre y revisa la vista previa: %s  2) Si estas de acuerdo, escribe el codigo %s en el ajuste "
+                       "'Codigo de vista previa aceptado' y exporta de nuevo. Puedes volver a laminar: el codigo solo cambia si cambian los ajustes del ondulado, el numero de capas o la altura de la pieza; "
+                       "si la pieza cambia de posicion, tamano o cantidad de material se te pedira revisar de nuevo.  Pieza: %d capas, altura %.2f mm.%s" %
+                       ((why + "  ") if why else "", svg_path, res.stable_code, int(res.sig["capas"]), res.sig["z_top"], order), res.stable_code)

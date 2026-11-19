@@ -319,3 +319,25 @@ def test_the_code_is_bound_to_the_exact_exported_text():
     import hashlib
     tampered = r.text.replace("G0 Z", "G0 Z ", 1)
     assert hashlib.sha256(tampered.encode()).hexdigest() != hashlib.sha256(r.text.encode()).hexdigest()
+
+
+# ---------------------------------------------------------------- orden de los scripts: el ondulado debe ir DESPUES de ARQUIS M486
+def test_warp_before_m486_does_not_block_but_degrades_object_cancellation_so_the_warp_script_goes_last():
+    """Medido (no supuesto): M486 sobre un G-code ya ondulado se inserta igual, pero avisa de que cancelar un objeto en tramos con Z 'puede afectar a la altura'."""
+    import sys
+    sys.path.insert(0, os.path.dirname(__file__))
+    from fixtures import grid_objects, instances_from, make_gcode
+    from arquis_engines.m486_engine import M486Options, process_gcode
+    objs = grid_objects(2, "A", w=20, d=20, gap=10)
+    chunks = make_gcode(objs)
+    inst = instances_from(objs)
+    cfg = wcfg(amplitude=0.5, z_in=0.3, ramp=1.0, center_x=35.0, center_y=35.0, head=npe.HeadModel(nozzle_clearance_deg=40.0, confirmed=True))
+    clean = process_gcode(chunks, inst, M486Options())
+    assert clean.status == "ok" and not [p for p in clean.problems if p.code.startswith(("W_Z", "V_Z"))]        # sobre el G-code normal: ningun aviso de Z
+    warped_first = nw.warp_gcode("".join(chunks), cfg)
+    after = process_gcode([warped_first.text], inst, M486Options())
+    codes = {p.code for p in after.problems}
+    assert after.status == "ok" and "W_Z_IN_EXTRUDING_MOVE" in codes                                        # NO bloquea, pero avisa de que la cancelacion puede afectar a la altura
+    # orden correcto: M486 primero y ondulado despues: los M486 se conservan en el archivo final
+    warped_last = nw.warp_gcode("".join(clean.chunks if hasattr(clean, "chunks") else clean.out), cfg)
+    assert warped_last.ok and "M486 S0" in warped_last.text

@@ -143,17 +143,7 @@ def test_nonplanar_script_first_export_only_writes_the_preview_and_the_code(monk
     lvl, msg = notes[-1]
     code = re.search(r"escribe el codigo ([0-9A-F]{12})", msg).group(1)
     assert lvl == "warning" and "NO aplicado todavia" in msg and "arquis_nonplanar_vista.svg" in msg and code
-    huella = re.search(r"Huella de la entrada: ([0-9A-F]{8})  \|  de los ajustes: ([0-9A-F]{8})", msg)
-    assert huella and "SIN CAMBIAR NADA" in msg
-    # misma pieza y mismos ajustes: mismo codigo y misma huella; otra entrada (p. ej. se quita un script o cambia el corte): otra huella y otro codigo
-    m2, sc2, notes2 = _np_setup(monkeypatch, tmp_path, warp_on=True)
-    sc2.execute(_cura_chunks())
-    assert re.search(r"escribe el codigo ([0-9A-F]{12})", notes2[-1][1]).group(1) == code and re.search(r"entrada: ([0-9A-F]{8})", notes2[-1][1]).group(1) == huella.group(1)
-    m3, sc3, notes3 = _np_setup(monkeypatch, tmp_path, warp_on=True)
-    other = _cura_chunks()
-    other[5] = other[5].replace("G1 F1800", "G1 F1801", 1) if "G1 F1800" in other[5] else other[5] + ";distinto\n"
-    sc3.execute(other)
-    assert re.search(r"escribe el codigo ([0-9A-F]{12})", notes3[-1][1]).group(1) != code and re.search(r"entrada: ([0-9A-F]{8})", notes3[-1][1]).group(1) != huella.group(1)
+    assert "Pieza: 24 capas" in msg and "SIN CAMBIAR NADA" not in msg and "Puedes volver a laminar" in msg                      # el mensaje ya no exige exportar identico
 
 
 def test_nonplanar_script_applies_only_with_the_right_code_and_keeps_the_header(monkeypatch, tmp_path):
@@ -203,3 +193,74 @@ def test_nonplanar_script_refuses_when_the_head_is_not_confirmed(monkeypatch, tm
     notes = []; m._notify = lambda t, l: notes.append((l, t))
     data = _cura_chunks()
     assert sc.execute(data) is data and "no esta confirmado" in notes[-1][1]
+
+
+
+# ---- el codigo sobrevive a laminados distintos de la MISMA pieza (diferencias minimas) y se invalida si la pieza cambia de verdad
+def _first_code(monkeypatch, tmp_path, data, **settings):
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, **settings)
+    out = sc.execute(data)
+    return out, re.search(r"escribe el codigo ([0-9A-F]{12})", notes[-1][1]).group(1), notes
+
+
+def _perturb(data, dx=0.003, e_scale=1.0001):
+    def fix(chunk):
+        chunk = re.sub(r"X(\d+\.?\d*)", lambda m: "X%.3f" % (float(m.group(1)) + dx), chunk)
+        return re.sub(r" E(\d+\.\d+)", lambda m: " E%.5f" % (float(m.group(1)) * e_scale), chunk)
+    return [fix(c) if c.startswith(("G0", "G1")) else c for c in data]
+
+
+def test_code_survives_a_slightly_different_slice_of_the_same_part(monkeypatch, tmp_path):
+    data = _cura_chunks()
+    _, code, _ = _first_code(monkeypatch, tmp_path, data)
+    again = _perturb(data)                                                                # otro laminado de la misma pieza: X +0,003 mm y E +0,01 %
+    assert "".join(again) != "".join(data)
+    m, ok, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    out = ok.execute(again)
+    assert out is not again and "APLICADO" in notes[-1][1] and ";ARQUIS_NP_WARP" in out[0].splitlines()[2] and code in out[0].splitlines()[2]
+
+
+def test_code_is_invalidated_when_the_part_really_changes(monkeypatch, tmp_path):
+    data = _cura_chunks()
+    _, code, _ = _first_code(monkeypatch, tmp_path, data)
+    moved = _perturb(data, dx=5.0, e_scale=1.0)                                           # la pieza se movio 5 mm: el codigo es el mismo pero hay que revisar de nuevo
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    assert sc.execute(moved) is moved and "NO aplicado todavia" in notes[-1][1] and "ha cambiado" in notes[-1][1] and "posicion o tamano" in notes[-1][1]
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    out = sc.execute(moved)                                                                 # tras revisar la nueva vista previa (mismo codigo), ahora si
+    assert out is not moved and "APLICADO" in notes[-1][1]
+    _first_code(monkeypatch, tmp_path, data)                                                # vuelve a guardarse la vista previa de la pieza original
+    more = _perturb(data, dx=0.0, e_scale=1.2)                                              # 20 % mas de filamento: tambien se pide revisar
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    assert sc.execute(more) is more and "filamento" in notes[-1][1]
+
+
+def test_code_changes_with_the_settings_and_with_the_number_of_layers_or_height(monkeypatch, tmp_path):
+    data = _cura_chunks(layers=24)
+    _, code, _ = _first_code(monkeypatch, tmp_path, data)
+    _, other_amp, _ = _first_code(monkeypatch, tmp_path, data, amplitude=1.2)
+    _, taller, _ = _first_code(monkeypatch, tmp_path, _cura_chunks(layers=30))
+    assert len({code, other_amp, taller}) == 3
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    assert sc.execute(_cura_chunks(layers=30)) is not None and "NO aplicado todavia" in notes[-1][1]       # el codigo de 24 capas no vale para 30
+
+
+def test_a_right_code_without_a_saved_preview_is_not_enough(monkeypatch, tmp_path):
+    data = _cura_chunks()
+    _, code, _ = _first_code(monkeypatch, tmp_path, data)
+    (tmp_path / "arquis_nonplanar_vista.json").unlink()                                    # nadie reviso ninguna vista previa para esta pieza
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    assert sc.execute(data) is data and "No hay una vista previa guardada" in notes[-1][1]
+    (tmp_path / "arquis_nonplanar_vista.json").write_text("no es json")
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True, accept_code=code)
+    assert sc.execute(data) is data and "NO aplicado todavia" in notes[-1][1]
+
+
+def test_script_warns_when_it_runs_before_arquis_m486(monkeypatch, tmp_path):
+    data = _cura_chunks()
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    sc.execute(data)
+    assert "AVISO DE ORDEN" not in notes[-1][1]                                           # con la marca ;ARQUIS_M486 delante: sin aviso
+    raw = [c for c in data if not c.startswith(";ARQUIS")]                                # G-code crudo de Cura: M486 aun no se ejecuto
+    m, sc, notes = _np_setup(monkeypatch, tmp_path, warp_on=True)
+    assert sc.execute(raw) is raw and "AVISO DE ORDEN" in notes[-1][1] and "ULTIMO" in notes[-1][1]
