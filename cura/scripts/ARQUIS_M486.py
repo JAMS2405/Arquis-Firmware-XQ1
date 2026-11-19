@@ -75,11 +75,13 @@ class ARQUIS_M486(Script):
                 },
                 "bed_x": {
                     "label": "Cama del firmware, ancho X",
+                    "description": "Ancho (eje X) de la cama de la impresora segun el firmware ARQUIS XQ1: 300 mm. Se compara con la cama del perfil de Cura.",
                     "type": "float", "unit": "mm", "default_value": 300, "minimum_value": "50",
                     "enabled": "emit_manifest and check_bed"
                 },
                 "bed_y": {
                     "label": "Cama del firmware, fondo Y",
+                    "description": "Fondo (eje Y) de la cama de la impresora segun el firmware ARQUIS XQ1: 300 mm. Se compara con la cama del perfil de Cura.",
                     "type": "float", "unit": "mm", "default_value": 300, "minimum_value": "50",
                     "enabled": "emit_manifest and check_bed"
                 },
