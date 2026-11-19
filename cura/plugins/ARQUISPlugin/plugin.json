@@ -1,0 +1,8 @@
+{
+    "name": "ARQUIS Slicer Suite",
+    "author": "ARQUIS",
+    "version": "0.1.0",
+    "api": 8,
+    "description": "Cancelacion de objetos con correspondencia verificada (M486) para Marlin / ARQUIS Firmware XQ1.",
+    "i18n-catalog": "cura"
+}
