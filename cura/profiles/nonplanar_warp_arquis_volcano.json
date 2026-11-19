@@ -1,0 +1,36 @@
+{
+  "_leeme": "EXPERIMENTAL. Ondulado de un G-code de Cura (capas no planas con volumen). head.confirmed sigue en false: lo cambia el propietario. Valores de ejemplo prudentes: amplitud 1 mm pico a pico, longitud de onda 20 mm, empieza a 0,8 mm y llega al maximo a los 5 mm de altura.",
+  "amplitude": 1.0,
+  "wavelength": 20.0,
+  "function": "wave",
+  "center_x": 150.0,
+  "center_y": 150.0,
+  "z_in": 0.8,
+  "ramp": 5.0,
+  "z_out": null,
+  "max_seg": 1.0,
+  "nozzle_d": 0.4,
+  "max_slope_deg": 15.0,
+  "head": {
+    "nozzle_clearance_deg": 40.0,
+    "safety_margin_deg": 5.0,
+    "envelopes": [
+      [
+        "hexagono de la boquilla",
+        3.5,
+        2.5
+      ],
+      [
+        "bloque calefactor Volcano 20x11.5 (7.3 mm medido)",
+        11.5,
+        7.3
+      ],
+      [
+        "ducto de ventilacion (a la altura del bloque; radio conservador)",
+        25.0,
+        7.3
+      ]
+    ],
+    "confirmed": false
+  }
+}

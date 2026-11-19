@@ -34,7 +34,7 @@ Un solo módulo, `cura/plugins/ARQUISPlugin/engines/nonplanar_engine.py` (Python
 | 9 | Vista previa | `render_preview` | SVG: vista superior por pendiente, perfil lateral por capas, resumen y hallazgos |
 | 10 | Exportación | `export_gcode` + `verify_gcode` | Solo con todas las barreras (§3); el texto resultante se vuelve a verificar |
 
-Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34), `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9) y `cura/tests/test_nonplanar_sheet.py` (12, lámina en espiral; ver §13).
+Herramienta: `cura/tools/nonplanar_demo.py`. Pruebas: `cura/tests/test_nonplanar.py` (34), `cura/tests/test_nonplanar_surface.py` (12, lectura de superficies; ver §9) `cura/tests/test_nonplanar_sheet.py` (12, lámina en espiral; ver §13) y `cura/tests/test_nonplanar_warp.py` (40, ondulado con volumen; ver §14).
 
 ## 3. Barreras de seguridad (todas obligatorias)
 
@@ -271,4 +271,54 @@ Sin STL, para ver el flujo: `--sheet-demo` (flor paramétrica de 13 mm de radio 
 **Limitaciones:** solo la superficie superior (2,5D); formas estrelladas; sin soportes ni borde; ancho de línea y espesor únicos; el espaciado entre vueltas varía con el radio del borde (se compensa en la extrusión, no en el ancho real); la unión entre vueltas **no está validada físicamente**; todo sin prueba en la impresora. La pendiente que admite depende de la estimación del cono (`head.nozzle_clearance_deg`).
 
 Vista previa de ejemplo: `img/nonplanar_lamina_flor_parametrica.png`.
+
+## 14. Línea principal: ondulado de un G-code normal con volumen (repositorio `makertum/non-planar-layer-fdm`)
+
+El propietario aclara (2026-11-19) lo que busca: **crear volumen** con capas no planas para que las piezas sean **más rígidas**, y aporta el repositorio `makertum/non-planar-layer-fdm`. Es una técnica distinta de la lámina en espiral (§13, que queda como utilidad secundaria): un **post-procesador** que deforma el G-code **normal** de una pieza con paredes y relleno.
+
+**La técnica** (descrita en su README; leí también su script para entenderla): trocear cada movimiento en segmentos cortos y sumar a Z una onda que crece con la altura, `z' = z + rampa(z)·f(x,y)`, compensando la extrusión según el espesor local de cada capa. La tracción entre capas (lo débil en FDM) pasa a ser esfuerzo cortante. La pieza conserva su forma en planta; las capas quedan onduladas y entrelazadas.
+
+**Licencia y autoría:** el repositorio es AGPL-3.0 (Moritz Walter, 2016). **Esta implementación es propia**: misma idea, fórmulas escritas aquí, ningún fragmento de su código copiado. Diferencia deliberada: mi onda tiene **media cero** (la suya, `−A/2 + …`, desplaza la pieza hacia abajo en promedio y comprime las capas).
+
+**Implementación:** `engines/nonplanar_warp.py` + `tools/nonplanar_warp.py` (desactivado por defecto, no conectado a Cura).
+- **Desplazamiento:** `f` = `wave` (dos senos en X e Y, pico a pico = amplitud), `radial`, o una **expresión propia** (x, y, r, A, L) evaluada con una lista blanca de nodos (el original usaba `eval` de Perl): se rechazan atributos, llamadas arbitrarias, índices y `__import__` (13 casos probados). Rampa de entrada (`z_in`, `ramp`) y, opcional, de salida (`z_out`, cara superior plana).
+- **Extrusión:** `E' = E·(1 + (dz(z) − dz(z−h))/h)`, con `h` el espesor nominal de cada capa leído del propio G-code. Funciona con E absoluta (M82, la de Cura) y relativa (M83).
+- **Respeta tu archivo:** solo toca la pieza (de `;LAYER:` a la última `;TIME_ELAPSED:`); tu inicio y tu final quedan intactos, las marcas `;ARQUIS` y el manifiesto con su CRC también, y el banner de código va después de ellas (dentro de los primeros 512 B).
+- **Al terminar la pieza** inserta una **subida segura** (`G0 Z…`, solo sube, hasta la cresta más alta + 0,5 mm) *antes* de tu final: tu `G91; G1 Z5` es relativo y habría partido de una posición ondulada más baja (detectado por una prueba: acababa 0,18 mm más bajo).
+
+**Lo que añade frente al script original** (el original no comprueba nada de esto) y que **bloquea la exportación**: pendiente máxima de la superficie (cono del cabezal), espesor de capa admisible (0,08–0,30 mm con boquilla 0,4), velocidad de Z limitada al 90 % del firmware por segmento, límites de cama y de Z, holgura frente al bloque, el ducto y el hexágono, conservación del volumen (E total ±8 %), y una **verificación independiente del texto resultante**. Además: vista previa con código, `head.confirmed`, y cero errores.
+
+**Prueba con tu G-code real** (6 piñones, 246 065 líneas, 4 mm de altura) con el perfil Volcano, amplitud 1 mm, λ 20 mm, `z_in` 0,8, rampa 2 mm [CÁLCULO]:
+
+| Medida | Resultado |
+|---|---|
+| Extrusión total | 11 851,79 → 11 851,91 mm (**+0,001 %**: el volumen se conserva) |
+| Multiplicador de E por segmento | 0,75–1,25; espesor de capa 0,18–0,30 mm (nominal 0,24) |
+| Pendiente de la superficie | 6,2° (límite efectivo 15°) |
+| Movimientos | 243 758 → 462 742 (5 % con la velocidad limitada por Z) |
+| Archivo | 7,7 → 18,3 MB; se procesa en ~7 s |
+| Holgura de cabezal usada | 0,95 mm (menor que cualquiera de las tres holguras del modelo) |
+| Verificación del texto | sin errores |
+
+La rampa de 2 mm en una pieza de 4 mm es **muy brusca** y deja el espesor en el límite (1,25×); para piezas reales usa una rampa mayor (p. ej. 5 mm en el perfil de ejemplo `profiles/nonplanar_warp_arquis_volcano.json`).
+
+**Uso:**
+```bash
+python3 cura/tools/nonplanar_warp.py --init-config warp.json
+python3 cura/tools/nonplanar_warp.py --enable-experimental --config warp.json --input pieza.gcode --preview vista.svg
+python3 cura/tools/nonplanar_warp.py --enable-experimental --config warp.json --input pieza.gcode --export pieza_ondulada.gcode --accept CODIGO
+```
+Parámetros: `amplitude` (pico a pico, mm; tope duro 4), `wavelength`, `function`, `center_x/y` (origen de la onda; por defecto el centro de la cama), `z_in`, `ramp`, `z_out`, `max_seg`, `max_slope_deg`, `head.*`. Vista previa de ejemplo: `img/nonplanar_ondulado_vista_previa.png`.
+
+**Limitaciones y riesgos (sin prueba física):**
+- **Rigidez no demostrada:** que la pieza resulte más rígida es la hipótesis del repositorio original; aquí **no se ha medido**. Haría falta imprimir probetas planas y onduladas y ensayarlas.
+- **La pieza queda deformada** (la cara superior ondula si no defines `z_out`); para piezas rectas hay que pre-deformar el diseño o usar `z_out`.
+- **Manifiesto y cancelación de objetos:** no se deforma el manifiesto ARQUIS (los estados «pendiente/imprimiendo/completado» pueden adelantarse o retrasarse hasta ~la mitad de la amplitud) y la **cancelación con `M486` no está probada con un archivo ondulado**. La cancelación visual sigue bloqueada de todos modos.
+- **Aceleración de Z:** el texto no se simula con el planificador de Marlin; la velocidad de Z sí se limita por segmento.
+- Solo G-code de Cura/Marlin con XYZ absoluto dentro de la pieza y sin arcos; se rechaza `G91`, `G92 X/Y/Z` y `G2/G3` dentro de la pieza.
+- Soportes, brim y torres también se ondulan por encima de `z_in`; las capas por debajo de `z_in` quedan planas (adherencia a la cama intacta).
+- El choque con el cabezal se calcula con el **modelo** (7,3 mm medidos; cono, hexágono y radio del ducto estimados); `head.confirmed` lo cambias tú.
+- Tamaño de archivo ×2,4 y más líneas por segundo para Marlin: **no se ha comprobado** que la lectura desde la SD y el planificador lo sostengan a tus velocidades.
+
+**Antes de imprimir:** confirma el cabezal, elige amplitud y rampa prudentes, revisa la vista previa, y haz primero una **probeta pequeña** (p. ej. un cubo de 30 mm) con el código aceptado y una primera ejecución en seco (sin filamento, mano en el paro).
 
