@@ -1,0 +1,16 @@
+{
+  "_leeme": "Perfil del cabezal ARQUIS XQ1 para AITE. Cada pieza es un par (eta, rho): altura de su punto mas bajo sobre la punta de la boquilla y distancia horizontal de ese punto al eje. Una superficie que sube hacia ese lado toca la pieza si tan(alfa) > eta/rho (informe AITE, D.10).",
+  "name": "Arquis XQ1 - Volcano + boquilla puntiaguda + conductos de capa",
+  "source": "Dos vistas acotadas del diseno real del cabezal montado en el carro X, aportadas por el propietario el 2026-11-22. Escala tomada de las propias cotas (35,55 px/mm vista frontal; 17,4 px/mm vista lateral).",
+  "single_cone": true,
+  "thermal_margin_mm": 0.0,
+  "primitives": [
+    {"name": "conducto izquierdo (vista frontal, eje X)", "eta": 8.28, "rho": 15.715, "hot": false, "basis": "cota del dibujo"},
+    {"name": "conducto derecho (vista frontal, eje X)", "eta": 8.245, "rho": 20.15, "hot": false, "basis": "cota del dibujo"},
+    {"name": "bloque calefactor con manguito, lado del riel X", "eta": 8.0, "rho": 16.13, "hot": true, "basis": "cota del dibujo"},
+    {"name": "bloque calefactor, lado opuesto al riel", "eta": 8.0, "rho": 7.9, "hot": true, "basis": "INFERIDO: supone bloque de 24 mm (20 mm + manguito); su extremo queda tapado en la vista lateral"},
+    {"name": "rueda del carro, borde cercano", "eta": 14.5, "rho": 33.5, "hot": false, "basis": "medido en pixeles sobre el dibujo"},
+    {"name": "rueda del carro, borde lejano (conservador)", "eta": 14.5, "rho": 39.6, "hot": false, "basis": "medido en pixeles sobre el dibujo; cota conservadora: supone que la superficie llega hasta la rueda"}
+  ],
+  "_pendiente": "Confirmar con calibre la altura de la rueda (14,5 mm) y la del conducto derecho (8,25 mm), que fijan el cono unico."
+}

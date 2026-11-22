@@ -11,6 +11,7 @@
 | [`07_etapa3_firmware.md`](07_etapa3_firmware.md) | Etapa 3: firmware y TS35 (rechazo M486 fuera de 0-29, lector de manifiesto, mapa y lista de 30 objetos, puerta de cancelación), pruebas por tipo, memoria antes/después, riesgos e instrucciones para tu impresora |
 | [`08_estado_proyecto.md`](08_estado_proyecto.md) | **Estado actual** frente al PROMPT MAESTRO: funciones comprobadas en la impresora, estado por etapa (implementado / simulación / físico), pendientes para cerrar la Etapa 3, mejoras futuras, próxima etapa autorizada y tabla de avance |
 | [`09_etapa5_nonplanar.md`](09_etapa5_nonplanar.md) | Etapa 5: motor no planar **experimental**, desactivado por defecto: arquitectura, barreras de seguridad, límites de tu firmware (Z 5 mm/s, 100 mm/s²), resultado del ejemplo, riesgos y cómo usarlo |
+| [`10_aite_fase1.md`](10_aite_fase1.md) | **AITE, Fase 1**: núcleo geométrico (lectores STL/3MF, detector de voladizos, solucionador de ángulo por región, perfil del cabezal y cono único, comparador de volumen). Paquete `cura/aite/`, 83 pruebas, sin G-code |
 | [`../../cura/VALIDACION_EN_CURA.md`](../../cura/VALIDACION_EN_CURA.md) | Cómo validar el plugin dentro de Cura 5.11 real (hoy: NO validado) |
 | [`06_decisiones.md`](06_decisiones.md) | Decisiones confirmadas del propietario (manifiesto, licencia, capacidad, repositorio, orientación provisional, política de cancelación visual) |
 | [`../../shared/object_protocol/ARQUIS_OBJECTS_V1.md`](../../shared/object_protocol/ARQUIS_OBJECTS_V1.md) | Especificación normativa del manifiesto y del mapa |
