@@ -3,6 +3,8 @@ enum MarlinState : uint8_t { MF_INITIALIZING = 0, MF_STOPPED, MF_KILLED, MF_RUNN
 extern MarlinState marlin_state;
 inline bool IsStopped() { return marlin_state == MF_STOPPED; }
 bool printingIsActive();
+bool printJobOngoing();
+bool IsRunning();   // MarlinCore.h real: inline bool IsRunning() { return marlin_state >= MF_RUNNING || marlin_state == MF_INITIALIZING; }
 bool printingIsPaused();
 
 class __FlashStringHelper; typedef const __FlashStringHelper* FSTR_P;

@@ -9,7 +9,7 @@ MKS="$(cd ../../../Marlin/src/lcd/extui/mks_ui && pwd)"
 T=$(mktemp -d); ./make_stub_tree.sh "$T"   # arbol con la disposicion del repositorio y las cabeceras stub
 MKS="$(cd ../../../Marlin/src/lcd/extui/mks_ui && pwd)"
 CXX=${CXX:-arm-none-eabi-g++}
-for f in arquis_data arquis_nav arquis_dashboard arquis_print arquis_objects_view arquis_ctrl_view arquis_controls arquis_tools_view arquis_tools arquis_files arquis_files_view arquis_params_view arquis_params arquis_objects arquis_objects_sd draw_cancel_object draw_print_file_arq; do
+for f in arquis_data arquis_nav arquis_dashboard arquis_print arquis_objects_view arquis_ctrl_view arquis_controls arquis_tools_view arquis_tools arquis_files arquis_files_view arquis_params_view arquis_params arquis_objects arquis_objects_sd draw_cancel_object draw_print_file_arq arquis_mesh_logic arquis_mesh_view arquis_mesh arquis_mesh_ui; do
   $CXX -mcpu=cortex-m4 -mthumb -std=gnu++17 -fno-exceptions -fno-rtti -Wall -Wextra -Wno-unused-parameter -I"$LV" -I"$T/Marlin/src/lcd/extui/mks_ui" -include stdint.h \
        -fsyntax-only "$T/Marlin/src/lcd/extui/mks_ui/$f.cpp" && echo "OK  $f.cpp compila contra las firmas de Marlin"
 done

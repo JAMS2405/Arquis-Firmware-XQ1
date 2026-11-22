@@ -151,3 +151,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 - Nuevo `herramientas/arquis_ui/empaquetar_entrega.py`: arma `Arquis-XQ1_UI_v1.0.0` (firmware, `assets`, `LEEME.txt`, `SHA256SUMS.txt`) y el `.zip`; comprueba tamaño del `.bin`, logo, fuente y recursos que pide `pic_manager.cpp`.
 - Documentación de entrega: `docs/arquis/ENTREGA_v1.0.0.md` (notas de versión, evidencia de lo no modificado, limitaciones), `GUIA_INSTALACION.md`, `GUIA_USUARIO.md`, `LISTA_VERIFICACION.md`; README actualizado.
 - Evidencia: fuera de la carpeta de la interfaz, el único archivo de Marlin modificado respecto a `main` es `Configuration.h` (`ARQUIS_UI` activado, `ARQUIS_TFT_BYTE_SWAP` desactivado).
+
+
+## Nivelación manual de cama 5×5 (sin sonda)
+Malla bilineal 5×5 medida con papel desde la TS35 (Herramientas → Malla 5x5), guardada con M500 y activada tras cada G28 (`ENABLE_LEVELING_AFTER_G28`). Ver `docs/arquis/MALLA_5x5.md`. **Aviso:** cambiar la malla de 3×3 a 5×5 cambia el tamaño de la EEPROM: la primera vez tras flashear Marlin la descarta y vuelve a los valores de fábrica (guarda `M503` antes).

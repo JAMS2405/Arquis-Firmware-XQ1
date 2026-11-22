@@ -1511,11 +1511,15 @@
  *     |    [-]    |
  *     O-- FRONT --+
  */
-#define NOZZLE_TO_PROBE_OFFSET { 10, 10, 0 }
+// Arquis: SIN sonda fisica (PROBE_MANUALLY). La boquilla ES el punto de medicion, asi que no hay desplazamiento.
+#define NOZZLE_TO_PROBE_OFFSET { 0, 0, 0 }
 
 // Most probes should stay away from the edges of the bed, but
 // with NOZZLE_AS_PROBE this can be negative for a wider probing area.
-#define PROBING_MARGIN 10
+// Arquis: margen de la malla manual 5x5 respecto a los bordes de la cama (clips / bordes no imprimibles).
+// Los 25 puntos se reparten uniformemente entre PROBING_MARGIN y (X|Y)_BED_SIZE - PROBING_MARGIN (300 mm -> 15..285 mm, paso 67,5 mm).
+// (MESH_INSET solo aplica a MBL/UBL; en AUTO_BED_LEVELING_BILINEAR el area de la malla la fija PROBING_MARGIN.)
+#define PROBING_MARGIN 15
 
 // X and Y axis travel speed (mm/min) between probes
 #define XY_PROBE_FEEDRATE (133*60)
@@ -1921,7 +1925,10 @@
  * leveling immediately after G28.
  */
 //#define RESTORE_LEVELING_AFTER_G28
-//#define ENABLE_LEVELING_AFTER_G28
+// Arquis: en AUTO_BED_LEVELING_BILINEAR Marlin NO guarda en la EEPROM si la compensacion estaba activa (solo la malla), asi que tras
+// reiniciar queda DESACTIVADA. RESTORE_LEVELING_AFTER_G28 no sirve (restauraria 'desactivada'); se usa ENABLE_LEVELING_AFTER_G28:
+// tras cada G28 la compensacion se activa SI hay una malla valida (si no la hay, Marlin no la activa). 'G28 L0' homea sin activarla.
+#define ENABLE_LEVELING_AFTER_G28
 
 /**
  * Auto-leveling needs preheating
@@ -1950,7 +1957,10 @@
 
 #if ANY(MESH_BED_LEVELING, AUTO_BED_LEVELING_UBL, PROBE_MANUALLY)
   // Set a height for the start of manual adjustment
-  #define MANUAL_PROBE_START_Z 0.2  // (mm) Comment out to use the last-measured height
+  // Arquis: altura (Z absoluta) a la que el asistente deja la boquilla en el PRIMER punto, antes de bajar con el papel.
+  // Alta a proposito: la cama puede estar hasta ~1 mm por encima de la referencia. Los puntos siguientes parten de la ultima
+  // medicion + 0,6 mm (nunca por encima de este valor): ver arquis_mesh_logic.h.
+  #define MANUAL_PROBE_START_Z 1.0  // (mm) Comment out to use the last-measured height
 #endif
 
 #if ANY(MESH_BED_LEVELING, AUTO_BED_LEVELING_BILINEAR, AUTO_BED_LEVELING_UBL)
@@ -1991,7 +2001,9 @@
 #if EITHER(AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_BILINEAR)
 
   // Set the number of grid points per dimension.
-  #define GRID_MAX_POINTS_X 3
+  // Arquis: malla 5x5 (25 puntos) medida a mano con papel. ATENCION: cambiar el tamano de la malla cambia el tamano de los datos
+  // de la EEPROM: tras flashear, Marlin descarta la EEPROM antigua y arranca con los valores de fabrica (ver docs/arquis/MALLA_5x5.md).
+  #define GRID_MAX_POINTS_X 5
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
 
   // Probe along the Y axis, advancing X after each column

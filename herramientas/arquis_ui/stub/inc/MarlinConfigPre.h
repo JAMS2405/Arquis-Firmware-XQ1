@@ -66,3 +66,14 @@ char *dtostrf(double, signed char, unsigned char, char *);
 #define Y_MIN_POS 0
 #define X_MAX_POS 220
 #define Y_MAX_POS 220
+// --- nivelacion manual 5x5 (arquis_mesh*.cpp): valores de la configuracion del XQ1 ---
+#define ENA_PROBE_MANUALLY 1
+#define ENA_ENABLE_LEVELING_AFTER_G28 1
+#define ENA_ENABLE_LEVELING_FADE_HEIGHT 1
+#define ANY(A,B) (ENABLED(A) || ENABLED(B))
+#define BED_MAX_TARGET 140
+#define XY_PROBE_FEEDRATE (133*60)
+#define Z_CLEARANCE_BETWEEN_PROBES 5
+#define MANUAL_PROBE_START_Z 1.0
+typedef uint32_t millis_t;
+#define SEC_TO_MS(N) millis_t((N)*1000UL)

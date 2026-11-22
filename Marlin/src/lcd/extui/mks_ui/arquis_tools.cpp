@@ -27,6 +27,7 @@
 #include "arquis_tools.h"
 #include "arquis_ctrl_view.h"
 #include "arquis_tools_view.h"
+#include "arquis_mesh_ui.h"
 #include "draw_ui.h"
 
 #include "../../../inc/MarlinConfig.h"
@@ -100,7 +101,7 @@ static void tools_dialog_cb(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   const int id = obj->mks_obj_id;
   arq_dialog_close();
-  #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+  #if ENABLED(AUTO_BED_LEVELING_BILINEAR) && !ARQ_HAS_MESH    // con malla manual 5x5 no se inyecta nunca el G29 guardado (no hay sonda)
     if (id == DLG_LVL_OK) {             // misma secuencia que ID_T_LEVELING de draw_tool.cpp
       get_gcode_command(AUTO_LEVELING_COMMAND_ADDR, (uint8_t *)public_buf_m);
       public_buf_m[sizeof(public_buf_m) - 1] = 0;
@@ -120,10 +121,14 @@ static void tools_cb(lv_obj_t *obj, lv_event_t event) {
     case T_EXTRUDE:      arq_tools_clear(); lv_draw_extrusion(); break;
     case T_MOVE:         arq_tools_clear(); lv_draw_move_motor(); break;
     case T_HOME:         arq_tools_clear(); lv_draw_home(); break;
+    #if ARQ_HAS_MESH
+    case T_LEVEL_AUTO:   arq_tools_clear(); arq_mesh_draw(); break;     // asistente de malla manual 5x5 (arquis_mesh_ui.cpp)
+    #else
     case T_LEVEL_AUTO:   // mueve la maquina de forma amplia (el comando guardado en la placa): se pide confirmacion
       arq_dialog_open("Nivelaci\xC3\xB3n autom\xC3\xA1tica", "El cabezal recorrer\xC3\xA1 la cama sondeando puntos. Retira cualquier objeto de la cama y comprueba que el hotend est\xC3\xA1 limpio.",
                       "Iniciar", "Volver", false, tools_dialog_cb, DLG_LVL_OK, DLG_LVL_NO);
       break;
+    #endif
     case T_LEVEL_MANUAL: uiCfg.leveling_first_time = true; arq_tools_clear(); lv_draw_manualLevel(); break;
     case T_FILAMENT:
       uiCfg.hotendTargetTempBak = thermalManager.degTargetHotend(uiCfg.extruderIndex);
@@ -140,7 +145,11 @@ void arq_tools_draw() {
   grid_tools.add(T_MOVE, &arq_icon_move, "Mover");
   grid_tools.add(T_HOME, &arq_icon_home, "Home");
   #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
-    grid_tools.add(T_LEVEL_AUTO, &arq_icon_level, "Nivel. auto");
+    #if ARQ_HAS_MESH
+      grid_tools.add(T_LEVEL_AUTO, &arq_icon_level, "Malla 5x5");     // nivelacion manual con papel (sin sonda)
+    #else
+      grid_tools.add(T_LEVEL_AUTO, &arq_icon_level, "Nivel. auto");
+    #endif
   #endif
   grid_tools.add(T_LEVEL_MANUAL, &arq_icon_level, "Nivelar cama");
   grid_tools.add(T_FILAMENT, &arq_icon_filament, "Filamento");
@@ -299,6 +308,9 @@ static void about_fill() {
   #endif
   #if HAS_MEDIA
     add_r("Tarjeta SD", card.isMounted() ? "Montada" : "Sin tarjeta", card.isMounted() ? ARQ_TINT_OK : ARQ_TINT_MUTED);
+  #endif
+  #if ARQ_HAS_MESH
+    add_r("Malla de cama", arq_mesh_is_leveling_on() ? "Activa" : (arq_mesh_is_valid() ? "Inactiva" : "Sin malla"), arq_mesh_is_leveling_on() ? ARQ_TINT_OK : (arq_mesh_is_valid() ? ARQ_TINT_WARN : ARQ_TINT_MUTED));
   #endif
   add_r("Marlin", (IsStopped() || marlin_state == MF_KILLED) ? "Detenido" : "Normal", (IsStopped() || marlin_state == MF_KILLED) ? ARQ_TINT_DANGER : ARQ_TINT_OK);
   r.n = n;
@@ -469,7 +481,11 @@ static void level_cb(lv_obj_t *obj, lv_event_t event) {
   if (id >= ARQ_LID_P1 && id <= ARQ_LID_P5 && queue.ring_buffer.empty()) {         // como ID_M_POINT1..5: solo con la cola vacia
     if (uiCfg.leveling_first_time) {
       uiCfg.leveling_first_time = false;
-      queue.inject_P(G28_STR);
+      #if ANY(ENABLE_LEVELING_AFTER_G28, RESTORE_LEVELING_AFTER_G28)
+        queue.inject(F("G28L0"));       // Arquis: ENABLE_LEVELING_AFTER_G28 activaria la malla; los tornillos se ajustan SIN compensacion
+      #else
+        queue.inject_P(G28_STR);
+      #endif
     }
     const int ind = id - ARQ_LID_P1;
     sprintf_P(public_buf_l, PSTR("G1Z10\nG1X%dY%d\nG1Z0"), gCfgItems.trammingPos[ind].x, gCfgItems.trammingPos[ind].y);

@@ -45,6 +45,7 @@
   #include "arquis_files.h"
   #include "arquis_params.h"
   #include "arquis_params_view.h"
+  #include "arquis_mesh_ui.h"
   static bool arq_pscr;   // la pantalla actual es una de parametros: sus filas y botones se dibujan con la lista ARQUIS
 #endif
 
@@ -753,6 +754,9 @@ void print_time_run() {
 void GUI_RefreshPage() {
   #if ENABLED(ARQUIS_UI)
     arq_print_poll();   // fin de impresion desde cualquier pantalla (ver arquis_print.cpp)
+    #if ARQ_HAS_MESH
+      arq_mesh_poll();  // nivelacion manual 5x5: avanza la sesion (y la termina con seguridad) aunque su pantalla no este visible
+    #endif
     arq_files_poll();   // miniatura de la confirmacion de "Imprimir archivo" (ver arquis_files.cpp)
   #endif
   if ((systick_uptime_millis % 1000) == 0) temps_update_flag = true;
@@ -841,7 +845,7 @@ void GUI_RefreshPage() {
       filament_dialog_handle();
       TERN_(MKS_WIFI_MODULE, wifi_scan_handle());
       break;
-    case MESHLEVELING_UI: break;
+    case MESHLEVELING_UI: break;       // se refresca con su propia tarea LVGL (arquis_mesh_ui.cpp)
     case HARDWARE_TEST_UI: break;
     case WIFI_LIST_UI:
       #if ENABLED(MKS_WIFI_MODULE)
@@ -957,7 +961,11 @@ void clear_cur_ui() {
       case NOZZLE_PROBE_OFFSET_UI:    lv_clear_auto_level_offset_settings(); break;
     #endif
     case TOOL_UI:                     lv_clear_tool(); break;
-    case MESHLEVELING_UI:             break;
+    #if ARQ_HAS_MESH
+      case MESHLEVELING_UI:           arq_mesh_clear(); break;
+    #else
+      case MESHLEVELING_UI:           break;
+    #endif
     case HARDWARE_TEST_UI:            break;
     #if ENABLED(MKS_WIFI_MODULE)
       case WIFI_LIST_UI:              lv_clear_wifi_list(); break;
@@ -1070,7 +1078,11 @@ void draw_return_ui() {
       #endif
       case TOOL_UI:                     lv_draw_tool(); break;
       case GCODE_UI:                    lv_draw_gcode(); break;
-      case MESHLEVELING_UI:             break;
+      #if ARQ_HAS_MESH
+        case MESHLEVELING_UI:           arq_mesh_draw(); break;
+      #else
+        case MESHLEVELING_UI:           break;
+      #endif
       case HARDWARE_TEST_UI:            break;
       #if ENABLED(MKS_WIFI_MODULE)
         case WIFI_LIST_UI:              lv_draw_wifi_list(); break;
