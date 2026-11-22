@@ -21,6 +21,7 @@
  */
 
 #include "arquis_logic.h"
+#include <math.h>
 
 #include <stdio.h>
 
@@ -79,3 +80,22 @@ bool arq_finish_detect(arq_finish_state_t *st, const arq_finish_in_t *in) {
 
 bool arq_finish_new_job(bool file_open, bool sd_done) { return file_open && !sd_done; }
 
+// ---- Velocidad real del cabezal ----------------------------------------------------------------------------------------------------
+void arq_speed_reset(arq_speed_t *s) { s->have = false; s->t_ms = 0; s->x = s->y = 0; s->cur = s->peak = 0; }
+
+void arq_speed_sample(arq_speed_t *s, uint32_t now_ms, float x, float y) {
+  if (!(x == x) || !(y == y)) return;                              // NaN: no se mide
+  if (!s->have) { s->have = true; s->t_ms = now_ms; s->x = x; s->y = y; return; }
+  const uint32_t dt = now_ms - s->t_ms;                            // aritmetica sin signo: vale aunque el contador de ms desborde
+  if (dt < ARQ_SPEED_WINDOW_MS) return;
+  const float dx = x - s->x, dy = y - s->y;
+  const float v = sqrtf(dx * dx + dy * dy) * 1000.0f / (float)dt;
+  s->t_ms = now_ms; s->x = x; s->y = y;
+  if (!(v <= ARQ_SPEED_JUMP_MMS)) return;                          // salto de posicion (o NaN): no es velocidad
+  s->cur = 0.5f * s->cur + 0.5f * v;                               // suavizado: la cifra no salta de una lectura a otra
+  if (v > s->peak) s->peak = v;
+}
+
+static uint16_t speed_u16(float v) { return v <= 0 ? 0 : v >= 9999.0f ? 9999 : (uint16_t)(v + 0.5f); }
+uint16_t arq_speed_cur_mms(const arq_speed_t *s)  { return speed_u16(s->cur); }
+uint16_t arq_speed_peak_mms(const arq_speed_t *s) { return speed_u16(s->peak); }

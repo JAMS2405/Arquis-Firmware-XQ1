@@ -45,6 +45,8 @@ typedef struct {
   uint32_t     elapsed_s;    // tiempo de impresion de Marlin (print_job_timer)
   uint32_t     remaining_s;  // 0 = desconocido (no se inventa)
   int32_t      z_cmm;        // altura Z actual en centesimas de mm (current_position.z, el mismo valor que muestra la interfaz original)
+  uint16_t     speed_mms;    // velocidad real del cabezal en XY (mm/s), solo durante una impresion; 0 si esta quieto
+  uint16_t     peak_mms;     // velocidad maxima alcanzada en esta impresion (mm/s)
   char         file[44];
 } arq_snapshot_t;
 
@@ -54,3 +56,4 @@ static inline bool arq_snapshot_equal(const arq_snapshot_t *a, const arq_snapsho
 // Lectura real (arquis_data.cpp): solo se enlaza dentro de Marlin; el simulador de PC no la usa.
 void arq_data_read(arq_snapshot_t *s);   // rellena el snapshot con los valores actuales de Marlin
 bool arq_data_job_active();              // imprimiendo o en pausa
+void arq_data_speed_poll();              // medir la velocidad real del cabezal; llamar en cada pasada del bucle de la pantalla (arq_print_poll)

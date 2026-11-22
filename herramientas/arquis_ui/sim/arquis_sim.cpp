@@ -86,7 +86,7 @@ static arq_snapshot_t make(arq_pstate_t st) {
     case ARQ_PS_COOLING: s.hot.cur = 118; s.hot.tgt = 0; s.bed.cur = 41; s.bed.tgt = 0; s.fan[0].pct = 100; break;
     case ARQ_PS_PRINTING: case ARQ_PS_PAUSED:
       s.hot.cur = 209; s.hot.tgt = 210; s.bed.cur = 60; s.bed.tgt = 60; s.fan[0].pct = 85; s.fan[1].pct = 40;
-      s.job = s.sd_job = true; s.pct = 62; s.elapsed_s = 2 * 3600 + 15 * 60; s.remaining_s = arq_remaining_s(s.elapsed_s, s.pct);
+      s.job = s.sd_job = true; s.pct = 62; s.speed_mms = 87; s.peak_mms = 214; s.elapsed_s = 2 * 3600 + 15 * 60; s.remaining_s = arq_remaining_s(s.elapsed_s, s.pct);
       strcpy(s.file, "soporte_motor_nema17_v3_final.gcode");
       if (st == ARQ_PS_PAUSED) { s.hot.cur = 205; s.fan[0].pct = 0; }
       break;

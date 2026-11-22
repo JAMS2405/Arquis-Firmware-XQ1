@@ -204,6 +204,7 @@ static void show_finish() {
 bool arq_print_dialog_open() { return arq_dialog_is_open(); }
 
 void arq_print_poll() {
+  arq_data_speed_poll();                            // velocidad real del cabezal: se muestrea en cada pasada (no solo cada segundo)
   #if HAS_MEDIA
     if (card.isFileOpen()) {                          // recordar el nombre: al terminar el archivo ya esta cerrado
       const char *n = card.longest_filename();

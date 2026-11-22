@@ -88,3 +88,21 @@ bool arq_finish_detect(arq_finish_state_t *st, const arq_finish_in_t *in);
 // true = una impresion NUEVA ha empezado mientras el aviso estaba aplazado (archivo abierto y sin haber terminado): hay que descartarlo.
 bool arq_finish_new_job(bool file_open, bool sd_done);
 
+// ---- Velocidad real del cabezal (funciones puras; las usa arquis_data.cpp) ------------------------------------------------------------
+// Se calcula derivando la posicion REAL de X e Y (la de los pasos ya ejecutados, no la de la cola) entre dos muestras: es la velocidad a la
+// que se mueve el cabezal de verdad, no la que pide el G-code. Se promedia en ventanas de ARQ_SPEED_WINDOW_MS como minimo.
+#define ARQ_SPEED_WINDOW_MS  150UL      // tiempo minimo entre dos muestras
+#define ARQ_SPEED_JUMP_MMS   1000.0f    // por encima es un salto de posicion (G92, home...), no un movimiento: se ignora
+
+typedef struct {
+  bool     have;                        // hay una muestra anterior
+  uint32_t t_ms;
+  float    x, y;                      // posicion de la muestra anterior (mm)
+  float    cur;                       // velocidad actual suavizada (mm/s)
+  float    peak;                      // velocidad maxima alcanzada desde el ultimo reset (mm/s)
+} arq_speed_t;
+
+void     arq_speed_reset(arq_speed_t *s);                                            // empieza de cero (nueva impresion / sin impresion)
+void     arq_speed_sample(arq_speed_t *s, uint32_t now_ms, float x, float y);        // llamar a menudo; solo calcula si pasaron >= ARQ_SPEED_WINDOW_MS
+uint16_t arq_speed_cur_mms(const arq_speed_t *s);                                    // redondeado, 0..9999
+uint16_t arq_speed_peak_mms(const arq_speed_t *s);

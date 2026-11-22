@@ -102,11 +102,13 @@ void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n);
 
 // Lista de datos (ARQ_LAYOUT_LIST): el llamador conserva el arreglo de filas
 typedef struct { const char *label; char v1[16]; char v2[10]; uint8_t dot; } arq_list_row_t;   // dot: arq_tint_t (ARQ_TINT_AUTO = sin punto)
-#define ARQ_LIST_ROWS_MAX 4          // filas de la lista de la supervision (altura fija de su tarjeta)
+#define ARQ_LIST_ROWS_MAX 5          // filas de la lista de la supervision (altura fija de su tarjeta; usa filas compactas)
 #define ARQ_LIST_DRAW_MAX 8          // filas que puede dibujar cualquier lista
 #define ARQ_LIST_ROW_H    22
+#define ARQ_LIST_ROW_H_COMPACT 18    // paso de fila con arq_card_set_compact()
 #define ARQ_LIST_PAD      6
 void arq_card_set_rows(lv_obj_t *c, arq_list_row_t *rows, uint8_t n);
+void arq_card_set_compact(lv_obj_t *c, bool compact);        // ARQ_LAYOUT_LIST: filas de ARQ_LIST_ROW_H_COMPACT en vez de ARQ_LIST_ROW_H
 
 // Dialogo de confirmacion (modal, sobre la capa superior). Solo uno abierto a la vez: 4 objetos (3 si es informativo), se liberan al cerrar.
 // cancel_text == nullptr -> dialogo informativo con un solo boton (ok_text).

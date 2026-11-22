@@ -32,6 +32,7 @@
 #include "../../../module/temperature.h"
 #include "../../../module/printcounter.h"
 #include "../../../module/motion.h"
+#include "../../../module/planner.h"
 #include "../../../sd/cardreader.h"
 
 #include <string.h>
@@ -61,6 +62,14 @@ static uint8_t job_percent() {
 
 bool arq_data_job_active() { return printingIsActive() || printingIsPaused(); }
 
+// Velocidad real: posicion de X e Y segun los pasos YA EJECUTADOS por el stepper (planner.get_axis_position_mm, la misma que usa M114 D),
+// derivada en el tiempo. Solo se mide durante una impresion; al terminar se pone a cero y la siguiente empieza con el maximo en cero.
+static arq_speed_t speed;
+void arq_data_speed_poll() {
+  if (!arq_data_job_active()) { if (speed.have || speed.peak > 0) arq_speed_reset(&speed); return; }
+  arq_speed_sample(&speed, (uint32_t)millis(), planner.get_axis_position_mm(X_AXIS), planner.get_axis_position_mm(Y_AXIS));
+}
+
 void arq_data_read(arq_snapshot_t *s) {
   memset(s, 0, sizeof(*s));                                  // incluye el relleno: permite comparar con memcmp
 
@@ -87,6 +96,8 @@ void arq_data_read(arq_snapshot_t *s) {
       s->fan[s->fan_n++] = { ARQ_FAN_AUX, f, (uint8_t)thermalManager.fanSpeedPercent(f) };
   #endif
 
+  s->speed_mms = arq_speed_cur_mms(&speed);
+  s->peak_mms  = arq_speed_peak_mms(&speed);
   s->z_cmm = (int32_t)(current_position.z * 100.0f + (current_position.z >= 0 ? 0.5f : -0.5f));
 
   // --- Estado de impresion (funciones reales de Marlin) ---

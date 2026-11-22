@@ -32,7 +32,7 @@
 #define JOB_Y    40
 #define JOB_H    96
 #define LIST_Y   (JOB_Y + JOB_H + ARQ_GAP)
-#define LIST_H   (ARQ_LIST_PAD + ARQ_LIST_ROWS_MAX * ARQ_LIST_ROW_H)
+#define LIST_H   (ARQ_LIST_PAD + ARQ_LIST_ROWS_MAX * ARQ_LIST_ROW_H_COMPACT)
 #define BTN_Y    246
 #define BTN_H    (ARQ_H - ARQ_MARGIN - BTN_Y)
 #define HOME_W   100
@@ -67,6 +67,7 @@ void arq_print_build(lv_obj_t *scr, lv_event_cb_t cb, const char *machine_name, 
   arq_card_set_value2(job, l1_txt);
   arq_card_set_sub(job, l2_txt, ARQ_TEXT_MUTED);
   list = arq_card_create(scr, COL_X, LIST_Y, COL_W, LIST_H, ARQ_LAYOUT_LIST, ARQ_BTN_SECONDARY, nullptr, 0);
+  arq_card_set_compact(list, true);                                   // 5 filas compactas: caben hotend, cama, ventilador, velocidad y Z
 
   // Botones de accion (fila inferior, a todo el ancho, como los accesos del Dashboard: icono arriba y texto debajo)
   const uint8_t n = with_objects ? 4 : 3;
@@ -138,6 +139,12 @@ void arq_print_update(const arq_snapshot_t *s, arq_pmode_t mode) {
   if (s->fan_n && n < ARQ_LIST_ROWS_MAX) {
     char v[10]; snprintf(v, sizeof(v), "%u%%", (unsigned)s->fan[0].pct);
     set_row(rows[n++], "Ventilador", v, "", s->fan[0].pct ? ARQ_TINT_OK : ARQ_TINT_MUTED);
+  }
+  if (s->job && n < ARQ_LIST_ROWS_MAX) {                             // velocidad REAL del cabezal (XY) y maxima alcanzada en esta impresion
+    char v[16], m[10];
+    snprintf(v, sizeof(v), "%u mm/s", (unsigned)s->speed_mms);
+    snprintf(m, sizeof(m), "m\xC3\xA1x %u", (unsigned)s->peak_mms);
+    set_row(rows[n++], "Veloc.", v, m, s->speed_mms ? ARQ_TINT_ACCENT : ARQ_TINT_MUTED);
   }
   if (n < ARQ_LIST_ROWS_MAX) {
     char v[16]; int32_t z = s->z_cmm < 0 ? -s->z_cmm : s->z_cmm;

@@ -39,6 +39,7 @@ typedef struct {
 #define F_DISABLED 0x04
 #define F_SELECTED 0x08
 #define F_BAR      0x10
+#define F_COMPACT  0x20   // lista con filas mas juntas (ARQ_LIST_ROW_H_COMPACT): cabe una fila mas
 
 static bool focus_ring_visible;   // el anillo de foco solo se ve cuando la perilla mueve el foco (con uso tactil no debe verse)
 
@@ -190,11 +191,12 @@ static void draw_list(const lv_area_t *mask, const arq_card_ext_t *e, const lv_a
   lv_draw_rect(&a, mask, arq_style_panel(), LV_OPA_COVER);
   const lv_coord_t top = (e->title && e->title[0]) ? 26 : 0;       // titulo opcional sobre las filas
   if (top) draw_text(mask, x0 + 12, y0 + 6, e->title, arq_style_text((arq_text_t)e->title_role));
+  const lv_coord_t pitch = (e->flags & F_COMPACT) ? ARQ_LIST_ROW_H_COMPACT : ARQ_LIST_ROW_H;
   bool any_dot = false;                                              // sin puntos de estado, las etiquetas se alinean al borde
   for (uint8_t i = 0; i < e->nrows && i < ARQ_LIST_DRAW_MAX; ++i) if (e->rows[i].dot != ARQ_TINT_AUTO) any_dot = true;
   for (uint8_t i = 0; i < e->nrows && i < ARQ_LIST_DRAW_MAX; ++i) {
     const arq_list_row_t &r = e->rows[i];
-    const lv_coord_t ry = y0 + ARQ_LIST_PAD + top + i * ARQ_LIST_ROW_H;
+    const lv_coord_t ry = y0 + ARQ_LIST_PAD + top + i * pitch;
     if (r.dot != ARQ_TINT_AUTO) draw_dot(mask, x0 + 17, ry + 9, 4, (arq_tint_t)r.dot);
     draw_text(mask, x0 + (any_dot ? 32 : 12), ry, r.label, arq_style_text(ARQ_TEXT_MUTED));
     lv_coord_t rx = x0 + w - 14;
@@ -375,6 +377,7 @@ void arq_card_set_logo(lv_obj_t *c, bool s)                       { NN(c) arq_ca
 void arq_card_set_fans(lv_obj_t *c, arq_fan_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->fans = rows; upd<uint8_t>(c, e->nfans, n); lv_obj_invalidate(c); }
 void arq_card_set_rows(lv_obj_t *c, arq_list_row_t *rows, uint8_t n) { NN(c) arq_card_ext_t *e = ext(c); e->rows = rows; e->nrows = n; lv_obj_invalidate(c); }
 void arq_card_set_selected(lv_obj_t *c, bool v)                   { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = v ? (e->flags | F_SELECTED) : (e->flags & ~F_SELECTED); upd<uint8_t>(c, e->flags, f); }
+void arq_card_set_compact(lv_obj_t *c, bool v)                    { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = v ? (e->flags | F_COMPACT) : (e->flags & ~F_COMPACT); upd<uint8_t>(c, e->flags, f); }
 void arq_card_set_show_bar(lv_obj_t *c, bool v)                   { NN(c) arq_card_ext_t *e = ext(c); const uint8_t f = v ? (e->flags | F_BAR) : (e->flags & ~F_BAR); upd<uint8_t>(c, e->flags, f); }
 void arq_card_set_kind(lv_obj_t *c, arq_btn_kind_t k)             { NN(c) upd<uint8_t>(c, ext(c)->kind, (uint8_t)k); }
 void arq_card_refresh(lv_obj_t *c)                                { NN(c) lv_obj_invalidate(c); }

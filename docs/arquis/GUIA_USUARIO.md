@@ -30,7 +30,7 @@ Recorrido por la pantalla táctil de la **Arquis XQ1**. (Las capturas son de la 
 
 ## 3. Durante la impresión
 ![Supervisión](ui/print_1_imprimiendo_x2.png)
-- Muestra el **progreso**, el tiempo transcurrido y restante (solo cuando hay datos suficientes para estimarlo), la altura Z, las temperaturas y los ventiladores.
+- Muestra el **progreso**, el tiempo transcurrido y restante (solo cuando hay datos suficientes para estimarlo), la altura Z, las temperaturas, los ventiladores y la **velocidad real del cabezal** (*Veloc.*: la actual en mm/s y la máxima alcanzada en esa impresión). Esa velocidad se mide con la posición real de X e Y (pasos ya ejecutados), no con la que pide el G-code; se promedia en ventanas de 0,15 s, así que un tramo muy corto puede no llegar a verse. La máxima se pone a cero al empezar cada impresión.
 - **Pausar / Reanudar:** el botón refleja el estado real. **Inicio** vuelve al Dashboard sin detener nada; desde allí, la tarjeta de avance regresa a la supervisión. Durante una impresión *Herram.* se oculta y *Mover* y *Ajustes* están deshabilitados (para no estropear la pieza).
 - **Cancelar** siempre pide confirmación:
 

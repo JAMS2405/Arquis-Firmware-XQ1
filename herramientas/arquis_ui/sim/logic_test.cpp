@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "arquis_logic.h"
+#include <math.h>
 static int fails = 0, total = 0;
 #define EXPECT(c, ...) do { ++total; if (!(c)) { ++fails; printf("FALLA  "); printf(__VA_ARGS__); printf("\n"); } } while (0)
 static arq_pstate_t st(bool stopped, bool paused, bool printing, int hc, int ht, int bc, int bt) {
@@ -113,6 +114,37 @@ int main() {
   EXPECT(!arq_finish_new_job(false, true), "terminada y archivo cerrado: el aviso sigue valido");
   EXPECT(!arq_finish_new_job(false, false), "tras M1001 (todo limpio): el aviso sigue valido");
   EXPECT(!arq_finish_new_job(true, true), "archivo abierto pero ya marcado como terminado: no es nueva");
+
+  // ---- Velocidad real del cabezal ----
+  {
+    arq_speed_t v; arq_speed_reset(&v);
+    arq_speed_sample(&v, 1000, 100, 100);                                   // primera muestra: solo guarda
+    EXPECT(arq_speed_cur_mms(&v) == 0 && arq_speed_peak_mms(&v) == 0, "velocidad: sin segunda muestra no hay valor");
+    arq_speed_sample(&v, 1100, 110, 100);                                   // 100 ms < ventana: se ignora
+    EXPECT(arq_speed_peak_mms(&v) == 0, "velocidad: menos de 150 ms no se calcula");
+    arq_speed_sample(&v, 1200, 120, 100);                                   // 20 mm en 200 ms = 100 mm/s
+    EXPECT(arq_speed_peak_mms(&v) == 100, "velocidad: 20 mm en 200 ms = 100 mm/s (maximo)");
+    EXPECT(arq_speed_cur_mms(&v) == 50, "velocidad: la actual esta suavizada (mitad en la primera ventana)");
+    arq_speed_sample(&v, 1400, 140, 100);                                   // otros 100 mm/s
+    EXPECT(arq_speed_cur_mms(&v) == 75, "velocidad: sigue subiendo hacia 100 (suavizado)");
+    arq_speed_sample(&v, 1600, 140, 100);                                   // quieto
+    EXPECT(arq_speed_cur_mms(&v) == 38 && arq_speed_peak_mms(&v) == 100, "velocidad: al parar baja y el maximo se conserva");
+    for (uint32_t t = 1800; t <= 3400; t += 200) arq_speed_sample(&v, t, 140, 100);
+    EXPECT(arq_speed_cur_mms(&v) == 0, "velocidad: quieto un rato = 0 mm/s");
+    arq_speed_sample(&v, 3600, 5140, 100);                                // salto de 5000 mm en 200 ms = 25000 mm/s: no es velocidad
+    EXPECT(arq_speed_peak_mms(&v) == 100, "velocidad: un salto de posicion (G92, home) se ignora");
+    arq_speed_sample(&v, 3800, 5140 + 40, 100);                              // 40 mm en 200 ms tras el salto = 200 mm/s: ya vale
+    EXPECT(arq_speed_peak_mms(&v) == 200, "velocidad: tras el salto vuelve a medir bien");
+    arq_speed_sample(&v, 4000, 5180 + 0, 100 + 30);                          // 30 mm en Y en 200 ms = 150 mm/s (menor que el maximo)
+    EXPECT(arq_speed_peak_mms(&v) == 200, "velocidad: el maximo no baja");
+    arq_speed_reset(&v);
+    EXPECT(arq_speed_cur_mms(&v) == 0 && arq_speed_peak_mms(&v) == 0 && !v.have, "velocidad: reset deja todo a cero");
+    arq_speed_t w; arq_speed_reset(&w);
+    arq_speed_sample(&w, 0xFFFFFF00u, 0, 0); arq_speed_sample(&w, 0x00000100u, 51.2f, 0);   // 512 ms a traves del desbordamiento de millis
+    EXPECT(arq_speed_peak_mms(&w) == 100, "velocidad: millis() desbordado (wrap) sigue midiendo bien");
+    arq_speed_t n; arq_speed_reset(&n); arq_speed_sample(&n, 0, 0, 0); arq_speed_sample(&n, 500, NAN, 0);
+    EXPECT(arq_speed_peak_mms(&n) == 0, "velocidad: NaN no se mide");
+  }
 
   printf("Pruebas de logica: %d de %d correctas%s\n", total - fails, total, fails ? "  <-- HAY FALLOS" : "");
   return fails ? 1 : 0;
