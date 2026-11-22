@@ -164,3 +164,6 @@ Los valores de cada impresora (medidas, pasos/mm, sentidos, finales de carrera, 
 ## Rendimiento: pantalla de ajustes de movimiento y torres de prueba
 **Ajustes → Rendimiento** (TS35): aceleraciones (M204/M201), Linear Advance K (M900), Junction Deviation (M205 J) e Input Shaping X/Y (M593) con límites, paso fino/grueso, Guardar (M500) y Restaurar. Solo con la impresora quieta. En `herramientas/torres/` hay un generador de torres de prueba (ringing por frecuencia y por aceleración, K, caudal máximo) que cambian un valor por tramo, verifican su G-code antes de escribirlo y terminan con `M501`; archivos listos para el XQ1 (PLA) en `herramientas/torres/listos/`. Ver `docs/arquis/RENDIMIENTO.md`. **Sin probar en la impresora.** Flash estimada +4,7 KB: mira el uso real con `pio run`.
 
+
+## Manual de uso completo
+`docs/arquis/MANUAL_DE_USO.md`: árbol de todas las pantallas, qué hace cada una, valores de fábrica, dónde se ajusta cada cosa (y si se guarda con M500), puesta a punto en orden y problemas frecuentes. Incluye lo nuevo (Malla 5×5, PID, Rendimiento, perfiles) marcado como no probado en la impresora.

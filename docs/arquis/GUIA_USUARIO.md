@@ -1,5 +1,7 @@
 # ARQUIS UI 1.0.0 — Guía de usuario
 
+> **Manual completo y actualizado** (árbol de pantallas, Malla 5×5, PID, Rendimiento, perfiles de máquina, valores de fábrica): [`MANUAL_DE_USO.md`](MANUAL_DE_USO.md). Esta guía es el recorrido ilustrado de la v1.0.0.
+
 Recorrido por la pantalla táctil de la **Arquis XQ1**. (Las capturas son de la maqueta de pruebas con LVGL real; en la pantalla física los colores pueden verse ligeramente distintos según la iluminación.)
 
 ## Código de colores
