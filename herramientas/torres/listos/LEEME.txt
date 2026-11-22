@@ -11,3 +11,12 @@ Para el Aquila D1:  ... generar_torres.py todas --maquina aquila --salida <carpe
   torre_caudal_xq1.gcode               caudal maximo del hotend (cilindro en espiral; velocidad creciente)
 
 Copialos a la raiz de la tarjeta SD (NO a la carpeta "assets"). Guia completa: docs/arquis/RENDIMIENTO.md
+
+--- OTROS MATERIALES (carpetas ASA, ABS, PETG y TPU) ---
+Cada carpeta trae el juego completo de 4 torres con las temperaturas de ese filamento (XQ1):
+  ASA  boquilla 265 / cama 100, ventilador 0         ABS  boquilla 250 / cama 90, ventilador 0
+  PETG boquilla 230 / cama 70,  ventilador 100       TPU  boquilla 235 / cama 70, ventilador 128, velocidad lenta (30 mm/s) y caudal bajo (1,5 a 5 mm3/s)
+Generadas con:  python3 herramientas/torres/generar_materiales.py
+Otra maquina:   python3 herramientas/torres/generar_materiales.py --maquina aquila --salida <carpeta>
+Cambiar temperaturas o anadir un material: edita la tabla MATERIALES al principio de generar_materiales.py y vuelve a ejecutarlo.
+El ringing (frecuencia y aceleracion) es mecanico: el resultado vale para cualquier material, aunque se incluye en cada carpeta.
