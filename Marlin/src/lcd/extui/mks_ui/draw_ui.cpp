@@ -47,6 +47,7 @@
   #include "arquis_params_view.h"
   #include "arquis_mesh_ui.h"
   #include "arquis_pid_ui.h"
+  #include "arquis_perf_ui.h"
   static bool arq_pscr;   // la pantalla actual es una de parametros: sus filas y botones se dibujan con la lista ARQUIS
 #endif
 
@@ -938,6 +939,9 @@ void clear_cur_ui() {
     #if ARQ_HAS_PID
       case PID_UI:                    arq_pid_clear(); break;
     #endif
+    #if ARQ_HAS_PERF
+      case PERF_UI:                   arq_perf_clear(); break;
+    #endif
     case PAUSE_UI:                    break;
     case EXTRUSION_UI:                lv_clear_extrusion(); break;
     case PREHEAT_UI:                  lv_clear_preHeat(); break;
@@ -1058,6 +1062,9 @@ void draw_return_ui() {
       #endif
       #if ARQ_HAS_PID
         case PID_UI:                    arq_pid_draw(); break;
+      #endif
+      #if ARQ_HAS_PERF
+        case PERF_UI:                   arq_perf_draw(); break;
       #endif
       case PAUSE_UI:                    break;
       case EXTRUSION_UI:                lv_draw_extrusion(); break;

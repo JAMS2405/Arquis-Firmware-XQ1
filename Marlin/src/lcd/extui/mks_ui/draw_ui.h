@@ -337,7 +337,8 @@ typedef enum {
   GCODE_UI,
   MEDIA_SELECT_UI,
   CANCEL_OBJECT_UI,
-  PID_UI                 // Arquis: autoajuste PID (arquis_pid_ui.cpp)
+  PID_UI,                // Arquis: autoajuste PID (arquis_pid_ui.cpp)
+  PERF_UI                // Arquis: rendimiento - aceleraciones, Linear Advance, Input Shaping (arquis_perf_ui.cpp)
 } DISP_STATE;
 
 typedef struct {

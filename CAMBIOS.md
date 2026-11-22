@@ -159,3 +159,8 @@ Malla bilineal 5×5 medida con papel desde la TS35 (Herramientas → Malla 5x5),
 
 ## Perfiles de máquina (varias impresoras, un solo firmware)
 Los valores de cada impresora (medidas, pasos/mm, sentidos, finales de carrera, PID…) viven en `Marlin/machine/<nombre>.h` y se eligen con el entorno de PlatformIO (`pio run -e aquila_d1`). El XQ1 no cambia. Ver `docs/arquis/MAQUINAS.md`. **EEPROM:** las versiones de la nivelación 5×5 y del PID de cama cambian su tamaño: guarda `M503` antes de flashear.
+
+
+## Rendimiento: pantalla de ajustes de movimiento y torres de prueba
+**Ajustes → Rendimiento** (TS35): aceleraciones (M204/M201), Linear Advance K (M900), Junction Deviation (M205 J) e Input Shaping X/Y (M593) con límites, paso fino/grueso, Guardar (M500) y Restaurar. Solo con la impresora quieta. En `herramientas/torres/` hay un generador de torres de prueba (ringing por frecuencia y por aceleración, K, caudal máximo) que cambian un valor por tramo, verifican su G-code antes de escribirlo y terminan con `M501`; archivos listos para el XQ1 (PLA) en `herramientas/torres/listos/`. Ver `docs/arquis/RENDIMIENTO.md`. **Sin probar en la impresora.** Flash estimada +4,7 KB: mira el uso real con `pio run`.
+

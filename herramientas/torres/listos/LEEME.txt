@@ -1,0 +1,13 @@
+ARCHIVOS LISTOS PARA LA TARJETA SD (Arquis XQ1)
+
+Generados con:  python3 herramientas/torres/generar_torres.py todas --salida herramientas/torres/listos
+Valores por defecto: PLA, boquilla 210 C, cama 60 C, boquilla 0.4, capa 0.2.
+SI TU FILAMENTO ES OTRO, NO uses estos archivos tal cual: genera los tuyos con --temp-boquilla y --temp-cama.
+Para el Aquila D1:  ... generar_torres.py todas --maquina aquila --salida <carpeta>
+
+  torre_ringing_frecuencia_xq1.gcode   frecuencia de Input Shaping por tramos (M593 F)
+  torre_ringing_aceleracion_xq1.gcode  aceleracion por tramos (M204)
+  torre_k_xq1.gcode                    Linear Advance K por tramos (M900 K)
+  torre_caudal_xq1.gcode               caudal maximo del hotend (cilindro en espiral; velocidad creciente)
+
+Copialos a la raiz de la tarjeta SD (NO a la carpeta "assets"). Guia completa: docs/arquis/RENDIMIENTO.md

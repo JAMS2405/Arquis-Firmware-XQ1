@@ -80,3 +80,9 @@ typedef uint32_t millis_t;
 #define ENA_PIDTEMP 1
 #define ENA_PIDTEMPBED 1
 #define HOTEND_OVERSHOOT 15
+// --- pantalla Rendimiento (arquis_perf*.cpp): valores de la configuracion del XQ1 ---
+#define ENA_LIN_ADVANCE 1
+#define ENA_INPUT_SHAPING_X 1
+#define ENA_INPUT_SHAPING_Y 1
+#define ENA_CLASSIC_JERK 0
+#define HAS_ZV_SHAPING 1

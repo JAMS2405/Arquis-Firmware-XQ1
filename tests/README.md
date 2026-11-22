@@ -16,3 +16,10 @@ Las pruebas propias del módulo de Cura están en `cura/tests/`; las del firmwar
 
 ## tests/machines (perfiles de máquina)
 `python3 tests/machines/test_profiles.py`: con el preprocesador de gcc comprueba que el XQ1 queda idéntico a la configuración anterior a los perfiles, que Aquila D1 cambia exactamente lo que declara (y coincide con su `Configuration.h` original) y que cada valor de un perfil está protegido. Documentación: `docs/arquis/MAQUINAS.md`.
+
+## tests/perf (pantalla Rendimiento)
+`run.sh`: comprobaciones estáticas (los límites de la pantalla frente al código de Marlin, lo que guarda M500, integración) y la lógica pura REAL (`arquis_perf_logic.cpp`, ASan/UBSan). La pantalla: `herramientas/arquis_ui/sim/build_perf_sim.sh`. Documentación: `docs/arquis/RENDIMIENTO.md`.
+
+## tests/torres (torres de prueba)
+`python3 tests/torres/test_torres.py`: generador de G-code (`herramientas/torres/generar_torres.py`): límites frente a `Configuration.h` y `machine/aquila_d1.h`, tablas, alturas, extrusión, rechazos, verificación del texto y archivos listos reproducibles.
+
