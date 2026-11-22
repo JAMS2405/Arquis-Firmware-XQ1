@@ -42,7 +42,7 @@ Además, medido en el PC del propietario [COMPILADO]: `pio run` correcto para `m
 | **2** Object Manager y manifiesto | Sí (`manifest_engine.py`, `object_manager_model.py`, `BedPreview.qml`, `shared/object_protocol/`) | Sí: 46 vectores del manifiesto, 391 del mapa, QML con Qt real | **En Cura real: sí** (captura, 6 duplicados, posiciones, manifiesto válido = escena; ventana del gestor abre con mapa y lista). **En la impresora:** el manifiesto generado se leyó y se mostró bien. Orientación `ORG=FL` **confirmada por el propietario**. Sin ejecutar en Cura real: perfil 450 × 450, rotaciones, grupos, modelos pequeños, clic mapa↔fila dentro de Cura | **Cerrada** (por el propietario); esos casos quedan como pruebas diferidas |
 | **3** Firmware y TFT | Sí (M486 con rango 0–29, lector de manifiesto en SD, mapa y lista de 30, puerta de cancelación visual) | Sí: motor M486 real en el PC, parser contra la referencia, vista con LVGL real en ARM/qemu | **Sí, la parte de visualización con manifiesto** (§1), incluido el bloqueo del botón. Orientación confirmada por el propietario. **No probado:** cancelación real, Z/E, rechazo de `M486` fuera de rango en la placa (T6) | **CERRADA** (por el propietario, 2026-11-19). **La cancelación visual con manifiesto sigue BLOQUEADA** (`ARQ_OBJ_VISUAL_CANCEL_VALIDATED 0`) y su validación física queda **diferida** |
 | **4** Calibration Suite | **No** (`calibration_engine.py` no existe) | — | — | **Aplazada por el propietario** (se pasa a la Etapa 5; se retomará después) |
-| **5** Non-Planar Engine | **En curso (autorizada 2026-11-19).** Ver `09_etapa5_nonplanar.md`. Desactivado por defecto | Ver ese documento | **Ninguna** | **En curso** |
+| **5** Non-Planar Engine | Sí (motor, lectura de STL, adaptador FullControl, lámina en espiral, ondulado de G-code, script de Cura). Ver `09_etapa5_nonplanar.md`. Desactivado por defecto | Sí: cálculo, modelo de Marlin y script de Cura (validación parcial en Cura real) | **Pruebas hechas por el propietario en la impresora (2026-11-22); resultados no registrados en el repositorio** | **CERRADA** (por el propietario, 2026-11-22) |
 | **6** Distribución | **No** (paquete/instalador de la suite). *No confundir con la «etapa 6» del trabajo de interfaz v1.0.0, que es otra cosa* | — | — | **No iniciada** |
 
 ## 3. Cierre de la Etapa 3: qué se aceptó y qué queda diferido
@@ -76,7 +76,9 @@ El propietario cerró la Etapa 3 el 2026-11-19. **Cerrar la etapa no equivale a 
 
 ## 5. Próxima etapa autorizada
 
-**Etapa 5: Non-Planar Engine** (autorizada por el propietario el 2026-11-19, **saltando la Etapa 4**, que queda aplazada). Alcance autorizado por el PROMPT MAESTRO: *análisis y generación experimental; prueba controlada con vista previa y validación*. Reglas: desactivado por defecto, no se modifica el núcleo de Marlin, no se genera G-code no planar de una impresión completa sin vista previa y validación, ejemplo pequeño y controlado, limitaciones documentadas. Detalle en [`09_etapa5_nonplanar.md`](09_etapa5_nonplanar.md). Después: Etapa 4 (si el propietario la retoma) y Etapa 6 (distribución), cada una con autorización explícita.
+**Ninguna autorizada hoy.** La Etapa 5 quedó cerrada el 2026-11-22; quedan la Etapa 4 (aplazada) y la Etapa 6 (sin iniciar), cada una con autorización explícita.
+
+Histórico: **Etapa 5: Non-Planar Engine** (autorizada por el propietario el 2026-11-19, **saltando la Etapa 4**, que queda aplazada). Alcance autorizado por el PROMPT MAESTRO: *análisis y generación experimental; prueba controlada con vista previa y validación*. Reglas: desactivado por defecto, no se modifica el núcleo de Marlin, no se genera G-code no planar de una impresión completa sin vista previa y validación, ejemplo pequeño y controlado, limitaciones documentadas. Detalle en [`09_etapa5_nonplanar.md`](09_etapa5_nonplanar.md). Después: Etapa 4 (si el propietario la retoma) y Etapa 6 (distribución), cada una con autorización explícita.
 
 ## 6. Tabla general de avance del PROMPT MAESTRO
 
@@ -87,17 +89,24 @@ El propietario cerró la Etapa 3 el 2026-11-19. **Cerrar la etapa no equivale a 
 | 2 | Object Manager y manifiesto | Hecha | Vectores compartidos, QML, G-code real | **Validada en Cura 5.11 real** (6 copias, manifiesto) y **leída por la impresora**. Orientación confirmada por el propietario | **Cerrada** |
 | 3 | Firmware y TFT | Hecha (compila: Flash 87,2 %, RAM 62,8 %) | Simulación con motor real, parser y LVGL | **Visualización probada** (mapa, lista, zoom, páginas, 6 idénticos) y orientación confirmada. **Cancelación real: diferida, no probada** | **Cerrada** (cancelación visual **bloqueada**) |
 | 4 | Calibration Suite | 0 % | — | — | **Aplazada** (decisión del propietario) |
-| 5 | Non-Planar Engine | En curso (ver `09_etapa5_nonplanar.md`) | Ver ese documento | Ninguna | **En curso** (desactivado por defecto) |
+| 5 | Non-Planar Engine | Hecha (ver `09_etapa5_nonplanar.md`) | Cálculo, modelo de Marlin, Cura parcial | Pruebas del propietario (resultados no registrados aquí) | **Cerrada** (2026-11-22; desactivado por defecto) |
 | 6 | Distribución | 0 % | — | — | **No iniciada** |
 
 ## 7. Plan de continuación
 
-1. **Etapa 5 (en curso):** motor experimental `nonplanar_engine.py`, ejemplo pequeño y controlado, vista previa, verificación de límites y colisiones, exportación bloqueada hasta tener vista previa aceptada y parámetros del cabezal confirmados (`09_etapa5_nonplanar.md`).
+1. **Etapa 5 (CERRADA 2026-11-22):** motor experimental `nonplanar_engine.py`, ejemplo pequeño y controlado, vista previa, verificación de límites y colisiones, exportación bloqueada hasta tener vista previa aceptada y parámetros del cabezal confirmados (`09_etapa5_nonplanar.md`).
 2. **Cuando el propietario lo decida:** validar físicamente la cancelación (puntos #4–#6 de §3) y solo entonces cambiar la puerta a 1.
-3. **Después de la Etapa 5:** Etapa 4 (Calibration Suite) si se retoma, y Etapa 6 (distribución), con autorización explícita.
+3. **Tras cerrar la Etapa 5:** Etapa 4 (Calibration Suite) si se retoma, y Etapa 6 (distribución), con autorización explícita.
 
 ## 8. Correcciones posteriores al cierre de la Etapa 3 (2026-11-19)
 
 - **Aviso de fin de impresión que no aparecía** (`img/fisico_fin_impresion_sin_aviso.webp`): al terminar el archivo, la pantalla seguía mostrando Pausar y Cancelar. **No es un fallo de la Etapa 3** (los archivos no cambiaron en esta rama): estaba en `arq_print_poll()` de la interfaz v1.0.0. El aviso se descartaba con `arq_data_job_active()`, que sigue en verdadero hasta que Marlin ejecuta `M1001`, es decir, después de los movimientos finales; con tu G-code (`G1 Z5`, `G1 X0 Y300`) el aviso se perdía. **Corregido** con una lógica pura nueva (`arq_finish_detect`, `arq_finish_new_job` en `arquis_logic`) y un respaldo de 3 s. **Evidencia: [SIMULACIÓN]** (70 pruebas de lógica, incluido el caso de la foto) y compila contra las firmas de Marlin; **no se ha reproducido ni verificado en la placa**: el diagnóstico es por lectura del código. Pendiente: compilar y comprobar en la impresora. Limitación conocida: si una impresión se aborta por otra vía que no sea el botón Cancelar, el respaldo mostrará «Impresión finalizada».
 - **¿Cancela objetos la Etapa 3?** Existen todas las piezas (el script inserta `M486`, Marlin los ejecuta, el manifiesto y la pantalla identifican cada objeto), pero **el botón de cancelar de la pantalla está bloqueado a propósito** (`ARQ_OBJ_VISUAL_CANCEL_VALIDATED 0`) hasta probar la cancelación real. La cancelación por orden `M486 P<n>` sí existe en Marlin, pero tampoco se ha probado aquí con la placa.
 
+## 9. Cierre de la Etapa 5 (2026-11-22)
+
+**Etapa 5 cerrada por el propietario el 2026-11-22**, tras pruebas hechas por él en la impresora. Los resultados detallados de esas pruebas **no se han trasladado a este repositorio**: lo que consta aquí es la decisión de cierre, no una medición. El motor sigue **desactivado por defecto** y las barreras de exportación no cambian.
+
+Lo que **sigue sin estar demostrado** por este repositorio (no por el propietario): la rigidez de las piezas onduladas, la cancelación con `M486` sobre un archivo ondulado, el comportamiento con anillos (con agujero) y la nivelación bilineal combinada con Z segmentado. Si las pruebas del propietario cubrieron alguno de esos puntos, conviene anotar el resultado en `09_etapa5_nonplanar.md`.
+
+Nota: este documento se escribió en la rama `claude/dreamy-allen-gc05as`; esa rama y `main` ya están unidas, y `main` incluye además la nivelación 5×5 y el PID (ver `docs/arquis/MALLA_5x5.md` y `docs/arquis/PID.md`).

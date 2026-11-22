@@ -1,5 +1,7 @@
 # Etapa 5 — ARQUIS Non-Planar Engine (experimental)
 
+> **Estado: CERRADA por el propietario el 2026-11-22**, tras pruebas hechas por él en la impresora. Los resultados detallados no están registrados en este documento; las frases «no existe ninguna prueba [FÍSICA]» de abajo describen el estado **anterior** al cierre y se conservan como histórico.
+
 Autorizada por el propietario el 2026-11-19 (se salta la Etapa 4, aplazada). Rama `claude/dreamy-allen-gc05as`; `main`, `platformio.ini`, `ini/`, el firmware y el planificador **no se han tocado**.
 
 > **Leyenda de pruebas** (la de `07_etapa3_firmware.md`): **[CÁLCULO]** verificación numérica en el PC · **[MODELO]** G-code leído con el modelo de Marlin del repositorio (`marlin_model.py`) · **[LECTURA]** comprobado en el código fuente · **[FÍSICA]** en la impresora.
@@ -361,3 +363,6 @@ python3 cura/tools/nonplanar_warp.py --enable-experimental --config cura/profile
 
 **Estado de validación:** el script y el motor están probados con una escena **falsa** de `Script` (14 pruebas del script, incluida la comprobación de que todos los ajustes tienen `label`, `description`, `type` y `default_value`, el fallo que cerró Cura en el script de M486). **No se ha ejecutado en Cura real**: hay que cargarlo, ver que aparece, activarlo en una pieza, comprobar el mensaje con el código y la vista previa, y exportar con el código. Hasta entonces no está validado.
 
+## Cierre (2026-11-22)
+
+**Etapa 5 cerrada por el propietario el 2026-11-22**, tras pruebas hechas por él en la impresora. Los resultados detallados de esas pruebas **no se han trasladado a este repositorio**: lo que consta aquí es la decisión de cierre, no una medición. El motor sigue **desactivado por defecto** y las barreras de exportación no cambian.

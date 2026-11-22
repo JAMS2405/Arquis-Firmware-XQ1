@@ -34,3 +34,6 @@ Estas decisiones **no están pendientes**. Cualquier documento que las presente 
 - **Autoriza la probeta de 30 mm** (la vista previa la acepta el propietario tecleando el código al exportar) y la **primera ejecución en seco**.
 - **Autoriza integrarlo en Cura como script del plugin**, apagado por defecto y con el código de aceptación dentro de Cura. Pendiente de validar en Cura real.
 
+## Cierre de la Etapa 5 (2026-11-22)
+- **Etapa 5 (Non-Planar Engine) cerrada por el propietario**, tras sus pruebas en la impresora (resultados no registrados en el repositorio). Sigue **desactivada por defecto**; sin cambios en el núcleo de Marlin.
+- Quedan: **Etapa 4** (Calibration Suite, aplazada) y **Etapa 6** (distribución, sin iniciar), cada una con autorización explícita.
