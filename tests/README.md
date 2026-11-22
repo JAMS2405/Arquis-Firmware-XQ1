@@ -10,3 +10,6 @@ Las pruebas propias del módulo de Cura están en `cura/tests/`; las del firmwar
 
 ## tests/mesh (nivelación manual 5×5)
 `run.sh` ejecuta: (1) `test_config.py` — comprobaciones estáticas de configuración y de cómo Marlin se comporta (G28, EEPROM, signos); (2) `mesh_logic_test.cpp` — la lógica pura REAL (`arquis_mesh_logic.cpp`, ASan+UBSan); (3) `bilinear_harness.cpp` — la interpolación bilineal y el *fade* REALES de Marlin (texto extraído de `bbl.cpp`/`planner.h` al compilar). La pantalla se prueba con `herramientas/arquis_ui/sim/build_mesh_sim.sh` (LVGL real + capturas) y el pegamento con `check_marlin_api.sh` (firmas, no es una compilación de Marlin). Documentación: `docs/arquis/MALLA_5x5.md`.
+
+## tests/pid (autoajuste PID)
+`run.sh`: comprobaciones estáticas (configuración, parche de `temperature.cpp`, cancelación con `wait_for_heatup`, convención de M301/M304) y la lógica pura REAL (`arquis_pid_logic.cpp`). La pantalla: `herramientas/arquis_ui/sim/build_pid_sim.sh`. Documentación: `docs/arquis/PID.md`.

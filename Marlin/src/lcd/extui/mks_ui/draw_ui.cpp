@@ -46,6 +46,7 @@
   #include "arquis_params.h"
   #include "arquis_params_view.h"
   #include "arquis_mesh_ui.h"
+  #include "arquis_pid_ui.h"
   static bool arq_pscr;   // la pantalla actual es una de parametros: sus filas y botones se dibujan con la lista ARQUIS
 #endif
 
@@ -754,6 +755,9 @@ void print_time_run() {
 void GUI_RefreshPage() {
   #if ENABLED(ARQUIS_UI)
     arq_print_poll();   // fin de impresion desde cualquier pantalla (ver arquis_print.cpp)
+    #if ARQ_HAS_PID
+      arq_pid_poll();   // autoajuste PID: tambien se llama durante M303 (arq_pid_idle)
+    #endif
     #if ARQ_HAS_MESH
       arq_mesh_poll();  // nivelacion manual 5x5: avanza la sesion (y la termina con seguridad) aunque su pantalla no este visible
     #endif
@@ -931,6 +935,9 @@ void clear_cur_ui() {
     #if ENABLED(CANCEL_OBJECTS)
       case CANCEL_OBJECT_UI:          lv_clear_cancel_object(); break;
     #endif
+    #if ARQ_HAS_PID
+      case PID_UI:                    arq_pid_clear(); break;
+    #endif
     case PAUSE_UI:                    break;
     case EXTRUSION_UI:                lv_clear_extrusion(); break;
     case PREHEAT_UI:                  lv_clear_preHeat(); break;
@@ -1048,6 +1055,9 @@ void draw_return_ui() {
       case OPERATE_UI:                  lv_draw_operation(); break;
       #if ENABLED(CANCEL_OBJECTS)
         case CANCEL_OBJECT_UI:          lv_draw_cancel_object(); break;
+      #endif
+      #if ARQ_HAS_PID
+        case PID_UI:                    arq_pid_draw(); break;
       #endif
       case PAUSE_UI:                    break;
       case EXTRUSION_UI:                lv_draw_extrusion(); break;

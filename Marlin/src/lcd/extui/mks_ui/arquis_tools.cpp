@@ -28,6 +28,7 @@
 #include "arquis_ctrl_view.h"
 #include "arquis_tools_view.h"
 #include "arquis_mesh_ui.h"
+#include "arquis_pid_ui.h"
 #include "draw_ui.h"
 
 #include "../../../inc/MarlinConfig.h"
@@ -189,7 +190,7 @@ void arq_home_clear() { grid_home.clear(); }
 
 // ==== AJUSTES (draw_set.cpp) =====================================================================================================
 static Grid grid_settings;
-enum { S_PARA, S_EEPROM, S_FAN, S_SYSTEM, S_LANG, S_WIFI, S_POWER };
+enum { S_PARA, S_EEPROM, S_FAN, S_SYSTEM, S_LANG, S_WIFI, S_POWER, S_PID };
 enum { DLG_PWR_OK = 601, DLG_PWR_NO };
 
 static void settings_dialog_cb(lv_obj_t *obj, lv_event_t event) {
@@ -215,6 +216,9 @@ static void settings_cb(lv_obj_t *obj, lv_event_t event) {
   switch (a) {
     case S_FAN:    lv_draw_fan(); break;
     case S_SYSTEM: lv_draw_about(); break;
+    #if ARQ_HAS_PID
+      case S_PID:  arq_pid_draw(); break;
+    #endif
     case S_LANG:   lv_draw_language(); break;
     case S_PARA:   lv_draw_machine_para(); break;
     case S_EEPROM: lv_draw_eeprom_settings(); break;
@@ -242,6 +246,9 @@ void arq_settings_draw() {
   grid_settings.add(S_EEPROM, &arq_icon_file, "Memoria");
   grid_settings.add(S_FAN, &arq_icon_fan, "Ventiladores");
   grid_settings.add(S_SYSTEM, &arq_icon_tools, "Sistema");
+  #if ARQ_HAS_PID
+    grid_settings.add(S_PID, &arq_icon_temp, "PID");               // autoajuste de hotend y cama (M303)
+  #endif
   #if HAS_LANG_SELECT_SCREEN
     grid_settings.add(S_LANG, &arq_icon_file, "Idioma");
   #endif

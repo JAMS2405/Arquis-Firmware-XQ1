@@ -30,6 +30,9 @@
 #include "../MarlinCore.h"
 #include "../HAL/shared/Delay.h"
 #include "../lcd/marlinui.h"
+#if ENABLED(ARQUIS_UI)
+  #include "../lcd/extui/mks_ui/arquis_pid_status.h"   // Arquis: estado del autoajuste PID para la pantalla TS35
+#endif
 #include "../gcode/gcode.h"
 
 #include "temperature.h"
@@ -696,11 +699,13 @@ volatile bool Temperature::raw_temps_ready = false;
 
     TERN_(EXTENSIBLE_UI, ExtUI::onPidTuning(ExtUI::result_t::PID_STARTED));
     TERN_(DWIN_LCD_PROUI, DWIN_PidTuning(isbed ? PIDTEMPBED_START : PIDTEMP_START));
+    TERN_(ARQUIS_UI, arq_pid_begin(ncycles));
 
     if (target > GHV(CHAMBER_MAX_TARGET, BED_MAX_TARGET, temp_range[heater_id].maxtemp - (HOTEND_OVERSHOOT))) {
       SERIAL_ECHOPGM(STR_PID_AUTOTUNE); SERIAL_ECHOLNPGM(STR_PID_TEMP_TOO_HIGH);
       TERN_(EXTENSIBLE_UI, ExtUI::onPidTuning(ExtUI::result_t::PID_TEMP_TOO_HIGH));
       TERN_(DWIN_LCD_PROUI, DWIN_PidTuning(PID_TEMP_TOO_HIGH));
+      TERN_(ARQUIS_UI, arq_pid_end(ARQ_PID_R_TOO_HIGH, 0, 0, 0));
       TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_PID_TEMP_TOO_HIGH)));
       return;
     }
@@ -780,6 +785,7 @@ volatile bool Temperature::raw_temps_ready = false;
           }
           SHV((bias + d) >> 1);
           TERN_(HAS_STATUS_MESSAGE, ui.status_printf(0, F(S_FMT " %i/%i"), GET_TEXT(MSG_PID_CYCLE), cycles, ncycles));
+          TERN_(ARQUIS_UI, arq_pid_cycle(cycles));
           cycles++;
           minT = target;
         }
@@ -793,6 +799,7 @@ volatile bool Temperature::raw_temps_ready = false;
         SERIAL_ECHOPGM(STR_PID_AUTOTUNE); SERIAL_ECHOLNPGM(STR_PID_TEMP_TOO_HIGH);
         TERN_(EXTENSIBLE_UI, ExtUI::onPidTuning(ExtUI::result_t::PID_TEMP_TOO_HIGH));
         TERN_(DWIN_LCD_PROUI, DWIN_PidTuning(PID_TEMP_TOO_HIGH));
+        TERN_(ARQUIS_UI, arq_pid_end(ARQ_PID_R_TOO_HIGH, 0, 0, 0));
         TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_PID_TEMP_TOO_HIGH)));
         break;
       }
@@ -831,6 +838,7 @@ volatile bool Temperature::raw_temps_ready = false;
         TERN_(DWIN_CREALITY_LCD, DWIN_Popup_Temperature(0));
         TERN_(DWIN_LCD_PROUI, DWIN_PidTuning(PID_TUNING_TIMEOUT));
         TERN_(EXTENSIBLE_UI, ExtUI::onPidTuning(ExtUI::result_t::PID_TUNING_TIMEOUT));
+        TERN_(ARQUIS_UI, arq_pid_end(ARQ_PID_R_TIMEOUT, 0, 0, 0));
         TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_PID_TIMEOUT)));
         SERIAL_ECHOPGM(STR_PID_AUTOTUNE); SERIAL_ECHOLNPGM(STR_PID_TIMEOUT);
         break;
@@ -879,6 +887,7 @@ volatile bool Temperature::raw_temps_ready = false;
         if (set_result)
           GHV(_set_chamber_pid(tune_pid), _set_bed_pid(tune_pid), _set_hotend_pid(heater_id, tune_pid));
 
+        TERN_(ARQUIS_UI, arq_pid_end(ARQ_PID_R_DONE, tune_pid.p, tune_pid.i, tune_pid.d));
         goto EXIT_M303;
       }
 
@@ -887,12 +896,14 @@ volatile bool Temperature::raw_temps_ready = false;
 
       // Run UI update
       TERN(DWIN_CREALITY_LCD, DWIN_Update(), ui.update());
+      TERN_(ARQUIS_UI, arq_pid_idle());   // Arquis: atiende la pantalla TS35 (progreso y Cancelar)
     }
 
     disable_all_heaters();
 
     EXIT_M303:
     wait_for_heatup = false;
+    TERN_(ARQUIS_UI, arq_pid_finish());
     TERN_(PRINTER_EVENT_LEDS, printerEventLEDs.onPidTuningDone(color));
     TERN_(EXTENSIBLE_UI, ExtUI::onPidTuning(ExtUI::result_t::PID_DONE));
     TERN_(DWIN_LCD_PROUI, DWIN_PidTuning(PID_DONE));

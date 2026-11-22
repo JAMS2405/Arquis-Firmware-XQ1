@@ -767,7 +767,9 @@
  *
  * With this option disabled, bang-bang will be used. BED_LIMIT_SWITCHING enables hysteresis.
  */
-//#define PIDTEMPBED
+// Arquis: PID de cama (permite el autoajuste M303 E-1 desde la pantalla: Ajustes > PID). Valores iniciales de Marlin; se sustituyen con el autoajuste.
+// ATENCION: activarlo cambia el tamano de los datos de la EEPROM (ver docs/arquis/PID.md).
+#define PIDTEMPBED
 
 #if ENABLED(PIDTEMPBED)
   //#define MIN_BED_POWER 0

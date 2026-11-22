@@ -77,3 +77,6 @@ char *dtostrf(double, signed char, unsigned char, char *);
 #define MANUAL_PROBE_START_Z 1.0
 typedef uint32_t millis_t;
 #define SEC_TO_MS(N) millis_t((N)*1000UL)
+#define ENA_PIDTEMP 1
+#define ENA_PIDTEMPBED 1
+#define HOTEND_OVERSHOOT 15

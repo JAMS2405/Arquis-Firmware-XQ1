@@ -1,8 +1,9 @@
 // STUB: firmas de temperature.h real (Marlin 2.1.2.10): leidas en Marlin/src/module/temperature.h
 #pragma once
 typedef int16_t celsius_t;
-struct hotend_info_t_stub { celsius_t target; };
-struct bed_info_t_stub { celsius_t target; };
+struct pid_stub { float p() const; float i() const; float d() const; };   // PID_t real: p(), i(), d()
+struct hotend_info_t_stub { celsius_t target; pid_stub pid; };
+struct bed_info_t_stub { celsius_t target; pid_stub pid; };
 class Temperature {
 public:
   static hotend_info_t_stub temp_hotend[1];
