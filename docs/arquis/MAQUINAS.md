@@ -40,4 +40,4 @@ Nivelación 5×5: área de 15 a 215 × 15 a 225 mm (pasos de 50 y 52,5 mm); el m
 
 ## Limitaciones
 * Cambios futuros que toquen a la vez una línea "de máquina" en `Configuration.h` darían conflicto de `git`; por eso están envueltas en `#ifndef` y los cambios de valores de máquina deben hacerse en el perfil.
-* No compilado aquí: tras `git pull`, comprueba en el log de `pio run -e aquila_d1 -v` que aparece `-DARQUIS_MACHINE_AQUILA_D1` y que el nombre de máquina en la pantalla (Sistema) es "Aquila D1".
+* Comprobación recomendada: tras `git pull`, comprueba en el log de `pio run -e aquila_d1 -v` que aparece `-DARQUIS_MACHINE_AQUILA_D1` y que el nombre de máquina en la pantalla (Sistema) es "Aquila D1".

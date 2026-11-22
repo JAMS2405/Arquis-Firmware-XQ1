@@ -1,6 +1,6 @@
 # ARQUIS — Rendimiento: ajustar velocidad y calidad desde la TS35 (sin recompilar)
 
-Estado: **implementado y probado en PC (lógica, pantalla LVGL simulada, firmas contra Marlin, generador de G-code verificado). Sin compilar con PlatformIO completo ni probado en la impresora.**
+Estado: **implementado y probado en PC (lógica, pantalla LVGL simulada, firmas contra Marlin, generador de G-code verificado).** **Probado en la impresora por el propietario (2026-11-22);** los resultados detallados de esas pruebas no se han trasladado a este repositorio. Los valores buenos de cada máquina (frecuencias, K, caudal, aceleración) siguen saliendo de las torres de prueba de cada usuario.
 
 Son dos piezas que se usan juntas:
 
@@ -94,6 +94,6 @@ Estimado compilando los 4 archivos de la pantalla con el compilador ARM en `-Os`
 * `herramientas/arquis_ui/sim/build_perf_sim.sh`: pantalla con LVGL real: toques sobre las 8 tarjetas, −/+, paso, Guardar, Restaurar, estados deshabilitados, 300 ciclos sin fugas. Capturas en `docs/arquis/perf/`.
 * `python3 tests/torres/test_torres.py`: 16 pruebas del generador (límites iguales a los de Marlin y de `machine/aquila_d1.h`, tablas ↔ órdenes, alturas, marcas de tramo, extrusión coherente con el ancho de línea, rechazos, G-code manipulado, archivos listos reproducibles).
 * `herramientas/arquis_ui/sim/check_marlin_api.sh`: los 4 archivos nuevos compilan contra las firmas de Marlin 2.1.2.10.
-* **Pendiente en la impresora:** todo lo de §4.
+* §4 describe lo que este repositorio **no puede demostrar por sí solo** (el filamento concreto, la resonancia real de cada máquina); el propietario probó la pantalla y las torres en la impresora.
 
 ![Limitada por el eje](perf/perf_3_limitada_por_eje.png) ![Shaping apagado](perf/perf_5_shaping_apagado.png) ![Impresión en curso](perf/perf_6_imprimiendo_bloqueada.png)
