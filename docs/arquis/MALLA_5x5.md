@@ -58,7 +58,8 @@ Mapa con la malla guardada (valores y colores), estado *Malla activa / inactiva 
 * No arranca con una impresión activa/pausada, Marlin detenido o un G29 manual en curso; la sesión se **aborta** si aparece alguna de estas condiciones, o si algo activa la compensación a mitad de medición. Con impresión en curso el abortado es "silencioso" (no toca Z, temperatura ni velocidad de la impresión).
 * Homing obligatorio al empezar (`G28 L0`); se comprueba `all_axes_homed()`.
 * Z: mínimo absoluto **−2,00 mm** (`ARQ_MESH_Z_MIN`), máximo 10 mm. Los **pasos gruesos (>0,10 mm) no pueden bajar de Z=0,50 mm** (cerca del papel solo pasos finos). Los puntos siguientes parten de última medición + 0,6 mm.
-* Los límites software de Marlin se aflojan **solo durante la sesión** (necesario para Z negativa) y se restablecen al terminar, cancelar o fallar.
+* El límite software **mínimo de Z** de Marlin se baja a −2,00 mm **solo durante la sesión** (necesario para Z negativa) y se recalcula al terminar, cancelar o fallar. (`SET_SOFT_ENDSTOP_LOOSE` por sí solo no basta: los `G1` los recorta `apply_motion_limits()`, que ignora ese indicador, y la boquilla no bajaba de Z=0.)
+* Límite físico: si el final de carrera Z queda a más de 2 mm por encima de la cama (la boquilla sigue alta en Z=0 y también en −2), hay que bajar el final de carrera Z mecánicamente.
 * No se acepta una confirmación mientras la máquina se mueve ni si la Z real difiere de la mostrada (>0,005 mm): se resincroniza y hay que confirmar de nuevo.
 * La malla solo se entrega si están los 25 puntos, son finitos y |corrección| ≤ 2,00 mm. Si algo falla tras escribir, se restaura la malla anterior.
 * Al terminar/cancelar: Z a 10 mm, se restaura la temperatura anterior de la cama y el estado anterior de la compensación.

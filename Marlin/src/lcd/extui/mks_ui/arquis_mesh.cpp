@@ -92,7 +92,16 @@ static bool inj(const char *cmd) {
   return true;
 }
 
-static void set_loose(bool on) { SET_SOFT_ENDSTOP_LOOSE(on); }
+// Durante la medicion hay que poder bajar de Z=0. OJO: SET_SOFT_ENDSTOP_LOOSE solo afecta a enabled() (limites manuales del LCD de Marlin);
+// los G1 pasan por apply_motion_limits(), que solo mira soft_endstop._enabled y recorta Z a soft_endstop.min.z (=Z_MIN_POS=0). Por eso
+// ademas se baja el minimo de Z a ARQ_MESH_Z_MIN y, al terminar, se recalcula con update_software_endstops() (valor original de Marlin).
+static void set_loose(bool on) {
+  SET_SOFT_ENDSTOP_LOOSE(on);
+  #if HAS_SOFTWARE_ENDSTOPS
+    if (on) soft_endstop.min.z = ARQ_MESH_Z_MIN;
+    else    update_software_endstops(Z_AXIS);
+  #endif
+}
 
 int16_t arq_mesh_ctl_bed_max() {
   #if HAS_HEATED_BED
