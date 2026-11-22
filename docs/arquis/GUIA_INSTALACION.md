@@ -57,3 +57,6 @@ Los ajustes guardados en la memoria (EEPROM: pasos, aceleración, PID, offsets�
 | Aviso `Motherboard DIAG jumpers must be removed…` | Es de Marlin y no impide compilar: con finales de carrera físicos los jumpers DIAG de los drivers deben estar quitados. Silenciar solo con `#define DIAG_JUMPERS_REMOVED` una vez comprobado |
 | El diagnóstico muestra un sensor en "Revisar" | Esa lectura es ≤ 0 °C o cercana al máximo configurado: revisa el termistor y su cable antes de calentar |
 | La cama marca ≈ 45 °C apagada | Pendiente conocido (ver `ENTREGA_v1.0.0.md` §7): comprobar el termistor |
+
+### Logo de arranque
+El logo que se ve al encender es `sd_assets\bmp_logo.bin` (480×320, RGB565): ahora es el logotipo con el lema «Soluciones Tecnológicas» (fuente: `herramientas\logo_arquis_con_lema.svg`, vista previa: `herramientas\splash_arranque_preview.png`; letras en claro sobre el fondo grafito de la interfaz). Para cambiarlo: renderiza el logo a 480×320 y conviértelo con `herramientas\logo_a_bin.py`. **El logo solo cambia al copiar a la SD la carpeta `assets` de este repositorio** (las imágenes se guardan en la memoria de la pantalla en el primer arranque con esa SD); un `.bin` nuevo sin esa carpeta no lo cambia.
