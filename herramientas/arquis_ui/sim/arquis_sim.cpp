@@ -610,7 +610,7 @@ static void tests() {
       for (auto &t : t2) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Ventiladores: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
       fans_screen(1, 0, 10, 0, nullptr); c_count = 0; tap(100, 90); CHECK(c_count == 0, "un solo ventilador: la tarjeta no es un boton");
       move_screen(mmodel(1, 7), nullptr);
-      struct T3 { int x, y, id; const char *n; } t3[] = { { 120, 90, ARQ_MID_YP, "Y+" }, { 50, 160, ARQ_MID_XN, "X-" }, { 190, 160, ARQ_MID_XP, "X+" }, { 120, 235, ARQ_MID_YN, "Y-" },
+      struct T3 { int x, y, id; const char *n; } t3[] = { { 120, 90, ARQ_MID_YN, "Y-" }, { 50, 160, ARQ_MID_XN, "X-" }, { 190, 160, ARQ_MID_XP, "X+" }, { 120, 235, ARQ_MID_YP, "Y+" },
         { 285, 100, ARQ_MID_ZP, "Z+" }, { 285, 220, ARQ_MID_ZN, "Z-" }, { 400, 175, ARQ_MID_S01, "0,1 mm" }, { 400, 230, ARQ_MID_S1, "1 mm" }, { 400, 290, ARQ_MID_S10, "10 mm" } };
       for (auto &t : t3) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Mover: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
       extrude_screen(emodel(210, 210, true, 0), nullptr);
@@ -678,7 +678,7 @@ static void tests() {
         CHECK(found == 5, "Nivelar cama: los 5 puntos reciben su toque (%d de 5)", found); }
       c_count = 0; tap(20, 22); CHECK(c_count == 1 && c_last == ARQ_LID_BACK, "Nivelar cama: Atras");
       baby_screen(0, 1, nullptr);
-      struct T5 { int x, y, id; const char *n; } t5[] = { { 120, 90, ARQ_MID_YP, "Y+" }, { 50, 160, ARQ_MID_XN, "X-" }, { 285, 100, ARQ_MID_ZP, "Z+" }, { 285, 220, ARQ_MID_ZN, "Z-" }, { 400, 145, ARQ_MID_S01, "0,01 mm" }, { 400, 210, ARQ_MID_S1, "0,05 mm" }, { 400, 278, ARQ_MID_S10, "0,1 mm" } };
+      struct T5 { int x, y, id; const char *n; } t5[] = { { 120, 90, ARQ_MID_YN, "Y-" }, { 50, 160, ARQ_MID_XN, "X-" }, { 285, 100, ARQ_MID_ZP, "Z+" }, { 285, 220, ARQ_MID_ZN, "Z-" }, { 400, 145, ARQ_MID_S01, "0,01 mm" }, { 400, 210, ARQ_MID_S1, "0,05 mm" }, { 400, 278, ARQ_MID_S10, "0,1 mm" } };
       for (auto &t : t5) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Babystep: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
       new_screen(); run(); }
   }

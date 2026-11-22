@@ -54,7 +54,7 @@ Flash: las vistas nuevas miden unos 11 KB de código (Thumb, `-Os`) y los iconos
 1. **Archivos:** Imprimir → debe listar tu SD; entra en una carpeta, sube página/baja página, Atrás (sube de carpeta y, en la raíz, vuelve al Dashboard). Toca un archivo → "¿Imprimir este archivo?" → Cancelar vuelve a la lista. (No pulses Imprimir si no quieres imprimir.)
 2. **Temperatura:** cambia de Hotend a Cama; pulsa +/− y comprueba que el objetivo cambia de 1, 5 o 10; **Apagar** lo deja en 0. No calientes si no quieres: basta con el 0.
 3. **Ventiladores:** 50 %, 100 %, Apagar, +/−; comprueba que también cambia Aux 1 y que el Dashboard lo refleja.
-4. **Mover:** con la cama despejada: estado "Ejes sin referenciar" hasta hacer Home; mueve 0,1 mm y comprueba el sentido de cada flecha (X+, Y+, Z+). Cuidado con los límites: igual que la original, no hay tope de seguridad propio si no se hizo Home.
+4. **Mover:** con la cama despejada: estado "Ejes sin referenciar" hasta hacer Home; mueve 0,1 mm y comprueba el sentido de cada flecha (X+, Y-, Z+; en Mover y Babystep Y- está arriba e Y+ abajo). Cuidado con los límites: igual que la original, no hay tope de seguridad propio si no se hizo Home.
 5. **Extrusión en frío:** debe mostrar "Hotend frío" y los dos botones grises.
 6. **Opciones** (solo se llega desde la supervisión, durante una impresión de prueba `G4 S1` o pausada): comprueba los accesos y el interruptor Autoapagado. Probar **Filamento** solo con la cama despejada: pausa la impresión y mueve el cabezal.
 

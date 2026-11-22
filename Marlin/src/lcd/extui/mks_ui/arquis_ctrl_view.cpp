@@ -141,10 +141,10 @@ void arq_move_build(lv_obj_t *scr, lv_event_cb_t cb, bool baby) {
   M.baby = baby;
   arq_header_create(&M.hd, scr, baby ? "Babystep" : "Mover", false, cb, ARQ_MID_BACK);
   const lv_coord_t c = 68, g = 6, x1 = ARQ_MARGIN + c + g, x2 = x1 + c + g, y1 = CY0 + c + g, y2 = y1 + c + g;
-  M.dir[0] = arq_nav_tile_create(scr, x1, CY0, c, c, &arq_icon_up,    ARQ_TINT_ACCENT, "Y+", ARQ_BTN_SECONDARY, cb, ARQ_MID_YP);
+  M.dir[0] = arq_nav_tile_create(scr, x1, CY0, c, c, &arq_icon_up,    ARQ_TINT_ACCENT, "Y-", ARQ_BTN_SECONDARY, cb, ARQ_MID_YN);   // Arquis: Y- ARRIBA, Y+ ABAJO (pedido del propietario; Mover y Babystep comparten esta vista)
   M.dir[1] = arq_nav_tile_create(scr, ARQ_MARGIN, y1, c, c, &arq_icon_left,  ARQ_TINT_ACCENT, "X-", ARQ_BTN_SECONDARY, cb, ARQ_MID_XN);
   M.dir[2] = arq_nav_tile_create(scr, x2, y1, c, c, &arq_icon_right, ARQ_TINT_ACCENT, "X+", ARQ_BTN_SECONDARY, cb, ARQ_MID_XP);
-  M.dir[3] = arq_nav_tile_create(scr, x1, y2, c, c, &arq_icon_down,  ARQ_TINT_ACCENT, "Y-", ARQ_BTN_SECONDARY, cb, ARQ_MID_YN);
+  M.dir[3] = arq_nav_tile_create(scr, x1, y2, c, c, &arq_icon_down,  ARQ_TINT_ACCENT, "Y+", ARQ_BTN_SECONDARY, cb, ARQ_MID_YP);
   const lv_coord_t zx = x2 + c + ARQ_GAP, zw = 92, zh = (3 * c + 2 * g - g) / 2;
   M.dir[4] = arq_nav_tile_create(scr, zx, CY0, zw, zh, &arq_icon_up,   ARQ_TINT_ACCENT, "Z+", ARQ_BTN_SECONDARY, cb, ARQ_MID_ZP);
   M.dir[5] = arq_nav_tile_create(scr, zx, CY0 + zh + g, zw, zh, &arq_icon_down, ARQ_TINT_ACCENT, "Z-", ARQ_BTN_SECONDARY, cb, ARQ_MID_ZN);
