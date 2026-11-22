@@ -36,6 +36,7 @@
  * Advanced settings can be found in Configuration_adv.h
  */
 #define CONFIGURATION_H_VERSION 02010206
+#include "machine/machine.h"   // Arquis: perfil de maquina (medidas, pasos/mm, sentidos, finales de carrera, PID...). Ver docs/arquis/MAQUINAS.md
 
 //===========================================================================
 //============================= Getting Started =============================
@@ -138,7 +139,9 @@
 //#define BLUETOOTH
 
 // Name displayed in the LCD "Ready" message and Info menu
-#define CUSTOM_MACHINE_NAME "Arquis XQ1"
+#ifndef CUSTOM_MACHINE_NAME   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define CUSTOM_MACHINE_NAME "Arquis XQ1"
+#endif
 
 // Printer's unique ID, used by some programs to differentiate between machines.
 // Choose your own or use a service like https://www.uuidgenerator.net/version4
@@ -551,7 +554,9 @@
  *   998 : Dummy Table that ALWAYS reads 25°C or the temperature defined below.
  *   999 : Dummy Table that ALWAYS reads 100°C or the temperature defined below.
  */
-#define TEMP_SENSOR_0 1
+#ifndef TEMP_SENSOR_0   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define TEMP_SENSOR_0 1
+#endif
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
 #define TEMP_SENSOR_3 0
@@ -559,7 +564,9 @@
 #define TEMP_SENSOR_5 0
 #define TEMP_SENSOR_6 0
 #define TEMP_SENSOR_7 0
-#define TEMP_SENSOR_BED 1
+#ifndef TEMP_SENSOR_BED   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define TEMP_SENSOR_BED 1
+#endif
 #define TEMP_SENSOR_PROBE 0
 #define TEMP_SENSOR_CHAMBER 0
 #define TEMP_SENSOR_COOLER 0
@@ -634,7 +641,9 @@
 // Above this temperature the heater will be switched off.
 // This can protect components from overheating, but NOT from shorts and failures.
 // (Use MINTEMP for thermistor short/failure protection.)
-#define HEATER_0_MAXTEMP 285
+#ifndef HEATER_0_MAXTEMP   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define HEATER_0_MAXTEMP 285
+#endif
 #define HEATER_1_MAXTEMP 275
 #define HEATER_2_MAXTEMP 275
 #define HEATER_3_MAXTEMP 275
@@ -642,7 +651,9 @@
 #define HEATER_5_MAXTEMP 275
 #define HEATER_6_MAXTEMP 275
 #define HEATER_7_MAXTEMP 275
-#define BED_MAXTEMP      115
+#ifndef BED_MAXTEMP   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define BED_MAXTEMP      115
+#endif
 #define CHAMBER_MAXTEMP  60
 
 /**
@@ -686,9 +697,15 @@
     #define DEFAULT_KI_LIST {   1.08,   1.08 }
     #define DEFAULT_KD_LIST { 114.00, 114.00 }
   #else
-    #define DEFAULT_KP  30.24
-    #define DEFAULT_KI   2.80
-    #define DEFAULT_KD  81.66
+    #ifndef DEFAULT_KP   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define DEFAULT_KP  30.24
+    #endif
+    #ifndef DEFAULT_KI   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define DEFAULT_KI   2.80
+    #endif
+    #ifndef DEFAULT_KD   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define DEFAULT_KD  81.66
+    #endif
   #endif
 #else
   #define BANG_MAX 255    // Limit hotend current while in bang-bang mode; 255=full current
@@ -777,9 +794,15 @@
 
   // 120V 250W silicone heater into 4mm borosilicate (MendelMax 1.5+)
   // from FOPDT model - kp=.39 Tp=405 Tdead=66, Tc set to 79.2, aggressive factor of .15 (vs .1, 1, 10)
-  #define DEFAULT_BED_KP 10.00
-  #define DEFAULT_BED_KI .023
-  #define DEFAULT_BED_KD 305.4
+  #ifndef DEFAULT_BED_KP   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+    #define DEFAULT_BED_KP 10.00
+  #endif
+  #ifndef DEFAULT_BED_KI   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+    #define DEFAULT_BED_KI .023
+  #endif
+  #ifndef DEFAULT_BED_KD   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+    #define DEFAULT_BED_KD 305.4
+  #endif
 
   // FIND YOUR OWN: "M303 E-1 C8 S90" to run autotune on the bed at 90 degreesC for 8 cycles.
 #else
@@ -1132,9 +1155,15 @@
 #endif
 
 // Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
-#define X_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
-#define Y_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
-#define Z_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#ifndef X_MIN_ENDSTOP_INVERTING   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define X_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#endif
+#ifndef Y_MIN_ENDSTOP_INVERTING   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Y_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#endif
+#ifndef Z_MIN_ENDSTOP_INVERTING   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Z_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#endif
 #define I_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define J_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define K_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
@@ -1150,7 +1179,9 @@
 #define U_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define V_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define W_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MIN_PROBE_ENDSTOP_INVERTING false // Set to true to invert the logic of the probe.
+#ifndef Z_MIN_PROBE_ENDSTOP_INVERTING   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Z_MIN_PROBE_ENDSTOP_INVERTING false // Set to true to invert the logic of the probe.
+#endif
 
 // Enable this feature if all enabled endstop pins are interrupt-capable.
 // This will remove the need to poll the interrupt pins, saving many CPU cycles.
@@ -1198,14 +1229,18 @@
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K...]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 160, 160, 791.74, 748.72 }  // Arquis: calibrado en la impresora real
+#ifndef DEFAULT_AXIS_STEPS_PER_UNIT   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define DEFAULT_AXIS_STEPS_PER_UNIT   { 160, 160, 791.74, 748.72 }  // Arquis: calibrado en la impresora real
+#endif
 
 /**
  * Default Max Feed Rate (linear=mm/s, rotational=°/s)
  * Override with M203
  *                                      X, Y, Z [, I [, J [, K...]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_MAX_FEEDRATE          { 500, 500, 45, 60 }
+#ifndef DEFAULT_MAX_FEEDRATE   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define DEFAULT_MAX_FEEDRATE          { 500, 500, 45, 60 }
+#endif
 
 //#define LIMITED_MAX_FR_EDITING        // Limit edit via M203 or LCD to DEFAULT_MAX_FEEDRATE * 2
 #if ENABLED(LIMITED_MAX_FR_EDITING)
@@ -1218,7 +1253,9 @@
  * Override with M201
  *                                      X, Y, Z [, I [, J [, K...]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_MAX_ACCELERATION      { 4500, 4500, 150, 10000 }
+#ifndef DEFAULT_MAX_ACCELERATION   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define DEFAULT_MAX_ACCELERATION      { 4500, 4500, 150, 10000 }
+#endif
 
 //#define LIMITED_MAX_ACCEL_EDITING     // Limit edit via M201 or LCD to DEFAULT_MAX_ACCELERATION * 2
 #if ENABLED(LIMITED_MAX_ACCEL_EDITING)
@@ -1233,9 +1270,15 @@
  *   M204 R    Retract Acceleration
  *   M204 T    Travel Acceleration
  */
-#define DEFAULT_ACCELERATION          3000    // X, Y, Z and E acceleration for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  2000    // E acceleration for retracts
-#define DEFAULT_TRAVEL_ACCELERATION   4000    // X, Y, Z acceleration for travel (non printing) moves
+#ifndef DEFAULT_ACCELERATION   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define DEFAULT_ACCELERATION          3000    // X, Y, Z and E acceleration for printing moves
+#endif
+#ifndef DEFAULT_RETRACT_ACCELERATION   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define DEFAULT_RETRACT_ACCELERATION  2000    // E acceleration for retracts
+#endif
+#ifndef DEFAULT_TRAVEL_ACCELERATION   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define DEFAULT_TRAVEL_ACCELERATION   4000    // X, Y, Z acceleration for travel (non printing) moves
+#endif
 
 /**
  * Default Jerk limits (mm/s)
@@ -1275,7 +1318,9 @@
  *   https://blog.kyneticcnc.com/2018/10/computing-junction-deviation-for-marlin.html
  */
 #if DISABLED(CLASSIC_JERK)
-  #define JUNCTION_DEVIATION_MM 0.05 // (mm) Distance from real junction edge
+  #ifndef JUNCTION_DEVIATION_MM   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+    #define JUNCTION_DEVIATION_MM 0.05 // (mm) Distance from real junction edge
+  #endif
   #define JD_HANDLE_SMALL_SEGMENTS    // Use curvature estimation instead of just the junction angle
                                       // for small segments (< 1mm) with large junction angles (> 135°).
 #endif
@@ -1676,9 +1721,15 @@
 // @section motion
 
 // Invert the stepper direction. Change (or reverse the motor connector) if an axis goes the wrong way.
-#define INVERT_X_DIR true
-#define INVERT_Y_DIR true
-#define INVERT_Z_DIR false
+#ifndef INVERT_X_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define INVERT_X_DIR true
+#endif
+#ifndef INVERT_Y_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define INVERT_Y_DIR true
+#endif
+#ifndef INVERT_Z_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define INVERT_Z_DIR false
+#endif
 //#define INVERT_I_DIR false
 //#define INVERT_J_DIR false
 //#define INVERT_K_DIR false
@@ -1689,7 +1740,9 @@
 // @section extruder
 
 // For direct drive extruder v9 set to true, for geared extruder set to false.
-#define INVERT_E0_DIR false
+#ifndef INVERT_E0_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define INVERT_E0_DIR false
+#endif
 #define INVERT_E1_DIR false
 #define INVERT_E2_DIR false
 #define INVERT_E3_DIR false
@@ -1717,9 +1770,15 @@
 
 // Direction of endstops when homing; 1=MAX, -1=MIN
 // :[-1,1]
-#define X_HOME_DIR -1
-#define Y_HOME_DIR -1
-#define Z_HOME_DIR -1
+#ifndef X_HOME_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define X_HOME_DIR -1
+#endif
+#ifndef Y_HOME_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Y_HOME_DIR -1
+#endif
+#ifndef Z_HOME_DIR   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Z_HOME_DIR -1
+#endif
 //#define I_HOME_DIR -1
 //#define J_HOME_DIR -1
 //#define K_HOME_DIR -1
@@ -1730,16 +1789,28 @@
 // @section geometry
 
 // The size of the printable area
-#define X_BED_SIZE 300
-#define Y_BED_SIZE 300
+#ifndef X_BED_SIZE   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define X_BED_SIZE 300
+#endif
+#ifndef Y_BED_SIZE   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Y_BED_SIZE 300
+#endif
 
 // Travel limits (linear=mm, rotational=°) after homing, corresponding to endstop positions.
-#define X_MIN_POS 0
-#define Y_MIN_POS 0
-#define Z_MIN_POS 0
+#ifndef X_MIN_POS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define X_MIN_POS 0
+#endif
+#ifndef Y_MIN_POS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Y_MIN_POS 0
+#endif
+#ifndef Z_MIN_POS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Z_MIN_POS 0
+#endif
 #define X_MAX_POS X_BED_SIZE
 #define Y_MAX_POS Y_BED_SIZE
-#define Z_MAX_POS 450
+#ifndef Z_MAX_POS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+  #define Z_MAX_POS 450
+#endif
 //#define I_MIN_POS 0
 //#define I_MAX_POS 50
 //#define J_MIN_POS 0

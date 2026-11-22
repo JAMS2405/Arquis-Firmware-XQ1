@@ -31,6 +31,7 @@
  * Basic settings can be found in Configuration.h
  */
 #define CONFIGURATION_ADV_H_VERSION 02010206
+#include "machine/machine.h"   // Arquis: perfil de maquina (medidas, pasos/mm, sentidos, finales de carrera, PID...). Ver docs/arquis/MAQUINAS.md
 
 // @section develop
 
@@ -1085,12 +1086,20 @@
 #define INPUT_SHAPING_Y
 #if EITHER(INPUT_SHAPING_X, INPUT_SHAPING_Y)
   #if ENABLED(INPUT_SHAPING_X)
-    #define SHAPING_FREQ_X  35.0        // (Hz) The default dominant resonant frequency on the X axis.
-    #define SHAPING_ZETA_X   0.40       // Damping ratio of the X axis (range: 0.0 = no damping to 1.0 = critical damping).
+    #ifndef SHAPING_FREQ_X   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define SHAPING_FREQ_X  35.0        // (Hz) The default dominant resonant frequency on the X axis.
+    #endif
+    #ifndef SHAPING_ZETA_X   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define SHAPING_ZETA_X   0.40       // Damping ratio of the X axis (range: 0.0 = no damping to 1.0 = critical damping).
+    #endif
   #endif
   #if ENABLED(INPUT_SHAPING_Y)
-    #define SHAPING_FREQ_Y  25          // (Hz) The default dominant resonant frequency on the Y axis.
-    #define SHAPING_ZETA_Y   0.70       // Damping ratio of the Y axis (range: 0.0 = no damping to 1.0 = critical damping).
+    #ifndef SHAPING_FREQ_Y   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define SHAPING_FREQ_Y  25          // (Hz) The default dominant resonant frequency on the Y axis.
+    #endif
+    #ifndef SHAPING_ZETA_Y   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define SHAPING_ZETA_Y   0.70       // Damping ratio of the Y axis (range: 0.0 = no damping to 1.0 = critical damping).
+    #endif
   #endif
   //#define SHAPING_MIN_FREQ  20.0      // (Hz) By default the minimum of the shaping frequencies. Override to affect SRAM usage.
   //#define SHAPING_MAX_STEPRATE 10000  // By default the maximum total step rate of the shaped axes. Override to affect SRAM usage.
@@ -2732,9 +2741,13 @@
   #define INTERPOLATE      true
 
   #if AXIS_IS_TMC_CONFIG(X)
-    #define X_CURRENT       650        // (mA) RMS current. Multiply by 1.414 for peak current.
+    #ifndef X_CURRENT   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define X_CURRENT       650        // (mA) RMS current. Multiply by 1.414 for peak current.
+    #endif
     #define X_CURRENT_HOME  X_CURRENT  // (mA) RMS current for homing. (Typically lower than *_CURRENT.)
-    #define X_MICROSTEPS     32        // 0..256
+    #ifndef X_MICROSTEPS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define X_MICROSTEPS     32        // 0..256
+    #endif
     #define X_RSENSE          0.11     // Multiplied x1000 for TMC26X
     #define X_CHAIN_POS      -1        // -1..0: Not chained. 1: MCU MOSI connected. 2: Next in chain, ...
     //#define X_INTERPOLATE  true      // Enable to override 'INTERPOLATE' for the X axis
@@ -2752,9 +2765,13 @@
   #endif
 
   #if AXIS_IS_TMC_CONFIG(Y)
-    #define Y_CURRENT       650
+    #ifndef Y_CURRENT   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define Y_CURRENT       650
+    #endif
     #define Y_CURRENT_HOME  Y_CURRENT
-    #define Y_MICROSTEPS    32
+    #ifndef Y_MICROSTEPS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define Y_MICROSTEPS    32
+    #endif
     #define Y_RSENSE          0.11
     #define Y_CHAIN_POS      -1
     //#define Y_INTERPOLATE  true
@@ -2772,9 +2789,13 @@
   #endif
 
   #if AXIS_IS_TMC_CONFIG(Z)
-    #define Z_CURRENT       650
+    #ifndef Z_CURRENT   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define Z_CURRENT       650
+    #endif
     #define Z_CURRENT_HOME  Z_CURRENT
-    #define Z_MICROSTEPS    32
+    #ifndef Z_MICROSTEPS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define Z_MICROSTEPS    32
+    #endif
     #define Z_RSENSE          0.11
     #define Z_CHAIN_POS      -1
     //#define Z_INTERPOLATE  true
@@ -2872,8 +2893,12 @@
   #endif
 
   #if AXIS_IS_TMC_CONFIG(E0)
-    #define E0_CURRENT      700
-    #define E0_MICROSTEPS   32
+    #ifndef E0_CURRENT   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define E0_CURRENT      700
+    #endif
+    #ifndef E0_MICROSTEPS   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+      #define E0_MICROSTEPS   32
+    #endif
     #define E0_RSENSE         0.11
     #define E0_CHAIN_POS     -1
     //#define E0_INTERPOLATE true
@@ -3063,7 +3088,9 @@
    * Define your own with:
    * { <off_time[1..15]>, <hysteresis_end[-3..12]>, hysteresis_start[1..8] }
    */
-  #define CHOPPER_TIMING CHOPPER_DEFAULT_24V        // All axes (override below)
+  #ifndef CHOPPER_TIMING   // Arquis: valor por defecto del XQ1; un perfil de maquina (Marlin/machine/*.h) puede definirlo antes
+    #define CHOPPER_TIMING CHOPPER_DEFAULT_24V        // All axes (override below)
+  #endif
   //#define CHOPPER_TIMING_X  CHOPPER_TIMING        // For X Axes (override below)
   //#define CHOPPER_TIMING_X2 CHOPPER_TIMING_X
   //#define CHOPPER_TIMING_Y  CHOPPER_TIMING        // For Y Axes (override below)

@@ -155,3 +155,7 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 
 ## Nivelación manual de cama 5×5 (sin sonda)
 Malla bilineal 5×5 medida con papel desde la TS35 (Herramientas → Malla 5x5), guardada con M500 y activada tras cada G28 (`ENABLE_LEVELING_AFTER_G28`). Ver `docs/arquis/MALLA_5x5.md`. **Aviso:** cambiar la malla de 3×3 a 5×5 cambia el tamaño de la EEPROM: la primera vez tras flashear Marlin la descarta y vuelve a los valores de fábrica (guarda `M503` antes).
+
+
+## Perfiles de máquina (varias impresoras, un solo firmware)
+Los valores de cada impresora (medidas, pasos/mm, sentidos, finales de carrera, PID…) viven en `Marlin/machine/<nombre>.h` y se eligen con el entorno de PlatformIO (`pio run -e aquila_d1`). El XQ1 no cambia. Ver `docs/arquis/MAQUINAS.md`. **EEPROM:** las versiones de la nivelación 5×5 y del PID de cama cambian su tamaño: guarda `M503` antes de flashear.
