@@ -6,7 +6,7 @@
 ## Cómo está montado
 | Pieza | Para qué |
 |---|---|
-| `Marlin/machine/xq1.h` | Arquis XQ1: sin overrides (valen los de `Configuration.h`). |
+| `Marlin/machine/xq1.h` | Arquis XQ1: solo overrides de Z (velocidad 5 mm/s, aceleración 100), prueba por Z que no subía al imprimir; el resto vale lo de `Configuration.h`. |
 | `Marlin/machine/aquila_d1.h` | Aquila D1: solo lo que difiere del XQ1 (cama 230×240, Z 240, pasos/mm, sentidos X/Y/E, finales de carrera X/Y, aceleración Y). Sacado de su `Configuration.h`. |
 | `Marlin/machine/machine.h` | Selector: elige el perfil según el entorno. |
 | `ini/arquis.ini` | Entornos de PlatformIO: `aquila_d1` = el entorno normal + `-DARQUIS_MACHINE_AQUILA_D1`. |
