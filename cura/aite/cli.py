@@ -1,20 +1,26 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
-"""Linea de comandos de AITE (Fase 1). Solo analiza y genera mallas de prueba: NO escribe G-code.
+"""Linea de comandos de AITE. La Fase 1 analiza y genera mallas de prueba (no escribe G-code); el subcomando "arbol" genera y verifica el
+G-code de UNA pieza prismatica de prueba (no es el laminador general).
 
     python -m aite info pieza.stl
     python -m aite analyze pieza.stl [--beta-c 55 | --c-min 0.5] [--alpha-max 20 | --head perfil.json] [--margin 3] [--strict]
     python -m aite head [perfil.json]
     python -m aite make-test-part salida.stl [--trunk 20x20x40] [--branch-len 15] [--branch-section 10x10] [--branch-z0 15] [--axis x|y] [--single]
+    python -m aite arbol --salida carpeta/ [--probeta] [--seco] [--material PETG] [--alfa 18.5] ...   (G-code del arbol de prueba, ver aite/arbol.py)
 
-Codigos de salida: 0 correcto; 1 con --strict si hay regiones infactibles o la malla no es estanca; 2 entrada invalida.
+Codigos de salida: 0 correcto; 1 con --strict si hay regiones infactibles o la malla no es estanca; 2 entrada invalida
+(en "arbol": 2 tambien si el G-code generado no pasa la verificacion; en ese caso no se escribe el archivo).
 """
 import argparse
+import os
 import sys
 from typing import List, Optional, Tuple
 
 from . import __version__
 from .head import HeadProfileError, load_head_profile
 from .mesh import MeshError, analyze_mesh, load_mesh, write_3mf, write_stl_binary
+from .arbol import Arbol, Proceso, Rama, generar, probeta_rama
+from .gcode_check import verificar
 from .overhang import analyze_overhangs
 from .parts import make_cross_part
 from .physics import beta_c_deg, max_feasible_overhang
@@ -123,8 +129,38 @@ def _cmd_make(a) -> int:
     return 0
 
 
+def _cmd_arbol(a) -> int:
+    proc = Proceso(material=a.material.upper(), boquilla=a.boquilla, ancho=a.ancho, capa_plana=a.capa_plana, capa_zona=a.capa_zona, capa_incl=a.capa_incl,
+                   alfa=a.alfa, c_min=a.c_min, flujo=a.flujo, t_boq=a.temp_boquilla, t_voladizo=a.temp_voladizo, t_cama=a.temp_cama,
+                   ventilador=a.ventilador, ventilador_voladizo=a.ventilador_voladizo, v_incl=a.v_incl, v_plana=a.v_plana,
+                   elevar_z=a.elevar_z, traslape_pared=a.traslape, aparcar=not a.sin_aparcar, seco=a.seco)
+    if a.probeta:
+        arbol = probeta_rama(proc, a.largo, a.alto_rama, a.pisos[0] if a.pisos else 6.0)
+    else:
+        pisos = a.pisos or [18.0, 34.0]
+        arbol = Arbol(a.tronco, a.altura, [Rama(+1 if i % 2 == 0 else -1, z, a.largo, a.alto_rama) for i, z in enumerate(pisos)])
+    texto, cons = generar(arbol, proc)
+    inf = verificar(texto, cons)
+    print("AITE %s - %s%s" % (__version__, "probeta de una rama" if a.probeta else "arbol con %d rama(s)" % len(arbol.ramas), " (EN SECO)" if a.seco else ""))
+    for av in cons.avisos:
+        print("AVISO: " + av)
+    print(inf.texto())
+    if not inf.ok:
+        print("error: el G-code NO pasa la verificacion; no se escribe el archivo", file=sys.stderr)
+        return 2
+    nombre = "%s_%s_xq1%s.gcode" % ("probeta_rama90" if a.probeta else "arbol_voladizo90", proc.material, "_SECO" if a.seco else "")
+    ruta = a.salida or nombre
+    if os.path.isdir(ruta) or (a.salida and a.salida.endswith(("/", os.sep))):
+        os.makedirs(ruta, exist_ok=True)
+        ruta = os.path.join(ruta, nombre)
+    with open(ruta, "w", encoding="ascii", newline="\n") as f:
+        f.write(texto)
+    print("escrito %s (%d lineas)" % (ruta, texto.count("\n")))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="aite", description="AITE Fase 1: analisis geometrico de voladizos (no genera G-code)")
+    p = argparse.ArgumentParser(prog="aite", description="AITE: analisis geometrico de voladizos (Fase 1) y G-code del arbol de prueba (subcomando arbol)")
     sub = p.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("info", help="datos y estanqueidad de una malla")
     i.add_argument("file")
@@ -157,6 +193,36 @@ def build_parser() -> argparse.ArgumentParser:
     m.add_argument("--single", action="store_true", help="una sola rama")
     m.add_argument("--cell", type=float, default=0.5)
     m.set_defaults(fn=_cmd_make)
+    r = sub.add_parser("arbol", help="G-code del arbol de prueba con ramas en voladizo de 90 grados (primera prueba fisica)")
+    d = Proceso()
+    r.add_argument("--salida", default=None, help="archivo .gcode o carpeta (con barra final o existente); por defecto, en la carpeta actual")
+    r.add_argument("--probeta", action="store_true", help="solo una rama corta (15 mm de alto): conviene probarla antes que el arbol")
+    r.add_argument("--seco", action="store_true", help="sin extruir, sin calentar y 10 mm mas arriba: solo para ver el movimiento")
+    r.add_argument("--material", default=d.material, help="solo para el nombre y la cabecera")
+    r.add_argument("--tronco", type=float, default=10.0, help="lado del tronco cuadrado (mm)")
+    r.add_argument("--altura", type=float, default=50.0)
+    r.add_argument("--largo", type=float, default=20.0, help="largo de cada rama desde la pared del tronco")
+    r.add_argument("--alto-rama", type=float, default=8.0, dest="alto_rama")
+    r.add_argument("--pisos", type=float, nargs="+", default=None, help="altura del piso de cada rama (alternan derecha e izquierda); por defecto 18 34")
+    r.add_argument("--boquilla", type=float, default=d.boquilla)
+    r.add_argument("--ancho", type=float, default=d.ancho, help="ancho de linea")
+    r.add_argument("--capa-plana", type=float, default=d.capa_plana, dest="capa_plana")
+    r.add_argument("--capa-zona", type=float, default=d.capa_zona, dest="capa_zona", help="capa plana del tronco mientras se imprime una rama")
+    r.add_argument("--capa-incl", type=float, default=d.capa_incl, dest="capa_incl", help="capa inclinada de las ramas")
+    r.add_argument("--alfa", type=float, default=d.alfa, help="inclinacion de las capas de rama (grados); debe caber en la ventana apoyo-minimo / cono del cabezal")
+    r.add_argument("--c-min", type=float, default=d.c_min, dest="c_min", help="apoyo minimo supuesto entre cordones (se mide con esta misma prueba)")
+    r.add_argument("--flujo", type=float, default=d.flujo)
+    r.add_argument("--temp-boquilla", type=int, default=d.t_boq, dest="temp_boquilla")
+    r.add_argument("--temp-voladizo", type=int, default=d.t_voladizo, dest="temp_voladizo")
+    r.add_argument("--temp-cama", type=int, default=d.t_cama, dest="temp_cama")
+    r.add_argument("--ventilador", type=int, default=d.ventilador, help="0-255, capas planas desde la capa 3")
+    r.add_argument("--ventilador-voladizo", type=int, default=d.ventilador_voladizo, dest="ventilador_voladizo")
+    r.add_argument("--v-incl", type=float, default=d.v_incl, dest="v_incl", help="velocidad en las capas inclinadas (mm/s)")
+    r.add_argument("--v-plana", type=float, default=d.v_plana, dest="v_plana")
+    r.add_argument("--elevar-z", type=float, default=d.elevar_z, dest="elevar_z", help="mm extra de Z sobre las capas inclinadas (si la punta roza la capa de abajo)")
+    r.add_argument("--traslape", type=float, default=d.traslape_pared, help="mm que el primer cordon de cada capa inclinada se mete en la pared del tronco")
+    r.add_argument("--sin-aparcar", action="store_true", dest="sin_aparcar", help="cambia la temperatura sin apartar el cabezal del modelo")
+    r.set_defaults(fn=_cmd_arbol)
     return p
 
 

@@ -1,6 +1,6 @@
 # AITE — Fase 1: núcleo geométrico
 
-> **Estado: implementado y probado en el PC (83 pruebas). Sin prueba física.** No genera G-code ni trayectorias: eso son las Fases 2 y 3. No modifica el firmware, Cura ni ningún archivo existente (solo añade `cura/aite/`, `cura/tests/aite/` y este documento).
+> **Estado: implementado y probado en el PC (83 pruebas). Sin prueba física.** La Fase 1 no genera G-code ni trayectorias (eso son las Fases 2 y 3). Después se añadió, aparte, el G-code de una pieza prismática de prueba: ver [`11_aite_arbol_prueba.md`](11_aite_arbol_prueba.md). No modifica el firmware, Cura ni ningún archivo existente (solo añade `cura/aite/`, `cura/tests/aite/` y este documento).
 
 AITE (*ARQUIS Interleaved Adaptive Non-Planar Toolpath Engine*) es la tecnología de laminado descrita en el informe técnico de la etapa 1. **No es la función No-Planar de la Etapa 5** (`09_etapa5_nonplanar.md`): aquella ondula capas sobre un mapa de alturas; AITE planifica capas inclinadas en voladizos, que un mapa de alturas no puede describir.
 

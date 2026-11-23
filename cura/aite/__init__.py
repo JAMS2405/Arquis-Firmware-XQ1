@@ -6,7 +6,10 @@ Diseno y justificacion: informe tecnico AITE (etapa 1) y ``docs/slicer_suite/10_
 
 Fase 1 (esta): lector de mallas STL/3MF, comprobacion de que son estancas, generador de la pieza de prueba, campo de columnas y capas,
 detector de voladizos (por facetas y por capas), solucionador de angulo por region, perfil del cabezal y comparador de volumen.
-NO genera G-code ni trayectorias: eso son las Fases 2 y 3.
+El laminador general (trayectorias y G-code de un STL cualquiera) son las Fases 2 y 3.
+
+Aparte: ``arbol`` y ``gcode_check`` generan y verifican el G-code de UNA pieza prismatica de prueba (arbol con ramas en voladizo de
+90 grados, primera prueba fisica); ver ``docs/slicer_suite/11_aite_arbol_prueba.md``. No es el laminador general.
 """
 
 __version__ = "0.1.0-fase1"
