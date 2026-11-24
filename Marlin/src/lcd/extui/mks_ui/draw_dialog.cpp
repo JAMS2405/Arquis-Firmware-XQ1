@@ -59,6 +59,7 @@
   #include "arquis_files.h"
   #include "arquis_params.h"
   #include "arquis_params_view.h"
+  #include "arquis_machine.h"
 #endif
 
 extern lv_group_t *g;
@@ -81,6 +82,12 @@ extern bool temps_update_flag;
 static void btn_ok_event_cb(lv_obj_t *btn, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   if (DIALOG_IS(TYPE_PRINT_FILE)) {
+    #if ENABLED(ARQUIS_UI)
+      // ARQUIS firmware unico: no se empieza a imprimir sin un modelo de maquina valido y comprobado (ni con un driver TMC
+      // sin verificar). El aviso lo muestra la pantalla a la que se vuelve.
+      if (!arq_mc_motion_ok()) arq_mc_tmc_verify(true);
+      if (!arq_mc_motion_ok()) { arq_mc_notice(arq_mc_block_text(arq_mc_block_reason())); goto_previous_ui(); return; }
+    #endif
     #if HAS_GCODE_PREVIEW
       preview_gcode_prehandle(list_file.file_name[sel_id]);
     #endif

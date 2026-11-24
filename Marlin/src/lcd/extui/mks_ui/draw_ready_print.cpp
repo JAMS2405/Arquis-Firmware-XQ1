@@ -29,6 +29,9 @@
 #include <lv_conf.h>
 #include "tft_lvgl_configuration.h"
 #include "draw_ui.h"
+#if ENABLED(ARQUIS_UI)
+  #include "arquis_machine_ui.h"
+#endif
 
 #include <lvgl.h>
 
@@ -130,6 +133,8 @@ void mks_disp_test() {
 
 void lv_draw_ready_print() {
   #if ENABLED(ARQUIS_UI)
+    // ARQUIS firmware unico: sin un modelo de maquina valido, el asistente sustituye a la pantalla de inicio
+    if (arq_mc_needs_wizard()) { arq_machine_wizard_draw(); return; }
     arq_dashboard_draw();
   #else   // ---- pantalla original MKS (se conserva intacta) ----
   char buf[30] = {0};

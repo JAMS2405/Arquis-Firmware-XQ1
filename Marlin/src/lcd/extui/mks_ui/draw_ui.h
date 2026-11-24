@@ -339,7 +339,8 @@ typedef enum {
   CANCEL_OBJECT_UI,
   PID_UI,                // Arquis: autoajuste PID (arquis_pid_ui.cpp)
   PERF_UI,               // Arquis: rendimiento - aceleraciones, Linear Advance, Input Shaping (arquis_perf_ui.cpp)
-  FLOW_UI                // Arquis: flujo de extrusion (M221), acceso desde Herramientas (arquis_tools.cpp)
+  FLOW_UI,               // Arquis: flujo de extrusion (M221), acceso desde Herramientas (arquis_tools.cpp)
+  ARQ_MACHINE_UI         // Arquis: firmware unico - asistente y Ajustes > Maquina (arquis_machine_ui.cpp)
 } DISP_STATE;
 
 typedef struct {

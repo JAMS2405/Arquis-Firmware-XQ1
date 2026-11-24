@@ -228,7 +228,7 @@ Nozzle nozzle;
   float Nozzle::park_mode_0_height(const_float_t park_z) {
     // Apply a minimum raise, if specified. Use park.z as a minimum height instead.
     return _MAX(park_z,                       // Minimum height over 0 based on input
-      _MIN(Z_MAX_POS,                         // Maximum height is fixed
+      _MIN(TERN(ARQUIS_UI, base_max_pos(Z_AXIS), Z_MAX_POS),   // Maximum height (ARQUIS: altura del modelo elegido)
         #ifdef NOZZLE_PARK_Z_RAISE_MIN
           NOZZLE_PARK_Z_RAISE_MIN +           // Minimum raise...
         #endif
@@ -237,8 +237,16 @@ Nozzle nozzle;
     );
   }
 
-  void Nozzle::park(const uint8_t z_action, const xyz_pos_t &park/*=NOZZLE_PARK_POINT*/) {
+  void Nozzle::park(const uint8_t z_action, const xyz_pos_t &park_in/*=NOZZLE_PARK_POINT*/) {
     constexpr feedRate_t fr_xy = NOZZLE_PARK_XY_FEEDRATE, fr_z = NOZZLE_PARK_Z_FEEDRATE;
+    #if ENABLED(ARQUIS_UI)
+      // ARQUIS firmware unico: NOZZLE_PARK_POINT se compila con la envolvente comun (Y_MAX_POS - 10 = 290). En una maquina
+      // mas pequena ese punto quedaria fuera: se limita a la cama y la altura del modelo elegido.
+      xyz_pos_t park = park_in;
+      NOMORE(park.x, base_max_pos(X_AXIS)); NOMORE(park.y, base_max_pos(Y_AXIS)); NOMORE(park.z, base_max_pos(Z_AXIS));
+    #else
+      const xyz_pos_t &park = park_in;
+    #endif
 
     switch (z_action) {
       case 1: // Go to Z-park height
@@ -246,7 +254,7 @@ Nozzle nozzle;
         break;
 
       case 2: // Raise by Z-park height
-        do_blocking_move_to_z(_MIN(current_position.z + park.z, Z_MAX_POS), fr_z);
+        do_blocking_move_to_z(_MIN(current_position.z + park.z, TERN(ARQUIS_UI, base_max_pos(Z_AXIS), Z_MAX_POS)), fr_z);
         break;
 
       default: // Raise by NOZZLE_PARK_Z_RAISE_MIN, use park.z as a minimum height

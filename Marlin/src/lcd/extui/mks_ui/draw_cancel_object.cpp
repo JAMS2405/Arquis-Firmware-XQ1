@@ -27,6 +27,7 @@
 #include "arquis_objects_view.h"
 #include "arquis_objects.h"
 #include "arquis_objects_sd.h"
+#include "arquis_machine.h"   // ARQUIS: cama del modelo elegido
 
 #include <stdio.h>
 #include <string.h>
@@ -138,7 +139,7 @@ static void build_model() {
     Mdl.bed = { arq_obj.min_x, arq_obj.min_y, arq_obj.bed_w, arq_obj.bed_d };
     if (Mdl.active >= 0) last_order = arq_obj.rec[Mdl.active].order;
   }
-  else Mdl.bed = { 0, 0, (int32_t)((X_BED_SIZE) * 10 + 0.5f), (int32_t)((Y_BED_SIZE) * 10 + 0.5f) };
+  else Mdl.bed = { 0, 0, (int32_t)(arq_mc_max_pos(0) * 10 + 0.5f), (int32_t)(arq_mc_max_pos(1) * 10 + 0.5f) };   // ARQUIS: cama del modelo
   for (int i = 0; i < n; ++i) {
     const bool canc = cancelable.is_canceled(i);
     if (man) {

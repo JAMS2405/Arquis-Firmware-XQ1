@@ -1,4 +1,7 @@
 #pragma once
+// REFERENCIA (firmware unico): el firmware YA NO incluye este archivo. Los valores de fabrica del Arquis XQ1 estan en la tabla de
+// Marlin/src/lcd/extui/mks_ui/arquis_machine_logic.cpp; tests/machines/test_profiles.py comprueba que coinciden con
+// Configuration.h + este archivo. Si cambias un valor aqui, cambia tambien la tabla (la prueba lo detecta).
 // Perfil Arquis XQ1 (300x300x450). Salvo lo de abajo, sus valores son los de Configuration.h / Configuration_adv.h.
 
 // PRUEBA (Z no subia al imprimir): Z mas lento y con menos aceleracion, como antes del commit c5b5cfd (Z 45 mm/s y 150 mm/s2).

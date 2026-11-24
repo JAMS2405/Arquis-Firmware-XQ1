@@ -14,8 +14,15 @@ Las pruebas propias del módulo de Cura están en `cura/tests/`; las del firmwar
 ## tests/pid (autoajuste PID)
 `run.sh`: comprobaciones estáticas (configuración, parche de `temperature.cpp`, cancelación con `wait_for_heatup`, convención de M301/M304) y la lógica pura REAL (`arquis_pid_logic.cpp`). La pantalla: `herramientas/arquis_ui/sim/build_pid_sim.sh`. Documentación: `docs/arquis/PID.md`.
 
-## tests/machines (perfiles de máquina)
-`python3 tests/machines/test_profiles.py`: con el preprocesador de gcc comprueba que el XQ1 queda idéntico a la configuración anterior a los perfiles, que Aquila D1 cambia exactamente lo que declara (y coincide con su `Configuration.h` original) y que cada valor de un perfil está protegido. Documentación: `docs/arquis/MAQUINAS.md`.
+## tests/machines (firmware único XQ1 / Aquila D1)
+`tests/machines/run.sh`:
+- **`test_profiles.py`** (preprocesador de gcc, sin compilar Marlin):
+  - la tabla de perfiles de fábrica coincide con la configuración real de cada máquina (`Configuration*.h` + `Marlin/machine/xq1.h` / `aquila_d1.h`);
+  - la configuración común no cambia salvo lo previsto;
+  - restricciones: `stepper.cpp`, el planificador, `endstops.cpp`, Input Shaping, la malla, el PID, el Wi-Fi y `temperature.cpp` siguen iguales que en `a98dd6a`; un solo entorno; USB solo CDC.
+- **`machine_logic_test.cpp`** (lógica REAL de `arquis_machine_logic.cpp`, con ASan+UBSan): rangos, detección del modelo, registro EEPROM (CRC, dos copias, contador de secuencia, cortes de luz a mitad de escritura, migración) y máscara `shaft`.
+
+La pantalla (asistente y Ajustes → Máquina) se prueba con `herramientas/arquis_ui/sim/build_machine_sim.sh` (LVGL real, toques simulados y capturas). Documentación: `docs/arquis/MAQUINAS.md`.
 
 ## tests/perf (pantalla Rendimiento)
 `run.sh`: comprobaciones estáticas (los límites de la pantalla frente al código de Marlin, lo que guarda M500, integración) y la lógica pura REAL (`arquis_perf_logic.cpp`, ASan/UBSan). La pantalla: `herramientas/arquis_ui/sim/build_perf_sim.sh`. Documentación: `docs/arquis/RENDIMIENTO.md`.

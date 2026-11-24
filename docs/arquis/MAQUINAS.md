@@ -1,43 +1,44 @@
-# Varias impresoras con el mismo firmware (perfiles de máquina)
+# Un solo firmware para Arquis XQ1 y Aquila D1
 
-**Problema:** el firmware (pantallas, nivelación 5×5, PID…) lo mantienes tú, pero cada impresora tiene sus medidas, pasos/mm, sentidos de motor, finales de carrera…, y cada `git pull` pisaba esos valores.
-**Solución:** esos valores viven en un **perfil por máquina** (`Marlin/machine/<nombre>.h`). El resto del firmware es común. Para actualizar, tu primo hace `git pull` y compila **su entorno**; sus parámetros no se tocan porque nunca están en `Configuration.h`.
+Desde la Fase 4 hay **un único `Robin_nano_v3.bin`** para las dos impresoras. El modelo **no se elige al compilar**: se elige en la pantalla.
+- **Primera instalación:** lo elige el asistente del primer arranque.
+- **Después:** se cambia en **Ajustes → Máquina**.
 
-## Cómo está montado
-| Pieza | Para qué |
-|---|---|
-| `Marlin/machine/xq1.h` | Arquis XQ1: solo overrides de Z (velocidad 5 mm/s, aceleración 100), prueba por Z que no subía al imprimir; el resto vale lo de `Configuration.h`. |
-| `Marlin/machine/aquila_d1.h` | Aquila D1: solo lo que difiere del XQ1 (cama 230×240, Z 240, pasos/mm, sentidos X/Y/E, finales de carrera X/Y, aceleración Y). Sacado de su `Configuration.h`. |
-| `Marlin/machine/machine.h` | Selector: elige el perfil según el entorno. |
-| `ini/arquis.ini` | Entornos de PlatformIO: `aquila_d1` = el entorno normal + `-DARQUIS_MACHINE_AQUILA_D1`. |
-| `Configuration.h` / `_adv.h` | Incluyen el selector **antes** de sus valores; los valores "de máquina" están protegidos con `#ifndef`, así que **gana lo que defina el perfil**. |
-Lista de valores que un perfil puede definir: ver `Marlin/machine/_plantilla.h` (medidas, pasos/mm, velocidades y aceleraciones, sentidos, finales de carrera, sensores y temperaturas máximas, PID de hotend y cama, input shaping, chopper, corrientes y micropasos de los TMC).
+La elección se guarda en la EEPROM. Instalación paso a paso: [`INSTALACION_FIRMWARE_UNICO.md`](INSTALACION_FIRMWARE_UNICO.md). Detalles técnicos: [`FASE4_IMPLEMENTACION_FINAL.md`](FASE4_IMPLEMENTACION_FINAL.md).
 
-## Qué hace cada uno
-* **Tú (XQ1):** nada cambia. `pio run -e mks_robin_nano_v3_1_usb_flash_drive_msc`. Se comprobó que **las 1266 macros de configuración quedan idénticas** a antes de los perfiles (`tests/machines/test_profiles.py`).
-* **Tu primo (Aquila D1):**
-  ```bash
-  git pull
-  pio run -e aquila_d1
-  ```
-  Y flashea el `.bin` como siempre. Cada actualización nueva = esos dos comandos. Si algo suyo no está en su perfil (p. ej. corrientes de motor o PID distintos), se **añade a `aquila_d1.h`** (no a `Configuration.h`). Todo lo que no aparece en su perfil lo hereda del firmware común.
+## Qué cambia entre las dos máquinas y dónde vive
+| Dato | XQ1 | Aquila D1 | Dónde se guarda |
+|---|---|---|---|
+| Modelo | Arquis XQ1 | Aquila D1 | Registro ARQUIS (EEPROM) |
+| Cama X × Y, altura Z (mm) | 300 × 300, 450 | 230 × 240, 240 | Registro ARQUIS |
+| Lógica de los finales X / Y / Z | invertida / invertida / invertida | normal / normal / invertida | Registro ARQUIS |
+| Sentido de los motores X / Y / Z / E0 | invertido / invertido / normal / normal | normal / normal / normal / invertido | Registro ARQUIS. Se aplica con el bit `GCONF.shaft` del TMC2209 |
+| Pasos/mm Z / E | 791,74 / 748,72 | 803,41 / 781,08 | EEPROM de Marlin (`M92`) |
+| Velocidad máx. Z, aceleración máx. Y / Z | 5 mm/s*, 4500 / 100* | 45 mm/s, 3500 / 150 | EEPROM de Marlin (`M203` / `M201`) |
 
-## Importante: lo que hay dentro de la impresora (EEPROM)
-Hay dos capas de "parámetros":
-1. **Valores por defecto** (en el firmware): los del perfil. Se mantienen en cada actualización.
-2. **Valores guardados en la EEPROM de la placa** (`M500`: Z-offset/home offset, PID afinado, pasos/mm ajustados, babystep…). Un flasheo normal **los conserva**… salvo cuando una actualización **cambia el tamaño de la EEPROM**. Esta actualización lo hace (malla 3×3→5×5 y PID de cama): **la primera vez Marlin descarta la EEPROM y arranca con los valores del perfil**.
-Por eso, **antes de flashear esta versión**: conectar y ejecutar `M503`, copiar/guardar la salida (sobre todo `M92`, `M206`/`M851`, `M301`, `M304`, `M204`, `M205`); **después**, reintroducir lo que difiera del perfil y `M500`. Los ajustes propios de la pantalla (idioma, posiciones de tornillos, etc.) están en otra memoria y se conservan. Cuando una versión futura no toque la EEPROM, se avisará en `CAMBIOS.md`.
+\* XQ1: Z a 5 mm/s y 100 mm/s² es la **prueba pendiente de validar** («Z no subía al imprimir»). En la pantalla aparece con un asterisco.
 
-## Qué se adapta solo a su cama (230×240)
-Nivelación 5×5: área de 15 a 215 × 15 a 225 mm (pasos de 50 y 52,5 mm); el mapa de cancelar objeto y el esquema de tornillos usan `X_BED_SIZE`/`Y_BED_SIZE`. Las posiciones de los 5 tornillos se configuran en la pantalla (Ajustes → Parámetros → Nivelación). **PID:** los valores por defecto son los del XQ1; debe hacer el autoajuste de hotend y cama (Ajustes → PID) y guardarlo.
+**Es común a las dos máquinas (va fijo en el BIN y no se edita desde la pantalla):**
+- placa MKS Robin Nano V3.1, pantalla TS35 y perilla;
+- TMC2209 por UART, 32 micropasos, *chopper* de 24 V;
+- termistores, temperaturas máximas (285 / 115 °C) y protecciones térmicas;
+- homing al mínimo con origen 0;
+- USB CDC/COM, Wi-Fi, microSD.
+
+Los valores de fábrica de cada modelo están en la tabla `profiles` de `Marlin/src/lcd/extui/mks_ui/arquis_machine_logic.cpp`. `Marlin/machine/xq1.h` y `aquila_d1.h` se conservan como **referencia** (el firmware ya no los incluye). `tests/machines/test_profiles.py` comprueba que la tabla coincide con ellos y con `Configuration*.h`.
+
+## Cómo se compila
+```bash
+pio run -e mks_robin_nano_v3_1_usb_flash_drive_msc
+```
+Ese único entorno produce el BIN de las dos máquinas. El entorno `aquila_d1` **ya no existe**.
+
+El nombre del entorno se conserva por compatibilidad, aunque el BIN ya no lleva USB MSC ni USB host (F3-08).
+
+## EEPROM
+- **Registro ARQUIS:** 32 bytes con 2 copias, en las direcciones 0x0F00 y 0x0F80 de la EEPROM I²C de 4 KB, aparte de los datos de Marlin (100–788). Lleva identificador `ARQM`, versión, longitud, número de secuencia y CRC16.
+- **EEPROM de Marlin:** no cambia de estructura ni de versión, así que **una actualización no borra los ajustes**.
+- **`M502`:** restaura los valores de fábrica **del modelo elegido**, no siempre los del XQ1.
 
 ## Añadir otra impresora
-1. Copia `Marlin/machine/_plantilla.h` como `Marlin/machine/<nombre>.h` y deja solo las líneas que difieran.
-2. En `machine.h`: `#elif defined(ARQUIS_MACHINE_<NOMBRE>)` → `#include "<nombre>.h"`.
-3. En `ini/arquis.ini`: copia `[env:aquila_d1]`, cambia nombre y `-D`.
-4. `python3 tests/machines/test_profiles.py` comprueba que cada valor está protegido y que el XQ1 no cambia.
-**Regla de oro:** lo de la máquina, en su perfil; lo común (funciones nuevas, pantallas), en el firmware.
-
-## Limitaciones
-* Cambios futuros que toquen a la vez una línea "de máquina" en `Configuration.h` darían conflicto de `git`; por eso están envueltas en `#ifndef` y los cambios de valores de máquina deben hacerse en el perfil.
-* No compilado aquí: tras `git pull`, comprueba en el log de `pio run -e aquila_d1 -v` que aparece `-DARQUIS_MACHINE_AQUILA_D1` y que el nombre de máquina en la pantalla (Sistema) es "Aquila D1".
+Ver `Marlin/machine/_plantilla.h`. Se añade una fila a la tabla de perfiles, no un entorno de compilación.

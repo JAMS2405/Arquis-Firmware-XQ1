@@ -1,81 +1,109 @@
 #!/usr/bin/env python3
-"""Pruebas de los perfiles de maquina (Marlin/machine/*.h): el XQ1 queda IDENTICO a antes y cada perfil solo cambia lo que declara.
-Usa el preprocesador de gcc (-dM -E) sobre Configuration.h / Configuration_adv.h REALES; no compila Marlin."""
+"""Firmware UNICO XQ1 / Aquila D1 (perfiles en tiempo de ejecucion). Comprueba, sin compilar Marlin:
+ 1) que la TABLA de perfiles de fabrica (arquis_machine_logic.cpp) coincide con la configuracion real de cada maquina tal y
+    como se compilaba antes (Configuration.h / Configuration_adv.h + Marlin/machine/xq1.h o aquila_d1.h, preprocesador de gcc);
+ 2) que la configuracion comun no cambia salvo lo previsto (logica de finales en tiempo de ejecucion);
+ 3) las restricciones: stepper.cpp, planificador, endstops.cpp, Input Shaping y malla sin tocar; USB solo CDC; un solo entorno."""
 import re, subprocess, sys, pathlib, tempfile, shutil
 ROOT = pathlib.Path(__file__).resolve().parents[2]; M = ROOT / "Marlin"
-BASELINE = "c5b5cfd"      # ultimo commit con la configuracion SIN perfiles (XQ1 tal y como estaba)
+BASE = "a98dd6ab50ae2a596344a789c344d9f81be08b14"   # ultimo commit con perfiles de compilacion (antes del firmware unico)
 fails = checks = 0
 def check(cond, msg):
     global fails, checks
     checks += 1; print(("[machines] OK    " if cond else "[machines] FALLA ") + msg)
     if not cond: fails += 1
 
-def dump(marlin_dir, defs=()):
-    base = ["g++", "-E", "-dM", "-x", "c++", "-I", str(marlin_dir), "-I", str(marlin_dir / "src/core"), "-DSTM32F4", *defs, "-include", str(marlin_dir / "src/core/macros.h")]
+def dump(mdir, defs=()):
+    base = ["g++", "-E", "-dM", "-x", "c++", "-I", str(mdir), "-I", str(M / "src/core"), "-DSTM32F4", *defs, "-include", str(M / "src/core/macros.h")]
     out = {}
-    for args in ([str(marlin_dir / "Configuration.h")], ["-include", str(marlin_dir / "Configuration.h"), str(marlin_dir / "Configuration_adv.h")]):
+    for args in ([str(mdir / "Configuration.h")], ["-include", str(mdir / "Configuration.h"), str(mdir / "Configuration_adv.h")]):
         r = subprocess.run(base + args, capture_output=True, text=True)
-        if r.returncode: print(r.stderr[:600]); return None
+        if r.returncode: print(r.stderr[:800]); return None
         for l in r.stdout.splitlines():
             m = re.match(r'#define (\w+)(?:\(.*?\))? ?(.*)$', l)
             if m: out[m.group(1)] = m.group(2).strip()
     return out
 
-xq1 = dump(M); aq = dump(M, ["-DARQUIS_MACHINE_AQUILA_D1"])
-# Overrides propios del perfil XQ1 (Marlin/machine/xq1.h): son los unicos valores en que el XQ1 puede diferir de la configuracion anterior
-xq1_prof = (M / "machine/xq1.h").read_text(encoding="utf-8")
-xq1_declared = {m.group(1): m.group(2).strip() for m in re.finditer(r'^#define\s+(\w+)\s+(.*?)\s*(?://.*)?$', xq1_prof, re.M)}
-check(xq1 is not None and aq is not None, "Configuration.h y Configuration_adv.h se preprocesan con y sin perfil")
-if xq1 is None or aq is None: sys.exit(1)
+def nums(s): return [float(x) for x in re.findall(r'-?\d+(?:\.\d+)?', s or "")]
 
-# 1) El XQ1 queda identico a la configuracion anterior a los perfiles
+# ---- 1) Configuracion antigua por maquina: arbol temporal con el selector de compilacion de antes ----
 tmp = pathlib.Path(tempfile.mkdtemp())
 try:
-    (tmp / "src").mkdir(); shutil.copytree(M / "src/core", tmp / "src/core")
-    ok = True
-    for f in ("Configuration.h", "Configuration_adv.h"):
-        r = subprocess.run(["git", "-C", str(ROOT), "show", "%s:Marlin/%s" % (BASELINE, f)], capture_output=True, text=True)
-        if r.returncode: ok = False; break
-        (tmp / f).write_text(r.stdout, encoding="utf-8")
-    if not ok: print("[machines] (sin el commit %s en este clon: se omite la comparacion con la configuracion anterior)" % BASELINE)
-    else:
-        old = dump(tmp)
-        diff = {k: (old.get(k), xq1.get(k)) for k in set(old) | set(xq1) if old.get(k) != xq1.get(k) and k not in xq1_declared}
-        check(old is not None and not diff, "XQ1 (perfil por defecto): todas las macros iguales a la configuracion anterior salvo las que declara xq1.h %s (%d macros)%s" % (sorted(xq1_declared), len(xq1), "" if not diff else " DIFF: %s" % list(diff.items())[:5]))
-        check(all(xq1.get(k) == v for k, v in xq1_declared.items()), "XQ1: cada valor de xq1.h es el que ve Marlin (%d valores)" % len(xq1_declared))
+    (tmp / "machine").mkdir()
+    for f in ("Configuration.h", "Configuration_adv.h"): shutil.copy(M / f, tmp / f)
+    for f in ("xq1.h", "aquila_d1.h"): shutil.copy(M / "machine" / f, tmp / "machine" / f)
+    (tmp / "machine/machine.h").write_text('#pragma once\n#if defined(ARQUIS_MACHINE_AQUILA_D1)\n  #include "aquila_d1.h"\n#else\n  #include "xq1.h"\n#endif\n')
+    old = {"xq1": dump(tmp), "aq": dump(tmp, ["-DARQUIS_MACHINE_AQUILA_D1"])}
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
+adv = (M / "Configuration_adv.h").read_text(encoding="utf-8")
+def adv_val(name):
+    m = re.search(r'#define\s+%s\s+(\S+)' % name, adv); return float(nums(m.group(1))[0]) if m else None
 
-# 2) Aquila D1: cambia exactamente lo que declara su perfil
-prof = (M / "machine/aquila_d1.h").read_text(encoding="utf-8")
-declared = {m.group(1): m.group(2).strip() for m in re.finditer(r'^#define\s+(\w+)\s+(.*?)\s*(?://.*)?$', prof, re.M)}
-changed = {k for k in set(xq1) | set(aq) if xq1.get(k) != aq.get(k)}
-# derivadas de las medidas (X_MAX_POS = X_BED_SIZE...) cambian solas: se aceptan si dependen de algo declarado
-derived = {"X_MAX_POS", "Y_MAX_POS", "X_BED_SIZE", "Y_BED_SIZE", "X_CENTER", "Y_CENTER", "X_MAX_BED", "Y_MAX_BED", "X_BED_SIZE"}
-unexpected = sorted(k for k in changed if k not in declared and k not in derived and k not in xq1_declared and not k.startswith("ARQUIS_MACHINE"))   # (lo que declara xq1.h solo cambia en el XQ1)
-check(not unexpected, "Aquila D1: no cambia nada que su perfil no declare %s" % (unexpected or ""))
-check(all(aq.get(k) == v for k, v in declared.items()), "Aquila D1: cada valor del perfil es el que ve Marlin (%d valores)" % len(declared))
-# 3) Valores de su Configuration.h original (Aquila_D1.zip)
-expected = {"X_BED_SIZE": "230", "Y_BED_SIZE": "240", "Z_MAX_POS": "240", "X_MAX_POS": "X_BED_SIZE", "Y_MAX_POS": "Y_BED_SIZE",   # (X/Y_MAX_POS siguen a la medida de la cama)
-           
-            "DEFAULT_AXIS_STEPS_PER_UNIT": "{ 160, 160, 803.41, 781.08 }", "DEFAULT_MAX_ACCELERATION": "{ 4500, 3500, 150, 10000 }",
-            "INVERT_X_DIR": "false", "INVERT_Y_DIR": "false", "INVERT_E0_DIR": "true",
-            "X_MIN_ENDSTOP_INVERTING": "false", "Y_MIN_ENDSTOP_INVERTING": "false"}
-for k, v in expected.items(): check(aq.get(k) == v, "Aquila D1: %s = %s (su archivo original)" % (k, v))
-check(aq.get("CUSTOM_MACHINE_NAME") == '"Aquila D1"', "Aquila D1: nombre")
-for k in ("Z_MIN_ENDSTOP_INVERTING", "DEFAULT_KP", "DEFAULT_BED_KP", "X_CURRENT", "SHAPING_FREQ_X", "PIDTEMPBED", "ENABLE_LEVELING_AFTER_G28", "GRID_MAX_POINTS_X"):
-    check(aq.get(k) == xq1.get(k), "Aquila D1 hereda %s del firmware comun (%s)" % (k, aq.get(k)))
-check(xq1.get("X_BED_SIZE") == "300" and xq1.get("CUSTOM_MACHINE_NAME") == '"Arquis XQ1"', "XQ1 sigue siendo 300 x 300 'Arquis XQ1'")
+check(all(old.values()), "configuracion de cada maquina reconstruida con el preprocesador")
+if not all(old.values()): sys.exit(1)
 
-# 4) Cada valor de un perfil esta protegido con #ifndef; cada perfil tiene entorno de PlatformIO
-cfg = (M / "Configuration.h").read_text(encoding="utf-8") + (M / "Configuration_adv.h").read_text(encoding="utf-8")
-for f in sorted((M / "machine").glob("*.h")):
-    if f.name in ("machine.h", "_plantilla.h"): continue
-    names = re.findall(r'^#define\s+(\w+)', f.read_text(encoding="utf-8"), re.M)
-    miss = [n for n in names if not re.search(r'#ifndef %s\b' % n, cfg)]
-    check(not miss, "%s: todos sus valores estan protegidos con #ifndef en Configuration*.h %s" % (f.name, miss or ""))
-ini = (ROOT / "ini/arquis.ini").read_text(encoding="utf-8"); mh = (M / "machine/machine.h").read_text(encoding="utf-8")
-for macro in re.findall(r'defined\((ARQUIS_MACHINE_\w+)\)', mh): check("-D" + macro in ini, "ini/arquis.ini define -D%s" % macro)
-check("ini/arquis.ini" in (ROOT / "platformio.ini").read_text(encoding="utf-8"), "platformio.ini incluye ini/arquis.ini")
-check('#include "machine/machine.h"' in (M / "Configuration.h").read_text(encoding="utf-8") and '#include "machine/machine.h"' in (M / "Configuration_adv.h").read_text(encoding="utf-8"), "ambos Configuration*.h incluyen el selector")
+# Tabla de perfiles del firmware
+src = (M / "src/lcd/extui/mks_ui/arquis_machine_logic.cpp").read_text(encoding="utf-8")
+body = src[src.index("profiles[ARQ_MC_NPROF] = {"):src.index("};", src.index("profiles[ARQ_MC_NPROF] = {"))]
+entries = re.findall(r'\{\s*"([^"]+)",\s*"[^"]+",(.*?)\{(.*?)\},\s*(.*?)\}', body, re.S)
+check(len(entries) == 2, "la tabla tiene 2 perfiles (%d)" % len(entries))
+BITS = {"ARQ_MC_BX": 1, "ARQ_MC_BY": 2, "ARQ_MC_BZ": 4, "ARQ_MC_BE": 8}
+def mask(expr): return sum(BITS[b] for b in re.findall(r'ARQ_MC_B[XYZE]', expr))
+table = {}
+for name, masks, vals, _ in entries:
+    m = [x.split("//")[0] for x in masks.strip().strip(",").split("\n") if x.strip()]
+    es, dr = mask(m[0]), mask(m[1])
+    v = nums(re.sub(r'//[^\n]*', '', vals))
+    table[name] = (es, dr, v)
+for key, name in (("xq1", "Arquis XQ1"), ("aq", "Aquila D1")):
+    c = old[key]; es, dr, v = table[name]
+    check(c["CUSTOM_MACHINE_NAME"] == '"%s"' % name, "%s: nombre" % name)
+    exp = [float(c["X_BED_SIZE"]), float(c["Y_BED_SIZE"]), float(c["Z_MAX_POS"])] + nums(c["DEFAULT_AXIS_STEPS_PER_UNIT"]) \
+        + nums(c["DEFAULT_MAX_FEEDRATE"]) + nums(c["DEFAULT_MAX_ACCELERATION"]) \
+        + [float(c["DEFAULT_ACCELERATION"]), float(c["DEFAULT_RETRACT_ACCELERATION"]), float(c["DEFAULT_TRAVEL_ACCELERATION"]), float(c["JUNCTION_DEVIATION_MM"])] \
+        + [adv_val("X_CURRENT"), adv_val("Y_CURRENT"), adv_val("Z_CURRENT"), adv_val("E0_CURRENT")] \
+        + [float(nums(c["SHAPING_FREQ_X"])[0]), float(nums(c["SHAPING_FREQ_Y"])[0]), 0, 0, 0]
+    check(len(v) == len(exp) and all(abs(a - b) < 1e-6 for a, b in zip(v, exp)),
+          "%s: valores de fabrica = configuracion real (medidas, pasos, velocidades, aceleraciones, JD, corrientes, Shaping)%s" % (name, "" if v == exp else " tabla=%s real=%s" % (v, exp)))
+    es_real = (c["X_MIN_ENDSTOP_INVERTING"] == "true") * 1 | (c["Y_MIN_ENDSTOP_INVERTING"] == "true") * 2 | (c["Z_MIN_ENDSTOP_INVERTING"] == "true") * 4
+    dr_real = (c["INVERT_X_DIR"] == "true") * 1 | (c["INVERT_Y_DIR"] == "true") * 2 | (c["INVERT_Z_DIR"] == "true") * 4 | (c["INVERT_E0_DIR"] == "true") * 8
+    check(es == es_real, "%s: logica de finales X/Y/Z = %s (configuracion: %d)" % (name, es, es_real))
+    check(dr == dr_real, "%s: direcciones X/Y/Z/E0 = %s (configuracion: %d)" % (name, dr, dr_real))
+check("P(ARQ_MP_FEED_Z) | P(ARQ_MP_ACC_Z)" in src, "XQ1: Z 5 mm/s y 100 mm/s2 marcados como provisionales (pendientes de validacion fisica)")
+# Lo comun a las dos maquinas (no esta en la tabla porque no cambia)
+for k in ("TEMP_SENSOR_0", "TEMP_SENSOR_BED", "HEATER_0_MAXTEMP", "BED_MAXTEMP", "DEFAULT_KP", "DEFAULT_BED_KP", "MOTHERBOARD", "X_DRIVER_TYPE", "E0_DRIVER_TYPE",
+          "THERMAL_PROTECTION_PERIOD", "THERMAL_PROTECTION_BED_PERIOD", "GRID_MAX_POINTS_X", "PROBING_MARGIN", "X_HOME_DIR", "Z_HOME_DIR"):
+    check(old["xq1"].get(k) == old["aq"].get(k), "comun a las dos: %s = %s" % (k, old["xq1"].get(k)))
+
+# ---- 2) Configuracion del firmware unico ----
+new = dump(M)
+check(new is not None, "Configuration.h / Configuration_adv.h del firmware unico se preprocesan")
+if new is None: sys.exit(1)
+changed = sorted(k for k in set(new) | set(old["xq1"]) if new.get(k) != old["xq1"].get(k))
+expected = {"X_MIN_ENDSTOP_INVERTING", "Y_MIN_ENDSTOP_INVERTING", "Z_MIN_ENDSTOP_INVERTING",      # en tiempo de ejecucion
+            "DEFAULT_MAX_FEEDRATE", "DEFAULT_MAX_ACCELERATION"}                                  # (xq1.h ya no se incluye: valores de compilacion comunes)
+check(set(changed) <= expected, "solo cambian las macros previstas respecto al XQ1 anterior %s" % (sorted(set(changed) - expected) or ""))
+check(new.get("X_MIN_ENDSTOP_INVERTING") == "((arq_mc_es_inv & 0x01) != 0)", "logica del final X en tiempo de ejecucion")
+check(new.get("X_BED_SIZE") == "300" and new.get("Z_MAX_POS") == "450", "envolvente de compilacion = maquina mas grande (300 x 300 x 450)")
+check(new.get("INVERT_X_DIR") == "true" and new.get("INVERT_E0_DIR") == "false", "direcciones compiladas = XQ1 (el Aquila invierte con GCONF.shaft)")
+
+# ---- 3) Restricciones ----
+def unchanged(path):
+    r = subprocess.run(["git", "-C", str(ROOT), "diff", "--quiet", BASE, "--", path]); return r.returncode == 0
+for p in ("Marlin/src/module/stepper.cpp", "Marlin/src/module/stepper.h", "Marlin/src/module/planner.cpp", "Marlin/src/module/planner.h",
+          "Marlin/src/module/endstops.cpp", "Marlin/src/module/endstops.h", "Marlin/src/module/stepper/indirection.h",
+          "Marlin/src/gcode/feature/input_shaping/M593.cpp", "Marlin/src/feature/bedlevel", "Marlin/src/lcd/extui/mks_ui/arquis_mesh.cpp",
+          "Marlin/src/lcd/extui/mks_ui/arquis_mesh_logic.cpp", "Marlin/src/lcd/extui/mks_ui/arquis_pid.cpp", "Marlin/src/lcd/extui/mks_ui/arquis_perf.cpp",
+          "Marlin/src/lcd/extui/mks_ui/wifi_module.cpp", "Marlin/src/module/temperature.cpp"):
+    check(unchanged(p), "sin cambios respecto a %s: %s" % (BASE[:7], p))
+ini = (ROOT / "ini/arquis.ini").read_text(encoding="utf-8"); f4 = (ROOT / "ini/stm32f4.ini").read_text(encoding="utf-8")
+check(not re.search(r"^\[env:", ini, re.M), "ini/arquis.ini: ya no hay entorno por maquina (un solo BIN)")
+check("-DUSBD_USE_CDC_MSC" not in f4.split("[env:mks_robin_nano_v3_1_usb_flash_drive_msc]")[1].split("[env:")[0] and "-DUSBHOST" in f4.split("[env:mks_robin_nano_v3_1_usb_flash_drive_msc]")[1].split("[env:")[0],
+      "entorno del BIN: sin MSC y quitando USB host (build_unflags)")
+st = (M / "src/module/settings.cpp").read_text(encoding="utf-8")
+check("static_assert(EEPROM_OFFSET + sizeof(SettingsData) <= ARQ_MC_EE_A" in st, "settings.cpp comprueba que los datos de Marlin no llegan al registro ARQUIS")
+check("arq_mc_boot_load()" in st and "arq_mc_on_reset()" in st, "settings.cpp carga el registro y aplica la mecanica del perfil en reset()")
+tr = (M / "src/module/stepper/trinamic.cpp").read_text(encoding="utf-8")
+check("gconf.shaft = arq_mc_shaft_bit(AXIS_ID)" in tr, "trinamic.cpp: sentido del modelo en GCONF.shaft (TMC2209)")
 print("[machines] %d comprobaciones, %d fallos" % (checks, fails)); sys.exit(1 if fails else 0)

@@ -137,6 +137,10 @@
 
 #include "../feature/controllerfan.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "../lcd/extui/mks_ui/arquis_machine.h"   // ARQUIS: perfil de maquina (registro propio en la EEPROM)
+#endif
+
 #if ENABLED(CASE_LIGHT_ENABLE)
   #include "../feature/caselight.h"
 #endif
@@ -599,6 +603,11 @@ typedef struct SettingsDataStruct {
   #endif
 
 } SettingsData;
+
+#if ENABLED(ARQUIS_UI) && ENABLED(EEPROM_SETTINGS)
+  // ARQUIS: el registro del perfil de maquina vive en la misma EEPROM, despues de los datos de Marlin, sin solaparse
+  static_assert(EEPROM_OFFSET + sizeof(SettingsData) <= ARQ_MC_EE_A, "Los datos de Marlin alcanzan el registro ARQUIS (ARQ_MC_EE_A)");
+#endif
 
 //static_assert(sizeof(SettingsData) <= MARLIN_EEPROM_SIZE, "EEPROM too small to contain SettingsData!");
 
@@ -2825,6 +2834,7 @@ void MarlinSettings::postprocess() {
   }
 
   bool MarlinSettings::load() {
+    TERN_(ARQUIS_UI, arq_mc_boot_load());   // ARQUIS: modelo, medidas, finales y direcciones ANTES de inicializar los drivers
     if (validate()) {
       const EEPROM_Error err = _load();
       const bool success = (err == ERR_EEPROM_NOERR);
@@ -3514,6 +3524,8 @@ void MarlinSettings::reset() {
       stepper.set_shaping_damping_ratio(Y_AXIS, SHAPING_ZETA_Y);
     #endif
   #endif
+
+  TERN_(ARQUIS_UI, arq_mc_on_reset());     // ARQUIS: valores mecanicos de fabrica del modelo activo (M502 / EEPROM invalida)
 
   postprocess();
 

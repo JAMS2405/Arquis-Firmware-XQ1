@@ -357,14 +357,14 @@ void report_current_position_projected() {
 
   // Return true if the given position is within the machine bounds.
   bool position_is_reachable(TERN_(HAS_X_AXIS, const_float_t rx) OPTARG(HAS_Y_AXIS, const_float_t ry)) {
-    if (TERN0(HAS_Y_AXIS, !COORDINATE_OKAY(ry, Y_MIN_POS - fslop, Y_MAX_POS + fslop))) return false;
+    if (TERN0(HAS_Y_AXIS, !COORDINATE_OKAY(ry, Y_MIN_POS - fslop, base_max_pos(Y_AXIS) + fslop))) return false;   // ARQUIS: maximo del modelo
     #if ENABLED(DUAL_X_CARRIAGE)
       if (active_extruder)
         return COORDINATE_OKAY(rx, X2_MIN_POS - fslop, X2_MAX_POS + fslop);
       else
         return COORDINATE_OKAY(rx, X1_MIN_POS - fslop, X1_MAX_POS + fslop);
     #else
-      if (TERN0(HAS_X_AXIS, !COORDINATE_OKAY(rx, X_MIN_POS - fslop, X_MAX_POS + fslop))) return false;
+      if (TERN0(HAS_X_AXIS, !COORDINATE_OKAY(rx, X_MIN_POS - fslop, base_max_pos(X_AXIS) + fslop))) return false;   // ARQUIS: maximo del modelo
       return true;
     #endif
   }
@@ -783,7 +783,7 @@ void do_blocking_move_to(const xyze_pos_t &raw, const_feedRate_t fr_mm_s/*=0.0f*
   void do_z_clearance(const_float_t zclear, const bool lower_allowed/*=false*/) {
     float zdest = zclear;
     if (!lower_allowed) NOLESS(zdest, current_position.z);
-    do_blocking_move_to_z(_MIN(zdest, Z_MAX_POS), TERN(HAS_BED_PROBE, z_probe_fast_mm_s, homing_feedrate(Z_AXIS)));
+    do_blocking_move_to_z(_MIN(zdest, base_max_pos(Z_AXIS)), TERN(HAS_BED_PROBE, z_probe_fast_mm_s, homing_feedrate(Z_AXIS)));   // ARQUIS: altura del modelo
   }
   void do_z_clearance_by(const_float_t zclear) {
     if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("do_z_clearance_by(", zclear, ")");

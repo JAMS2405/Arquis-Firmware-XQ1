@@ -306,7 +306,7 @@ void PrintJobRecovery::save(const bool force/*=false*/, const float zraise/*=POW
 
     #if POWER_LOSS_ZRAISE
       // Get the limited Z-raise to do now or on resume
-      const float zraise = _MAX(0, _MIN(current_position.z + POWER_LOSS_ZRAISE, Z_MAX_POS - 1) - current_position.z);
+      const float zraise = _MAX(0, _MIN(current_position.z + POWER_LOSS_ZRAISE, TERN(ARQUIS_UI, base_max_pos(Z_AXIS), Z_MAX_POS) - 1) - current_position.z);   // ARQUIS: altura del modelo
     #else
       constexpr float zraise = 0;
     #endif

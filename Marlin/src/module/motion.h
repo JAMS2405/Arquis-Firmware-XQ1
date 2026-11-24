@@ -131,7 +131,14 @@ inline int8_t pgm_read_any(const int8_t *p) { return TERN(__IMXRT1062__, *p, pgm
     return pgm_read_any(&NAME##_P[axis]); \
   }
 XYZ_DEFS(float, base_min_pos,   MIN_POS);
-XYZ_DEFS(float, base_max_pos,   MAX_POS);
+#if ENABLED(ARQUIS_UI)
+  // ARQUIS firmware unico: el maximo de X/Y/Z lo da el modelo elegido en la pantalla (arquis_machine.cpp). Se lee en cada
+  // llamada: el static const de XYZ_DEFS se quedaria con el primer valor si el modelo cambia.
+  float arq_mc_max_pos(const uint8_t axis);
+  inline float base_max_pos(const AxisEnum axis) { return arq_mc_max_pos(axis); }
+#else
+  XYZ_DEFS(float, base_max_pos,   MAX_POS);
+#endif
 XYZ_DEFS(float, base_home_pos,  HOME_POS);
 XYZ_DEFS(float, max_length,     MAX_LENGTH);
 XYZ_DEFS(int8_t, home_dir, HOME_DIR);

@@ -26,6 +26,10 @@
  */
 
 #include "gcode.h"
+
+#if ENABLED(ARQUIS_UI)
+  #include "../lcd/extui/mks_ui/arquis_machine.h"
+#endif
 GcodeSuite gcode;
 
 #if ENABLED(WIFI_CUSTOM_COMMAND)
@@ -343,6 +347,15 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
   #if ENABLED(FLOWMETER_SAFETY)
     if (cooler.flowfault) {
       SERIAL_ECHO_MSG(STR_FLOWMETER_FAULT);
+      return;
+    }
+  #endif
+
+  #if ENABLED(ARQUIS_UI)
+    // ARQUIS firmware unico: sin un modelo de maquina valido y comprobado (y drivers TMC verificados) no se acepta ningun
+    // movimiento. Tambien atiende M9050 (estado / volver al asistente). Ver lcd/extui/mks_ui/arquis_machine.cpp.
+    if (arq_mc_gcode_hook(parser.command_letter, parser.codenum)) {
+      if (!no_ok) queue.ok_to_send();
       return;
     }
   #endif

@@ -26,6 +26,7 @@
 
 #include "arquis_objects_sd.h"
 #include "arquis_objects.h"
+#include "arquis_machine.h"   // ARQUIS: cama del modelo elegido
 #include "draw_ui.h"
 #include "tft_lvgl_configuration.h"      // public_buf
 #include "../../../sd/cardreader.h"
@@ -39,8 +40,8 @@ enum : uint8_t { LD_IDLE = 0, LD_HEAD, LD_TAIL };
 static uint8_t  stage;
 static uint32_t tail_pos, tail_end, file_size, file_id;
 
-#define BED_W_DMM  ((uint16_t)((X_BED_SIZE) * 10 + 0.5f))
-#define BED_D_DMM  ((uint16_t)((Y_BED_SIZE) * 10 + 0.5f))
+#define BED_W_DMM  ((uint16_t)(arq_mc_max_pos(0) * 10 + 0.5f))   // cama del modelo elegido
+#define BED_D_DMM  ((uint16_t)(arq_mc_max_pos(1) * 10 + 0.5f))
 
 // Con un archivo abierto o una impresion en curso NO se abre nada: openFileRead() llama a abortFilePrintNow()
 static bool sd_busy() { return !card.isMounted() || card.isFileOpen() || card.isPrinting() || printingIsActive() || printingIsPaused(); }

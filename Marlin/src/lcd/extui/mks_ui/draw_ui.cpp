@@ -49,6 +49,7 @@
   #include "arquis_pid_ui.h"
   #include "arquis_perf_ui.h"
   #include "arquis_tools.h"
+  #include "arquis_machine_ui.h"
   static bool arq_pscr;   // la pantalla actual es una de parametros: sus filas y botones se dibujan con la lista ARQUIS
 #endif
 
@@ -949,6 +950,7 @@ void clear_cur_ui() {
     #endif
     #if ENABLED(ARQUIS_UI)
       case FLOW_UI:                   arq_flow_clear(); break;
+      case ARQ_MACHINE_UI:            arq_machine_ui_clear(); break;
     #endif
     case PAUSE_UI:                    break;
     case EXTRUSION_UI:                lv_clear_extrusion(); break;
@@ -1076,6 +1078,7 @@ void draw_return_ui() {
       #endif
       #if ENABLED(ARQUIS_UI)
         case FLOW_UI:                   arq_flow_draw(); break;
+        case ARQ_MACHINE_UI:            arq_machine_ui_draw(); break;
       #endif
       case PAUSE_UI:                    break;
       case EXTRUSION_UI:                lv_draw_extrusion(); break;
@@ -1490,6 +1493,8 @@ void LV_TASK_HANDLER() {
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_update_encoder();
   #endif
+
+  TERN_(ARQUIS_UI, arq_machine_tick());   // ARQUIS: verificacion periodica de los TMC2209 y avisos del perfil de maquina
 }
 
 #endif // HAS_TFT_LVGL_UI

@@ -28,6 +28,7 @@
 #include "arquis_dashboard_view.h"
 #include "arquis_nav.h"
 #include "arquis_widgets.h"
+#include "arquis_machine.h"   // ARQUIS: modelo de maquina elegido (medidas y nombre)
 #include "draw_ui.h"
 
 extern lv_group_t *g;
@@ -60,7 +61,7 @@ void arq_dashboard_draw() {
   arq_screen_apply(scr);
   arq_snapshot_t s;
   arq_data_read(&s);
-  arq_dash_build(scr, event_handler, MACHINE_NAME, &s);
+  arq_dash_build(scr, event_handler, arq_mc_name(), &s);
   arq_dash_update(&s);
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) arq_group_add_clickables(g, scr);   // la perilla navega por las tarjetas (como lv_big_button_create)

@@ -28,6 +28,7 @@
 #include "../../../inc/MarlinConfig.h"
 #include "arquis_print.h"
 #include "arquis_print_view.h"
+#include "arquis_machine.h"   // ARQUIS: modelo de maquina elegido (medidas y nombre)
 #include "arquis_widgets.h"
 #include "arquis_data.h"
 #include "draw_ui.h"
@@ -153,7 +154,7 @@ void arq_print_draw() {
   arq_screen_apply(scr);
   arq_snapshot_t s;
   arq_data_read(&s);
-  arq_print_build(scr, screen_cb, MACHINE_NAME, &s, mode_now(), ENABLED(CANCEL_OBJECTS));
+  arq_print_build(scr, screen_cb, arq_mc_name(), &s, mode_now(), ENABLED(CANCEL_OBJECTS));
   arq_print_update(&s, mode_now());
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) arq_group_add_clickables(g, scr);

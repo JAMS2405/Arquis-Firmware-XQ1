@@ -21,6 +21,10 @@
  */
 
 #include "../gcode.h"
+
+#if ENABLED(ARQUIS_UI)
+  #include "../../lcd/extui/mks_ui/arquis_machine.h"
+#endif
 #include "../../inc/MarlinConfig.h"
 #include "../queue.h"           // for getting the command port
 
@@ -64,7 +68,15 @@ void GcodeSuite::M115() {
     " " DETAILED_BUILD_VERSION " (" __DATE__ " " __TIME__ ")"
     " SOURCE_CODE_URL:" SOURCE_CODE_URL
     " PROTOCOL_VERSION:" PROTOCOL_VERSION
-    " MACHINE_TYPE:" MACHINE_NAME
+    " MACHINE_TYPE:"
+  );
+  // ARQUIS firmware unico: el nombre es el del modelo elegido en la pantalla (no uno fijado al compilar)
+  #if ENABLED(ARQUIS_UI)
+    SERIAL_ECHO(arq_mc_name());
+  #else
+    SERIAL_ECHOPGM(MACHINE_NAME);
+  #endif
+  SERIAL_ECHOPGM(
     " EXTRUDER_COUNT:" STRINGIFY(EXTRUDERS)
     #if NUM_AXES != XYZ
       " AXIS_COUNT:" STRINGIFY(NUM_AXES)

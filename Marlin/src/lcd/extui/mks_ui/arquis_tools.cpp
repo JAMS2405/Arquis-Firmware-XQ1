@@ -30,6 +30,7 @@
 #include "arquis_mesh_ui.h"
 #include "arquis_pid_ui.h"
 #include "arquis_perf_ui.h"
+#include "arquis_machine_ui.h"   // ARQUIS: modelo de maquina elegido (medidas, nombre) y Ajustes > Maquina
 #include "draw_ui.h"
 
 #include "../../../inc/MarlinConfig.h"
@@ -227,7 +228,7 @@ static void settings_cb(lv_obj_t *obj, lv_event_t event) {
     #if ARQ_HAS_PERF
       case S_PERF: arq_perf_draw(); break;
     #endif
-    case S_PARA:   lv_draw_machine_para(); break;
+    case S_PARA:   arq_machine_menu_draw(); break;          // firmware unico: Ajustes > Maquina (incluye los parametros MKS)
     case S_EEPROM: lv_draw_eeprom_settings(); break;
     #if ENABLED(MKS_WIFI_MODULE)
       case S_WIFI:
@@ -249,7 +250,7 @@ static void settings_cb(lv_obj_t *obj, lv_event_t event) {
 
 void arq_settings_draw() {
   grid_settings.begin();
-  grid_settings.add(S_PARA, &arq_icon_gear, "Par\xC3\xA1metros");
+  grid_settings.add(S_PARA, &arq_icon_gear, "M\xC3\xA1quina");       // modelo, medidas, finales, motores... y parametros MKS
   grid_settings.add(S_EEPROM, &arq_icon_file, "Memoria");
   grid_settings.add(S_FAN, &arq_icon_fan, "Ventiladores");
   grid_settings.add(S_SYSTEM, &arq_icon_tools, "Sistema");
@@ -280,7 +281,7 @@ static void about_fill() {
   uint8_t n = 0;
   auto add_l = [&](const char *label, const char *v) { l.rows[n].label = label; snprintf(l.rows[n].v1, sizeof(l.rows[n].v1), "%s", v); l.rows[n].v2[0] = 0; l.rows[n].dot = ARQ_TINT_AUTO; ++n; };
   l.title = "Sistema";
-  add_l("M\xC3\xA1quina", MACHINE_NAME);
+  add_l("M\xC3\xA1quina", arq_mc_name());
   add_l("Firmware", "Marlin " SHORT_BUILD_VERSION);
   add_l("Interfaz", "ARQUIS " ARQUIS_UI_VERSION);
   add_l("Placa", BOARD_INFO_NAME);
@@ -565,7 +566,7 @@ void arq_level_draw() {
   arq_screen_apply(l_scr);
   arq_level_model_t m;
   memset(&m, 0, sizeof(m));
-  m.bed_x = (int16_t)(X_MAX_POS - X_MIN_POS); m.bed_y = (int16_t)(Y_MAX_POS - Y_MIN_POS);
+  m.bed_x = (int16_t)(arq_mc_max_pos(0) - X_MIN_POS); m.bed_y = (int16_t)(arq_mc_max_pos(1) - Y_MIN_POS);   // cama del modelo
   for (uint8_t i = 0; i < 5; ++i) { m.x[i] = (int16_t)(gCfgItems.trammingPos[i].x - X_MIN_POS); m.y[i] = (int16_t)(gCfgItems.trammingPos[i].y - Y_MIN_POS); }
   arq_level_build(l_scr, level_cb, &m);
   add_to_group(l_scr);

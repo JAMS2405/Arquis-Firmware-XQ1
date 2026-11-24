@@ -32,6 +32,10 @@
 #include "trinamic.h"
 #include "../stepper.h"
 
+#if ENABLED(ARQUIS_UI)
+  #include "../../lcd/extui/mks_ui/arquis_machine.h"   // ARQUIS: direccion del motor por modelo (GCONF.shaft)
+#endif
+
 #include <HardwareSerial.h>
 #include <SPI.h>
 
@@ -717,6 +721,7 @@ enum StealthIndex : uint8_t {
     gconf.mstep_reg_select = true; // Select microsteps with UART
     gconf.i_scale_analog = false;
     gconf.en_spreadcycle = !stealth;
+    TERN_(ARQUIS_UI, gconf.shaft = arq_mc_shaft_bit(AXIS_ID));   // ARQUIS: sentido del modelo (X=0, Y=1, Z=2, E0=3)
     st.GCONF(gconf.sr);
     st.stored.stealthChop_enabled = stealth;
 

@@ -219,10 +219,12 @@ public:
         _MAX((X_MIN_BED) + (PROBING_MARGIN_LEFT), (X_MIN_POS) + probe_offset_xy.x)
       );
     }
-    static constexpr float _max_x(const xy_pos_t &probe_offset_xy=offset_xy) {
+    // ARQUIS firmware unico: el borde derecho/trasero sale de la cama del modelo elegido (base_max_pos, X/Y_MIN_BED = 0),
+    // asi el area de sondeo y la malla 5x5 siguen a la maquina. Ya no es constexpr.
+    static float _max_x(const xy_pos_t &probe_offset_xy=offset_xy) {
       return TERN(IS_KINEMATIC,
         (X_CENTER) + probe_radius(probe_offset_xy),
-        _MIN((X_MAX_BED) - (PROBING_MARGIN_RIGHT), (X_MAX_POS) + probe_offset_xy.x)
+        _MIN(TERN(ARQUIS_UI, (X_MIN_BED) + base_max_pos(X_AXIS), (X_MAX_BED)) - (PROBING_MARGIN_RIGHT), TERN(ARQUIS_UI, base_max_pos(X_AXIS), (X_MAX_POS)) + probe_offset_xy.x)
       );
     }
     static constexpr float _min_y(const xy_pos_t &probe_offset_xy=offset_xy) {
@@ -231,10 +233,10 @@ public:
         _MAX((Y_MIN_BED) + (PROBING_MARGIN_FRONT), (Y_MIN_POS) + probe_offset_xy.y)
       );
     }
-    static constexpr float _max_y(const xy_pos_t &probe_offset_xy=offset_xy) {
+    static float _max_y(const xy_pos_t &probe_offset_xy=offset_xy) {
       return TERN(IS_KINEMATIC,
         (Y_CENTER) + probe_radius(probe_offset_xy),
-        _MIN((Y_MAX_BED) - (PROBING_MARGIN_BACK), (Y_MAX_POS) + probe_offset_xy.y)
+        _MIN(TERN(ARQUIS_UI, (Y_MIN_BED) + base_max_pos(Y_AXIS), (Y_MAX_BED)) - (PROBING_MARGIN_BACK), TERN(ARQUIS_UI, base_max_pos(Y_AXIS), (Y_MAX_POS)) + probe_offset_xy.y)
       );
     }
 
