@@ -141,9 +141,11 @@ void arq_print_update(const arq_snapshot_t *s, arq_pmode_t mode) {
     set_row(rows[n++], "Ventilador", v, "", s->fan[0].pct ? ARQ_TINT_OK : ARQ_TINT_MUTED);
   }
   if (s->job && n < ARQ_LIST_ROWS_MAX) {                             // velocidad REAL del cabezal (XY) y maxima alcanzada en esta impresion
-    char v[16], m[10];
+    // m[16]: cubre todo el rango de uint16_t ("max 65535" con a acentuada = 10 B + nulo). La logica (speed_u16) ya limita a 0..9999;
+    // el tope de 9999 tambien aqui garantiza que el texto cabe completo en arq_list_row_t::v2[10] (9 B + nulo) aunque esa logica cambie.
+    char v[16], m[16];
     snprintf(v, sizeof(v), "%u mm/s", (unsigned)s->speed_mms);
-    snprintf(m, sizeof(m), "m\xC3\xA1x %u", (unsigned)s->peak_mms);
+    snprintf(m, sizeof(m), "m\xC3\xA1x %u", (unsigned)(s->peak_mms > 9999 ? 9999 : s->peak_mms));
     set_row(rows[n++], "Veloc.", v, m, s->speed_mms ? ARQ_TINT_ACCENT : ARQ_TINT_MUTED);
   }
   if (n < ARQ_LIST_ROWS_MAX) {
