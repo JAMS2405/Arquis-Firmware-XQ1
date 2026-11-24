@@ -182,6 +182,7 @@ void gCfgItems_init() {
     W25QXX.SPI_FLASH_BufferWrite((uint8_t *)&custom_gcode_command[3], OTHERS_COMMAND_ADDR_3, 100);
     W25QXX.SPI_FLASH_BufferWrite((uint8_t *)&custom_gcode_command[4], OTHERS_COMMAND_ADDR_4, 100);
   }
+  TERN_(ARQUIS_UI, gCfgItems.cloud_enable = false);   // F3-06: sin Nube MKS aunque la memoria SPI la tuviera activada (solo en RAM; la estructura no cambia)
 
   const byte rot = (TFT_ROTATION & TFT_ROTATE_180) ? 0xEE : 0x00;
   if (gCfgItems.disp_rotation_180 != rot) {
@@ -838,7 +839,9 @@ void GUI_RefreshPage() {
         }
         break;
 
-      case BIND_UI: refresh_bind_ui(); break;
+      #if DISABLED(ARQUIS_UI)   // F3-06: sin Nube MKS
+        case BIND_UI: refresh_bind_ui(); break;
+      #endif
     #endif
 
     case FILAMENTCHANGE_UI:
@@ -969,7 +972,7 @@ void clear_cur_ui() {
     case PRINT_MORE_UI:               break;
     case FILAMENTCHANGE_UI:           lv_clear_filament_change(); break;
     case LEVELING_UI:                 lv_clear_manualLevel(); break;
-    #if ENABLED(MKS_WIFI_MODULE)
+    #if ENABLED(MKS_WIFI_MODULE) && DISABLED(ARQUIS_UI)   // F3-06: sin Nube MKS
       case BIND_UI:                   lv_clear_cloud_bind(); break;
     #endif
     #if HAS_BED_PROBE
@@ -1094,7 +1097,7 @@ void draw_return_ui() {
       case PRINT_MORE_UI:               lv_draw_more(); break;
       case FILAMENTCHANGE_UI:           lv_draw_filament_change(); break;
       case LEVELING_UI:                 lv_draw_manualLevel(); break;
-      #if ENABLED(MKS_WIFI_MODULE)
+      #if ENABLED(MKS_WIFI_MODULE) && DISABLED(ARQUIS_UI)   // F3-06: sin Nube MKS
         case BIND_UI:                   lv_draw_cloud_bind(); break;
       #endif
       #if HAS_BED_PROBE

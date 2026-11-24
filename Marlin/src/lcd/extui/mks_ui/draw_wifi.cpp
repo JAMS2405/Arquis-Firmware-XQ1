@@ -51,9 +51,11 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
     case ID_W_RETURN:
       lv_draw_set();
       break;
-    case ID_W_CLOUD:
-      lv_draw_cloud_bind();
-      break;
+    #if DISABLED(ARQUIS_UI)   // ARQUIS UI (F3-06): sin Nube MKS
+      case ID_W_CLOUD:
+        lv_draw_cloud_bind();
+        break;
+    #endif
     #if ENABLED(MKS_WIFI_MODULE)
       case ID_W_RECONNECT: {
         uint8_t cmd_wifi_list[] = { 0xA5, 0x07, 0x00, 0x00, 0xFC };
@@ -68,7 +70,7 @@ void lv_draw_wifi() {
   #if ENABLED(ARQUIS_UI)
     // Arquis: mismo manejador e ids (1 = volver, 2 = nube, 3 = reconectar); el texto lo compone disp_wifi_state()
     scr = lv_screen_create(WIFI_UI, "");
-    arq_wifi_build(scr, event_handler, gCfgItems.wifi_mode_sel == STA_MODEL, gCfgItems.cloud_enable);
+    arq_wifi_build(scr, event_handler, gCfgItems.wifi_mode_sel == STA_MODEL, false);   // F3-06: sin boton de Nube MKS
     #if HAS_ROTARY_ENCODER
       if (gCfgItems.encoder_enable) arq_group_add_clickables(g, scr);
     #endif

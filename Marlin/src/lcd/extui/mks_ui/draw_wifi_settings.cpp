@@ -119,9 +119,11 @@ void lv_draw_wifi_settings() {
   lv_obj_t *line3 = lv_line_create(scr, nullptr);
   lv_ex_line(line3, line_points[2]);
 
-  lv_label_create(scr, PARA_UI_POS_X, PARA_UI_POS_Y * 4 + 10, machine_menu.wifiCloud);
-  lv_obj_t *buttonCloudValue = lv_imgbtn_create(scr, gCfgItems.cloud_enable ? "F:/bmp_enable.bin" : "F:/bmp_disable.bin", PARA_UI_STATE_POS_X, PARA_UI_POS_Y * 4 + PARA_UI_STATE_V, event_handler, ID_WIFI_CLOUD);
-  labelCloudValue = lv_label_create_empty(buttonCloudValue);
+  #if DISABLED(ARQUIS_UI)   // ARQUIS UI (F3-06): sin la fila de Nube MKS
+    lv_label_create(scr, PARA_UI_POS_X, PARA_UI_POS_Y * 4 + 10, machine_menu.wifiCloud);
+    lv_obj_t *buttonCloudValue = lv_imgbtn_create(scr, gCfgItems.cloud_enable ? "F:/bmp_enable.bin" : "F:/bmp_disable.bin", PARA_UI_STATE_POS_X, PARA_UI_POS_Y * 4 + PARA_UI_STATE_V, event_handler, ID_WIFI_CLOUD);
+    labelCloudValue = lv_label_create_empty(buttonCloudValue);
+  #endif
 
   lv_obj_t *line4 = lv_line_create(scr, nullptr);
   lv_ex_line(line4, line_points[3]);
@@ -155,8 +157,10 @@ void lv_draw_wifi_settings() {
     lv_label_set_text(labelPassWordValue, machine_menu.wifiEdit);
     lv_obj_align(labelPassWordValue, buttonPassWordValue, LV_ALIGN_CENTER, 0, 0);
 
-    lv_label_set_text(labelCloudValue, gCfgItems.cloud_enable ? machine_menu.enable : machine_menu.disable);
-    lv_obj_align(labelCloudValue, buttonCloudValue, LV_ALIGN_CENTER, 0, 0);
+    #if DISABLED(ARQUIS_UI)
+      lv_label_set_text(labelCloudValue, gCfgItems.cloud_enable ? machine_menu.enable : machine_menu.disable);
+      lv_obj_align(labelCloudValue, buttonCloudValue, LV_ALIGN_CENTER, 0, 0);
+    #endif
 
     lv_label_set_text(labelConfig, machine_menu.wifiConfig);
     lv_obj_align(labelConfig, buttonConfig, LV_ALIGN_CENTER, 0, 0);
@@ -170,7 +174,9 @@ void lv_draw_wifi_settings() {
       lv_group_add_obj(g, buttonModelValue);
       lv_group_add_obj(g, buttonNameValue);
       lv_group_add_obj(g, buttonPassWordValue);
-      lv_group_add_obj(g, buttonCloudValue);
+      #if DISABLED(ARQUIS_UI)   // F3-06: sin la fila de Nube MKS
+        lv_group_add_obj(g, buttonCloudValue);
+      #endif
       lv_group_add_obj(g, buttonConfig);
       lv_group_add_obj(g, buttonBack);
     }

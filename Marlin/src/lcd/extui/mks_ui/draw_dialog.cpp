@@ -178,7 +178,7 @@ static void btn_ok_event_cb(lv_obj_t *btn, lv_event_t event) {
   else if (DIALOG_IS(TYPE_FILAMENT_LOAD_COMPLETED, TYPE_FILAMENT_UNLOAD_COMPLETED)) {
     goto_previous_ui();
   }
-  #if ENABLED(MKS_WIFI_MODULE)
+  #if ENABLED(MKS_WIFI_MODULE) && DISABLED(ARQUIS_UI)   // ARQUIS UI (F3-06): sin Nube MKS
     else if (DIALOG_IS(TYPE_UNBIND)) {
       cloud_unbind();
       goto_previous_ui();

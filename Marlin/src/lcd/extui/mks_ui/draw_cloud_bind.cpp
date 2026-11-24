@@ -22,7 +22,7 @@
 
 #include "../../../inc/MarlinConfigPre.h"
 
-#if ALL(HAS_TFT_LVGL_UI, MKS_WIFI_MODULE)
+#if ALL(HAS_TFT_LVGL_UI, MKS_WIFI_MODULE) && DISABLED(ARQUIS_UI)   // ARQUIS UI (F3-06): sin Nube MKS ni QRCode; la interfaz MKS original la conserva
 
 #include "lv_conf.h"
 #include "draw_ui.h"
