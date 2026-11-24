@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Genera los iconos ARQUIS como mascaras de transparencia de 4 bits (LV_IMG_CF_ALPHA_4BIT, 40x40, 800 bytes c/u).
+"""Genera los iconos ARQUIS como mascaras de transparencia de 2 bits (LV_IMG_CF_ALPHA_2BIT, 40x40, 400 bytes c/u).
+ARQUIS UI 2.0 (F3-05): 2 bpp por defecto (validado con LVGL 6.1.1-MKS: 0,5 % de pixeles distintos, sin artefactos).
+Para volver a 4 bpp: ARQ_ICON_BPP=4 python arquis_iconos.py
 Se compilan dentro del firmware (const -> Flash, 0 bytes de RAM) y se tiñen con el color del tema en tiempo de ejecucion,
 asi un mismo icono sirve en azul, blanco, verde, rojo o gris sin archivos extra en la SD.
 Uso:  python arquis_iconos.py   -> escribe ../../Marlin/src/lcd/extui/mks_ui/arquis_icons.c y arquis_icons.h
@@ -79,21 +81,25 @@ def render(svg, N=N):
     a = Image.open(io.BytesIO(png)).convert('RGBA').split()[3]
     return np.asarray(a.resize((N, N), Image.LANCZOS), dtype=np.uint8)
 
-def pack4(a):  # filas alineadas a byte, nibble alto primero (formato LV_IMG_CF_ALPHA_4BIT)
-    q = np.rint(a.astype(np.float32) / 17.0).astype(np.uint8)      # 0..15
+BPP = int(os.environ.get('ARQ_ICON_BPP', '2'))   # 2 (por defecto) o 4
+CF = {2: 'LV_IMG_CF_ALPHA_2BIT', 4: 'LV_IMG_CF_ALPHA_4BIT'}[BPP]
+
+def pack(a):  # filas alineadas a byte, pixel de la izquierda en los bits altos (formato LV_IMG_CF_ALPHA_2BIT / _4BIT)
+    lv = (1 << BPP) - 1; per = 8 // BPP
+    q = np.rint(a.astype(np.float32) / (255.0 / lv)).astype(np.uint8)   # 0..3 o 0..15
     rows = []
     for r in q:
-        row = list(r) + ([0] if len(r) % 2 else [])
-        rows.append(bytes((row[i] << 4) | row[i+1] for i in range(0, len(row), 2)))
+        row = list(r) + [0] * ((-len(r)) % per)
+        rows.append(bytes(sum(int(row[i + j]) << (8 - BPP * (j + 1)) for j in range(per)) for i in range(0, len(row), per)))
     return b''.join(rows)
 
 previews = {k: render(v) for k, v in ICONS.items()}
-data = {k: pack4(a) for k, a in previews.items()}
+data = {k: pack(a) for k, a in previews.items()}
 prev_s = {k: render(v, N2) for k, v in SMALL.items()}
-data_s = {k: pack4(a) for k, a in prev_s.items()}
+data_s = {k: pack(a) for k, a in prev_s.items()}
 names = list(ICONS)
-stride = (N + 1) // 2
-c = ['/* ARQUIS UI - iconos 40x40, mascara de transparencia de 4 bits. ARCHIVO GENERADO por herramientas/arquis_ui/arquis_iconos.py: no editar a mano. */',
+stride = (N * BPP + 7) // 8
+c = [f'/* ARQUIS UI - iconos 40x40, mascara de transparencia de {BPP} bits. ARCHIVO GENERADO por herramientas/arquis_ui/arquis_iconos.py: no editar a mano. */',
      '#include "arquis_icons.h"', '']
 for k in names:
     d = data[k]
@@ -101,16 +107,16 @@ for k in names:
     for i in range(0, len(d), stride):
         c.append('  ' + ','.join(f'0x{x:02x}' for x in d[i:i+stride]) + ',')
     c.append('};')
-    c.append(f'const lv_img_dsc_t arq_icon_{k} = {{ .header = {{ .cf = LV_IMG_CF_ALPHA_4BIT, .always_zero = 0, .reserved = 0, .w = {N}, .h = {N} }}, .data_size = {len(d)}, .data = arq_icon_{k}_map }};')
+    c.append(f'const lv_img_dsc_t arq_icon_{k} = {{ .header = {{ .cf = {CF}, .always_zero = 0, .reserved = 0, .w = {N}, .h = {N} }}, .data_size = {len(d)}, .data = arq_icon_{k}_map }};')
     c.append('')
-stride2 = (N2 + 1) // 2
+stride2 = (N2 * BPP + 7) // 8
 for k in SMALL:
     d = data_s[k]
     c.append(f'static const uint8_t arq_icon_s_{k}_map[] = {{')
     for i in range(0, len(d), stride2):
         c.append('  ' + ','.join(f'0x{x:02x}' for x in d[i:i+stride2]) + ',')
     c.append('};')
-    c.append(f'const lv_img_dsc_t arq_icon_s_{k} = {{ .header = {{ .cf = LV_IMG_CF_ALPHA_4BIT, .always_zero = 0, .reserved = 0, .w = {N2}, .h = {N2} }}, .data_size = {len(d)}, .data = arq_icon_s_{k}_map }};')
+    c.append(f'const lv_img_dsc_t arq_icon_s_{k} = {{ .header = {{ .cf = {CF}, .always_zero = 0, .reserved = 0, .w = {N2}, .h = {N2} }}, .data_size = {len(d)}, .data = arq_icon_s_{k}_map }};')
     c.append('')
 open(os.path.join(OUT, 'arquis_icons.c'), 'w').write('\n'.join(c))
 h = ['/* ARQUIS UI - iconos (generado por herramientas/arquis_ui/arquis_iconos.py) */', '#pragma once', '#include "lvgl.h"', '#ifdef __cplusplus', 'extern "C" {', '#endif', '',
