@@ -36,6 +36,16 @@ void arq_speed_build(lv_obj_t *scr, lv_event_cb_t cb);
 void arq_speed_update(const arq_speed_model_t *m);
 void arq_speed_forget();
 
+// ---- Flujo de extrusion (M221, en %): valor grande, +/-, preajustes y paso -------------------------------------------------------------
+enum { ARQ_WID_BACK = 1, ARQ_WID_P0, ARQ_WID_P1, ARQ_WID_P2, ARQ_WID_S1, ARQ_WID_S5, ARQ_WID_S10, ARQ_WID_DEC, ARQ_WID_INC };
+#define ARQ_FLOW_PRESET_0 90      // preajustes de la columna izquierda (%); el del medio es el 100 % de fabrica
+#define ARQ_FLOW_PRESET_1 100
+#define ARQ_FLOW_PRESET_2 110
+typedef struct { int16_t flow; uint8_t step; } arq_flow_model_t;                 // step: 1, 5 o 10
+void arq_flow_build(lv_obj_t *scr, lv_event_cb_t cb);
+void arq_flow_update(const arq_flow_model_t *m);
+void arq_flow_forget();
+
 // ---- Nivelar cama (5 puntos sobre un esquema de la cama) ----------------------------------------------------------------------------
 enum { ARQ_LID_BACK = 1, ARQ_LID_P1, ARQ_LID_P2, ARQ_LID_P3, ARQ_LID_P4, ARQ_LID_P5 };
 typedef struct { int16_t bed_x, bed_y; int16_t x[5], y[5]; } arq_level_model_t;      // mm

@@ -79,7 +79,7 @@ void arq_extrude_forget();
 
 // ---- Opciones (rejilla de accesos 4 x 2) -----------------------------------------------------------------------------------------
 enum { ARQ_XID_BACK = 1, ARQ_XID_ITEM0 = 10 };                 // los accesos usan ARQ_XID_ITEM0 + indice
-#define ARQ_OPT_MAX 8
+#define ARQ_OPT_MAX 12                                          // hasta 8: 4 x 2 (como siempre); de 9 a 12: 4 x 3
 typedef struct { const lv_img_dsc_t *icon; const char *title; const char *sub; uint8_t kind; } arq_opt_item_t;   // sub: texto fijo del llamador o nullptr
 void arq_opts_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const arq_opt_item_t *items, uint8_t n);
 void arq_opts_set(uint8_t index, const char *sub, uint8_t kind);   // cambia el subtitulo y el tipo (p. ej. interruptor activado)

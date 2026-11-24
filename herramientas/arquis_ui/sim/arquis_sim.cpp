@@ -194,6 +194,7 @@ static void confirm_screen(const char *file, const char *shot, bool thumb = fals
 
 // ---- Etapa 5: Velocidad, Nivelar cama, Sistema, Babystep ---------------------------------------------------------------------------
 static void speed_screen(int feed, int flow, int sel, int step, const char *shot) { lv_obj_t *s = new_screen(); arq_speed_build(s, ccb); arq_speed_model_t m = { (int16_t)feed, (int16_t)flow, (uint8_t)sel, (uint8_t)step }; arq_speed_update(&m); if (shot) dump(shot); }
+static void flow_screen(int flow, int step, const char *shot) { lv_obj_t *s = new_screen(); arq_flow_build(s, ccb); arq_flow_model_t m = { (int16_t)flow, (uint8_t)step }; arq_flow_update(&m); if (shot) dump(shot); }
 static void level_screen(const char *shot) { lv_obj_t *s = new_screen(); arq_level_model_t m; memset(&m, 0, sizeof(m)); m.bed_x = m.bed_y = 220; int xs[5] = { 30, 190, 190, 30, 110 }, ys[5] = { 30, 30, 190, 190, 110 }; for (int i = 0; i < 5; ++i) { m.x[i] = xs[i]; m.y[i] = ys[i]; } arq_level_build(s, ccb, &m); if (shot) dump(shot); }
 static arq_info_list_t il, ir;
 static void info_screen(const char *shot) {
@@ -658,17 +659,21 @@ static void tests() {
     { new_screen(); run(); const uint32_t b = used();
       struct S { const char *name; void (*mk)(); } scr[] = {
         { "Velocidad", [] { speed_screen(100, 85, 0, 5, nullptr); } }, { "Nivelar cama", [] { level_screen(nullptr); } },
-        { "Sistema", [] { info_screen(nullptr); } }, { "Babystep", [] { baby_screen(-1250, 0, nullptr); } } };
+        { "Sistema", [] { info_screen(nullptr); } }, { "Babystep", [] { baby_screen(-1250, 0, nullptr); } }, { "Flujo", [] { flow_screen(100, 5, nullptr); } } };
       for (auto &c : scr) { new_screen(); const uint32_t b1 = used(); c.mk(); const uint32_t u = used() - b1; printf("[mem] %s: %u B\n", c.name, (unsigned)u); CHECK(u < 5200, "%s: %u B de heap (< 5200 B)", c.name, (unsigned)u); }
       for (int i = 0; i < 100; ++i) for (auto &c : scr) c.mk();
       new_screen(); run(); const uint32_t u1 = used();
       for (int i = 0; i < 100; ++i) for (auto &c : scr) c.mk();
       new_screen(); run(); const uint32_t u2 = used();
-      CHECK(u2 <= u1 && u1 <= b + 16, "Etapa 5: 400 + 400 ciclos de las 4 pantallas: sin fugas (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b);
+      CHECK(u2 <= u1 && u1 <= b + 16, "Etapa 5: 400 + 400 ciclos de las 5 pantallas: sin fugas (%u B, %u B; base %u B)", (unsigned)u1, (unsigned)u2, (unsigned)b);
       speed_screen(100, 85, 0, 5, nullptr);
       struct T { int x, y, id; const char *n; } t4[] = { { 20, 22, ARQ_SID_BACK, "Atras" }, { 100, 90, ARQ_SID_FEED, "Movimiento" }, { 100, 180, ARQ_SID_FLOW, "Extrusion" }, { 50, 290, ARQ_SID_S1, "1%" },
         { 110, 290, ARQ_SID_S5, "5%" }, { 170, 290, ARQ_SID_S10, "10%" }, { 300, 250, ARQ_SID_DEC, "menos" }, { 410, 250, ARQ_SID_INC, "mas" } };
       for (auto &t : t4) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Velocidad: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
+      flow_screen(100, 5, nullptr);
+      struct TF { int x, y, id; const char *n; } tf[] = { { 20, 22, ARQ_WID_BACK, "Atras" }, { 40, 100, ARQ_WID_P0, "90%" }, { 100, 100, ARQ_WID_P1, "100%" }, { 160, 100, ARQ_WID_P2, "110%" },
+        { 40, 250, ARQ_WID_S1, "1%" }, { 100, 250, ARQ_WID_S5, "5%" }, { 160, 250, ARQ_WID_S10, "10%" }, { 300, 250, ARQ_WID_DEC, "menos" }, { 410, 250, ARQ_WID_INC, "mas" } };
+      for (auto &t : tf) { c_count = 0; tap(t.x, t.y); CHECK(c_count == 1 && c_last == t.id, "Flujo: toque en %s -> id %d (recibido %d)", t.n, t.id, c_last); }
       level_screen(nullptr);
       // las posiciones de los 5 botones caen donde corresponde: 1 abajo-izquierda, 2 abajo-derecha, 3 arriba-derecha, 4 arriba-izquierda, 5 centro
       struct P { int x, y, id; const char *n; } pp[] = { { 6 + 4 + 5 + 27, 52 + 4 + 5 + 27 + 190 - 0, ARQ_LID_P1, "punto 1" } };
@@ -846,11 +851,14 @@ int main(int argc, char **argv) {
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[8] = { { &arq_icon_temp, "Temperatura", nullptr, 1 }, { &arq_icon_down, "Extruir", nullptr, 1 }, { &arq_icon_move, "Mover", nullptr, 1 }, { &arq_icon_home, "Home", nullptr, 1 },
         { &arq_icon_level, "Nivel. auto", nullptr, 1 }, { &arq_icon_level, "Nivelar cama", nullptr, 1 }, { &arq_icon_filament, "Filamento", nullptr, 1 }, { &arq_icon_tools, "M\xC3\xA1s", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Herramientas", it, 8); dump("st5_5_herramientas"); }
+    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[9] = { { &arq_icon_temp, "Temperatura", nullptr, 1 }, { &arq_icon_down, "Extruir", nullptr, 1 }, { &arq_icon_move, "Mover", nullptr, 1 }, { &arq_icon_home, "Home", nullptr, 1 },
+        { &arq_icon_level, "Malla 5x5", nullptr, 1 }, { &arq_icon_level, "Nivelar cama", nullptr, 1 }, { &arq_icon_filament, "Filamento", nullptr, 1 }, { &arq_icon_sliders, "Flujo", nullptr, 1 }, { &arq_icon_tools, "M\xC3\xA1s", nullptr, 1 } };
+      arq_opts_build(sc, ccb, "Herramientas", it, 9); dump("st5_10_herramientas_flujo"); }
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[5] = { { &arq_icon_gear, "Par\xC3\xA1metros", nullptr, 1 }, { &arq_icon_file, "Memoria", nullptr, 1 }, { &arq_icon_fan, "Ventiladores", nullptr, 1 }, { &arq_icon_tools, "Sistema", nullptr, 1 }, { &arq_icon_power, "Apagar", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Ajustes", it, 5); dump("st5_6_ajustes"); }
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[6] = { { &arq_icon_home, "Home todo", nullptr, 1 }, { &arq_icon_right, "Home X", nullptr, 1 }, { &arq_icon_up, "Home Y", nullptr, 1 }, { &arq_icon_down, "Home Z", nullptr, 1 }, { &arq_icon_power, "Motores off", nullptr, 1 }, { &arq_icon_power, "Motores XY", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Home", it, 6); dump("st5_7_home"); }
-    speed_screen(100, 85, 0, 5, "st5_1_velocidad"); level_screen("st5_2_nivelar"); info_screen("st5_3_sistema"); baby_screen(-1250, 0, "st5_4_babystep");
+    speed_screen(100, 85, 0, 5, "st5_1_velocidad"); flow_screen(100, 5, "st5_8_flujo"); flow_screen(92, 1, "st5_9_flujo_92"); level_screen("st5_2_nivelar"); info_screen("st5_3_sistema"); baby_screen(-1250, 0, "st5_4_babystep");
     pl_screen(0, "st5b_1_parametros"); pl_screen(1, "st5b_2_aceleracion"); pl_screen(2, "st5b_3_dos_valores"); pl_screen(3, "st5b_4_interruptores");
     numpad_screen("Aceleraci\xC3\xB3n de impresi\xC3\xB3n", "500.0", true, "st5b_5_teclado"); numpad_screen("Posici\xC3\xB3n X", "-", false, "st5b_6_teclado_invalido");
     msg_screen("Confirmar", "\xC2\xBFGuardar los ajustes en la memoria?", "Aceptar", "Cancelar", false, "st5b_7_dialogo_confirmar");

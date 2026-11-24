@@ -166,3 +166,9 @@ Los valores de cada impresora (medidas, pasos/mm, sentidos, finales de carrera, 
 
 ## Velocidad real en la pantalla de impresión
 Nueva fila **Veloc.** en la supervisión: velocidad real del cabezal en XY (mm/s) y la máxima alcanzada en esa impresión. Se calcula derivando la posición real de X e Y (`planner.get_axis_position_mm`, pasos ya ejecutados) en ventanas de 0,15 s, con suavizado; los saltos de posición (G92, home) se ignoran y el máximo se reinicia con cada impresión. La lista de la supervisión pasa a 5 filas compactas (18 px). Lógica pura y probada en `herramientas/arquis_ui/sim/logic_test.cpp`; **no compilado con PlatformIO ni probado en la impresora**.
+
+## Flujo de extrusión: botón y pantalla propia en Herramientas
+Nuevo botón **Flujo** en Herramientas con su pantalla (`FLOW_UI`, `arq_flow_*` en `arquis_tools.cpp` / `arquis_tools_view.cpp`): % de extrusión (M221) en grande, − / +, pasos 1/5/10 % y preajustes 90/100/110 %. Hace lo mismo que la tarjeta *Extrusión* de la pantalla de Velocidad (`planner.flow_percentage` + `refresh_e_factor`, con los límites `MIN/MAX_EXT_SPEED_PERCENT`), sin tocar el núcleo de Marlin. La rejilla de accesos (`arq_opts_build`) admite ahora hasta 12 tarjetas: con 8 o menos queda 4 × 2 como siempre; con 9 a 12 pasa a 4 × 3. Simulador: pantalla, rejilla de 9 y pruebas de toque (los avisos de heap que ya fallaban al compilar con el compilador del PC siguen igual). **No compilado con PlatformIO ni probado en la impresora.**
+
+## XQ1: Z a 5 mm/s y aceleración 100 (prueba)
+`Marlin/machine/xq1.h` fija `DEFAULT_MAX_FEEDRATE` Z = 5 y `DEFAULT_MAX_ACCELERATION` Z = 100 (antes 45 y 150 desde `c5b5cfd`) por una Z que no subía al imprimir. `tests/machines/test_profiles.py` admite ahora los valores que declara `xq1.h`.

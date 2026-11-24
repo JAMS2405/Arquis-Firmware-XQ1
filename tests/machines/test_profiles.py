@@ -22,6 +22,9 @@ def dump(marlin_dir, defs=()):
     return out
 
 xq1 = dump(M); aq = dump(M, ["-DARQUIS_MACHINE_AQUILA_D1"])
+# Overrides propios del perfil XQ1 (Marlin/machine/xq1.h): son los unicos valores en que el XQ1 puede diferir de la configuracion anterior
+xq1_prof = (M / "machine/xq1.h").read_text(encoding="utf-8")
+xq1_declared = {m.group(1): m.group(2).strip() for m in re.finditer(r'^#define\s+(\w+)\s+(.*?)\s*(?://.*)?$', xq1_prof, re.M)}
 check(xq1 is not None and aq is not None, "Configuration.h y Configuration_adv.h se preprocesan con y sin perfil")
 if xq1 is None or aq is None: sys.exit(1)
 
@@ -37,8 +40,9 @@ try:
     if not ok: print("[machines] (sin el commit %s en este clon: se omite la comparacion con la configuracion anterior)" % BASELINE)
     else:
         old = dump(tmp)
-        diff = {k: (old.get(k), xq1.get(k)) for k in set(old) | set(xq1) if old.get(k) != xq1.get(k)}
-        check(old is not None and not diff, "XQ1 (perfil por defecto): TODAS las macros iguales a la configuracion anterior (%d macros)%s" % (len(xq1), "" if not diff else " DIFF: %s" % list(diff.items())[:5]))
+        diff = {k: (old.get(k), xq1.get(k)) for k in set(old) | set(xq1) if old.get(k) != xq1.get(k) and k not in xq1_declared}
+        check(old is not None and not diff, "XQ1 (perfil por defecto): todas las macros iguales a la configuracion anterior salvo las que declara xq1.h %s (%d macros)%s" % (sorted(xq1_declared), len(xq1), "" if not diff else " DIFF: %s" % list(diff.items())[:5]))
+        check(all(xq1.get(k) == v for k, v in xq1_declared.items()), "XQ1: cada valor de xq1.h es el que ve Marlin (%d valores)" % len(xq1_declared))
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
@@ -48,7 +52,7 @@ declared = {m.group(1): m.group(2).strip() for m in re.finditer(r'^#define\s+(\w
 changed = {k for k in set(xq1) | set(aq) if xq1.get(k) != aq.get(k)}
 # derivadas de las medidas (X_MAX_POS = X_BED_SIZE...) cambian solas: se aceptan si dependen de algo declarado
 derived = {"X_MAX_POS", "Y_MAX_POS", "X_BED_SIZE", "Y_BED_SIZE", "X_CENTER", "Y_CENTER", "X_MAX_BED", "Y_MAX_BED", "X_BED_SIZE"}
-unexpected = sorted(k for k in changed if k not in declared and k not in derived and not k.startswith("ARQUIS_MACHINE"))
+unexpected = sorted(k for k in changed if k not in declared and k not in derived and k not in xq1_declared and not k.startswith("ARQUIS_MACHINE"))   # (lo que declara xq1.h solo cambia en el XQ1)
 check(not unexpected, "Aquila D1: no cambia nada que su perfil no declare %s" % (unexpected or ""))
 check(all(aq.get(k) == v for k, v in declared.items()), "Aquila D1: cada valor del perfil es el que ve Marlin (%d valores)" % len(declared))
 # 3) Valores de su Configuration.h original (Aquila_D1.zip)

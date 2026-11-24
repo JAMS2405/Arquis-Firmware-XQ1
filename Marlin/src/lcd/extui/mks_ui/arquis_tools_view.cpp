@@ -65,6 +65,45 @@ void arq_speed_update(const arq_speed_model_t *m) {
   arq_card_refresh(V.feed); arq_card_refresh(V.flow); arq_card_refresh(V.big);
 }
 
+// ==== Flujo de extrusion =========================================================================================================
+static struct { arq_header_t hd; lv_obj_t *big, *pre[3], *st[3], *dec, *inc; bool built, valid; arq_flow_model_t prev; } F;
+static char f_big[8];
+
+void arq_flow_forget() { memset(&F, 0, sizeof(F)); }
+
+void arq_flow_build(lv_obj_t *scr, lv_event_cb_t cb) {
+  arq_flow_forget();
+  arq_header_create(&F.hd, scr, "Flujo", false, cb, ARQ_WID_BACK);
+  const lv_coord_t lw = 196, rx = ARQ_MARGIN + lw + ARQ_GAP, rw = ARQ_W - ARQ_MARGIN - rx;
+  const lv_coord_t sw = (lw - 2 * ARQ_GAP) / 3, rh = (CY1 - CY0 - ARQ_GAP) / 2, sy = CY0 + rh + ARQ_GAP;
+  static const char *const pre_txt[3] = { "90" PCT, "100" PCT, "110" PCT };
+  static const char *const step_txt[3] = { "1" PCT, "5" PCT, "10" PCT };
+  for (uint8_t i = 0; i < 3; ++i) {
+    F.pre[i] = arq_button_create(scr, ARQ_MARGIN + i * (sw + ARQ_GAP), CY0, sw, rh, nullptr, pre_txt[i], ARQ_BTN_SECONDARY, cb, ARQ_WID_P0 + i);
+    F.st[i]  = arq_button_create(scr, ARQ_MARGIN + i * (sw + ARQ_GAP), sy, sw, CY1 - sy, nullptr, step_txt[i], ARQ_BTN_SECONDARY, cb, ARQ_WID_S1 + i);
+  }
+  F.big = arq_card_create(scr, rx, CY0, rw, 110, ARQ_LAYOUT_BIG, ARQ_BTN_SECONDARY, nullptr, 0);
+  arq_card_set_title(F.big, "Flujo", ARQ_TEXT_MUTED);
+  arq_card_set_value(F.big, f_big, ARQ_TEXT_NUM_L);
+  const lv_coord_t by = CY0 + 118, bw = (rw - ARQ_GAP) / 2;
+  F.dec = arq_button_create(scr, rx, by, bw, CY1 - by, &arq_icon_minus, nullptr, ARQ_BTN_SECONDARY, cb, ARQ_WID_DEC);
+  F.inc = arq_button_create(scr, rx + bw + ARQ_GAP, by, rw - bw - ARQ_GAP, CY1 - by, &arq_icon_plus, nullptr, ARQ_BTN_SECONDARY, cb, ARQ_WID_INC);
+  F.built = true;
+}
+
+void arq_flow_update(const arq_flow_model_t *m) {
+  if (!F.built || (F.valid && !memcmp(&F.prev, m, sizeof(*m)))) return;
+  F.prev = *m; F.valid = true;
+  snprintf(f_big, sizeof(f_big), "%d%%", m->flow);
+  static const int16_t pv[3] = { ARQ_FLOW_PRESET_0, ARQ_FLOW_PRESET_1, ARQ_FLOW_PRESET_2 };
+  static const uint8_t sv[3] = { 1, 5, 10 };
+  for (uint8_t i = 0; i < 3; ++i) {
+    arq_card_set_kind(F.pre[i], m->flow == pv[i] ? ARQ_BTN_PRIMARY : ARQ_BTN_SECONDARY);      // el preajuste activo se resalta
+    arq_card_set_kind(F.st[i],  m->step == sv[i] ? ARQ_BTN_PRIMARY : ARQ_BTN_SECONDARY);
+  }
+  arq_card_refresh(F.big);
+}
+
 // ==== Nivelar cama ===============================================================================================================
 #define LV_MAP_X   6
 #define LV_MAP_SZ  (CY1 - CY0)

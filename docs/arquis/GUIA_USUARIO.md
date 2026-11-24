@@ -52,9 +52,9 @@ Recorrido por la pantalla táctil de la **Arquis XQ1**. (Las capturas son de la 
 | ![Mover](ui/ctl_5_mover_x2.png) **Mover** | Mueve X, Y y Z con pasos de 0,1, 1 y 10 mm; avisa si falta hacer Home |
 | ![Extruir](ui/ctl_7_extruir_x2.png) **Extruir** | Extruye o retrae; con el hotend frío lo bloquea y lo explica |
 
-**Herramientas** reúne Temperatura, Extruir, Mover, Home, Nivelación (automática si existe y manual de 5 puntos), Filamento y Más:
+**Herramientas** reúne Temperatura, Extruir, Mover, Home, Nivelación (automática si existe y manual de 5 puntos), Filamento, **Flujo** y Más:
 
-![Herramientas](ui/st5_5_herramientas_x2.png)
+![Herramientas](ui/st5_10_herramientas_flujo_x2.png)
 
 - **Home** (todo, X, Y, Z) y *Motores off*:
 
@@ -63,6 +63,10 @@ Recorrido por la pantalla táctil de la **Arquis XQ1**. (Las capturas son de la 
 - **Nivelar cama:** el esquema muestra los 5 puntos; cada uno sube, se desplaza y baja. **Despeja la cama antes.**
 
 ![Nivelar cama](ui/st5_2_nivelar_x2.png)
+
+- **Flujo** (Herramientas → Flujo, también con una impresión en curso: *Inicio* → *Herramientas*): pantalla propia para el caudal de extrusión (M221) con el valor grande, − / + , pasos de 1, 5 y 10 % y preajustes de 90, 100 y 110 %. El cambio se aplica al instante y no se guarda: la próxima impresión vuelve a empezar al 100 % salvo que el G-code diga otra cosa.
+
+![Flujo](ui/st5_8_flujo_x2.png)
 
 - **Velocidad** (movimiento y extrusión en %) y **Babystep** (ajuste fino de Z durante la impresión):
 

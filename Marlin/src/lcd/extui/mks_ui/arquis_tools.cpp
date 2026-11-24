@@ -96,7 +96,7 @@ struct Grid {
 
 // ==== HERRAMIENTAS (draw_tool.cpp) ===============================================================================================
 static Grid grid_tools;
-enum { T_TEMP, T_EXTRUDE, T_MOVE, T_HOME, T_LEVEL_AUTO, T_LEVEL_MANUAL, T_FILAMENT, T_MORE };
+enum { T_TEMP, T_EXTRUDE, T_MOVE, T_HOME, T_LEVEL_AUTO, T_LEVEL_MANUAL, T_FILAMENT, T_FLOW, T_MORE };
 enum { DLG_LVL_OK = 501, DLG_LVL_NO };
 
 static void tools_dialog_cb(lv_obj_t *obj, lv_event_t event) {
@@ -136,6 +136,7 @@ static void tools_cb(lv_obj_t *obj, lv_event_t event) {
       uiCfg.hotendTargetTempBak = thermalManager.degTargetHotend(uiCfg.extruderIndex);
       arq_tools_clear(); lv_draw_filament_change();
       break;
+    case T_FLOW:         arq_tools_clear(); arq_flow_draw(); break;     // flujo de extrusion (M221), pantalla propia
     case T_MORE:         arq_tools_clear(); lv_draw_more(); break;
   }
 }
@@ -155,6 +156,7 @@ void arq_tools_draw() {
   #endif
   grid_tools.add(T_LEVEL_MANUAL, &arq_icon_level, "Nivelar cama");
   grid_tools.add(T_FILAMENT, &arq_icon_filament, "Filamento");
+  grid_tools.add(T_FLOW, &arq_icon_sliders, "Flujo");               // % de extrusion (M221), tambien con una impresion en curso
   grid_tools.add(T_MORE, &arq_icon_tools, "M\xC3\xA1s");
   grid_tools.show(TOOL_UI, "Herramientas", tools_cb);
 }
@@ -483,6 +485,59 @@ void arq_speed_clear() {
   arq_speed_forget();
   if (s_scr) lv_obj_del(s_scr);
   s_scr = nullptr;
+}
+
+// ==== FLUJO (pantalla propia; las mismas llamadas que la tarjeta "Extrusion" de la pantalla de Velocidad) =========================
+static lv_obj_t *f_scr;
+
+static void flow_set(int v) {
+  if (v < MIN_EXT_SPEED_PERCENT) v = MIN_EXT_SPEED_PERCENT;
+  if (v > MAX_EXT_SPEED_PERCENT) v = MAX_EXT_SPEED_PERCENT;
+  planner.flow_percentage[0] = (int16_t)v;
+  planner.refresh_e_factor(0);
+  #if HAS_MULTI_EXTRUDER
+    planner.flow_percentage[1] = planner.flow_percentage[0];
+    planner.refresh_e_factor(1);
+  #endif
+}
+
+static void flow_refresh() {
+  if (!f_scr) return;
+  arq_flow_model_t m;
+  m.flow = planner.flow_percentage[0]; m.step = uiCfg.stepPrintSpeed;
+  arq_flow_update(&m);
+}
+
+static void flow_cb(lv_obj_t *obj, lv_event_t event) {
+  if (event != LV_EVENT_RELEASED) return;
+  switch (obj->mks_obj_id) {
+    case ARQ_WID_BACK: goto_previous_ui(); return;
+    case ARQ_WID_P0:  flow_set(ARQ_FLOW_PRESET_0); break;
+    case ARQ_WID_P1:  flow_set(ARQ_FLOW_PRESET_1); break;
+    case ARQ_WID_P2:  flow_set(ARQ_FLOW_PRESET_2); break;
+    case ARQ_WID_S1:  uiCfg.stepPrintSpeed =  1; break;
+    case ARQ_WID_S5:  uiCfg.stepPrintSpeed =  5; break;
+    case ARQ_WID_S10: uiCfg.stepPrintSpeed = 10; break;
+    case ARQ_WID_INC: flow_set(planner.flow_percentage[0] + uiCfg.stepPrintSpeed); break;
+    case ARQ_WID_DEC: flow_set(planner.flow_percentage[0] - uiCfg.stepPrintSpeed); break;
+  }
+  flow_refresh();
+}
+
+void arq_flow_draw() {
+  f_scr = lv_screen_create(FLOW_UI, "");
+  arq_screen_apply(f_scr);
+  if (uiCfg.stepPrintSpeed != 1 && uiCfg.stepPrintSpeed != 5 && uiCfg.stepPrintSpeed != 10) uiCfg.stepPrintSpeed = 5;
+  arq_flow_build(f_scr, flow_cb);
+  flow_refresh();
+  add_to_group(f_scr);
+}
+
+void arq_flow_clear() {
+  remove_group();
+  arq_flow_forget();
+  if (f_scr) lv_obj_del(f_scr);
+  f_scr = nullptr;
 }
 
 // ==== NIVELAR CAMA (draw_manuaLevel.cpp) =========================================================================================

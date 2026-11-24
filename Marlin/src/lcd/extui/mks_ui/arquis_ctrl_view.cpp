@@ -252,7 +252,8 @@ void arq_opts_build(lv_obj_t *scr, lv_event_cb_t cb, const char *title, const ar
   arq_opts_forget();
   O.n = n > ARQ_OPT_MAX ? ARQ_OPT_MAX : n;
   arq_header_create(&O.hd, scr, title, false, cb, ARQ_XID_BACK);
-  const lv_coord_t w = (ARQ_W - 2 * ARQ_MARGIN - 3 * ARQ_GAP) / 4, h = (CY1 - CY0 - ARQ_GAP) / 2;
+  const uint8_t rows = O.n > 8 ? 3 : 2;
+  const lv_coord_t w = (ARQ_W - 2 * ARQ_MARGIN - 3 * ARQ_GAP) / 4, h = (CY1 - CY0 - (rows - 1) * ARQ_GAP) / rows;
   for (uint8_t i = 0; i < O.n; ++i) {
     O.item[i] = arq_nav_tile_create(scr, ARQ_MARGIN + (i % 4) * (w + ARQ_GAP), CY0 + (i / 4) * (h + ARQ_GAP), w, h, items[i].icon, ARQ_TINT_ACCENT, items[i].title,
                                     (arq_btn_kind_t)items[i].kind, cb, ARQ_XID_ITEM0 + i);
