@@ -182,7 +182,8 @@ void gCfgItems_init() {
     W25QXX.SPI_FLASH_BufferWrite((uint8_t *)&custom_gcode_command[3], OTHERS_COMMAND_ADDR_3, 100);
     W25QXX.SPI_FLASH_BufferWrite((uint8_t *)&custom_gcode_command[4], OTHERS_COMMAND_ADDR_4, 100);
   }
-  TERN_(ARQUIS_UI, gCfgItems.cloud_enable = false);   // F3-06: sin Nube MKS aunque la memoria SPI la tuviera activada (solo en RAM; la estructura no cambia)
+  TERN_(ARQUIS_UI, gCfgItems.cloud_enable = false);
+  TERN_(ARQUIS_UI, gCfgItems.language = LANG_SPANISH);   // F3-07: solo espanol aunque la memoria SPI guardara otro idioma (solo en RAM)   // F3-06: sin Nube MKS aunque la memoria SPI la tuviera activada (solo en RAM; la estructura no cambia)
 
   const byte rot = (TFT_ROTATION & TFT_ROTATE_180) ? 0xEE : 0x00;
   if (gCfgItems.disp_rotation_180 != rot) {

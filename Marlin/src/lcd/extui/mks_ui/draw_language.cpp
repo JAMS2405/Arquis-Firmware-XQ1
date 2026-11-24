@@ -30,8 +30,9 @@
 #include "draw_ui.h"
 #include "arquis_tools.h"
 
-void lv_draw_language()  { arq_language_draw(); }
-void lv_clear_language() { arq_language_clear(); }
+// F3-07: ARQUIS UI solo en espanol; LANGUAGE_UI ya no se abre desde ningun menu. Si se llegara a pedir, vuelve a Ajustes.
+void lv_draw_language()  { lv_draw_set(); }
+void lv_clear_language() {}
 
 #else   // ---- pantalla original MKS (se conserva intacta) ----
 

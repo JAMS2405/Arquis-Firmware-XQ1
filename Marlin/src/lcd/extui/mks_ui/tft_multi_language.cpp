@@ -1352,7 +1352,7 @@ void disp_language_init() {
             eeprom_menu.readTips         = EEPROM_READ_TIPS_T_CN;
             eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_T_CN;
             break;
-#endif // ARQUIS_UI
+          // ARQUIS UI (F3-07): solo espanol. El bloque ingles queda dentro del mismo #if DISABLED(ARQUIS_UI) que el chino y el ruso
           case LANG_ENGLISH:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_EN;
             common_menu.text_back             = BACK_TEXT_EN;
@@ -1588,7 +1588,6 @@ void disp_language_init() {
             eeprom_menu.readTips         = EEPROM_READ_TIPS_EN;
             eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_EN;
             break;
-#if DISABLED(ARQUIS_UI)
           case LANG_RUSSIAN:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_RU;
             common_menu.text_back             = BACK_TEXT_RU;
@@ -1915,6 +1914,9 @@ void disp_language_init() {
             eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_RU;
             break;
 #endif // ARQUIS_UI
+#if ENABLED(ARQUIS_UI)
+          default:   // F3-07: cualquier idioma guardado se muestra con las tablas en espanol
+#endif
           case LANG_SPANISH:
             common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_SP;
             common_menu.text_back             = BACK_TEXT_SP;
@@ -2626,6 +2628,7 @@ void disp_language_init() {
 
       #endif // if 1
 
+#if DISABLED(ARQUIS_UI)   // F3-07: con ARQUIS UI el caso por defecto es el espanol (arriba)
     default:
       common_menu.dialog_confirm_title  = TITLE_DIALOG_CONFIRM_EN;
       common_menu.text_back             = BACK_TEXT_EN;
@@ -2859,6 +2862,7 @@ void disp_language_init() {
       eeprom_menu.readTips         = EEPROM_READ_TIPS_EN;
       eeprom_menu.revertTips       = EEPROM_REVERT_TIPS_EN;
       break;
+#endif
   }
 }
 

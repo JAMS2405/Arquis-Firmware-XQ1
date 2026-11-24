@@ -227,7 +227,6 @@ static void settings_cb(lv_obj_t *obj, lv_event_t event) {
     #if ARQ_HAS_PERF
       case S_PERF: arq_perf_draw(); break;
     #endif
-    case S_LANG:   lv_draw_language(); break;
     case S_PARA:   lv_draw_machine_para(); break;
     case S_EEPROM: lv_draw_eeprom_settings(); break;
     #if ENABLED(MKS_WIFI_MODULE)
@@ -259,9 +258,6 @@ void arq_settings_draw() {
   #endif
   #if ARQ_HAS_PERF
     grid_settings.add(S_PERF, &arq_icon_speed, "Rendimiento");     // aceleraciones, Linear Advance, Input Shaping
-  #endif
-  #if HAS_LANG_SELECT_SCREEN
-    grid_settings.add(S_LANG, &arq_icon_file, "Idioma");
   #endif
   #if ENABLED(MKS_WIFI_MODULE)
     grid_settings.add(S_WIFI, &arq_icon_wifi, "Wi-Fi");
@@ -639,37 +635,6 @@ void arq_more_draw() {
 }
 void arq_more_clear() { grid_more.clear(); }
 
-// ==== IDIOMA (draw_language.cpp) =================================================================================================
-// Mismas acciones que la original: guarda el idioma en la flash SPI y recarga las tablas de textos de MKS. ARQUIS UI conserva solo
-// espanol e ingles. Las pantallas ARQUIS estan en espanol; el idioma afecta a los textos de MKS (con ingles se muestran sin traducir).
-static Grid grid_lang;
-static const uint8_t lang_code[2] = { LANG_SPANISH, LANG_ENGLISH };
-
-static void lang_mark() {
-  for (uint8_t i = 0; i < 2; ++i) {
-    const bool on = (gCfgItems.language == lang_code[i]);
-    arq_opts_set(i, on ? "Activo" : nullptr, on ? ARQ_BTN_SUCCESS : ARQ_BTN_SECONDARY);
-  }
-}
-
-static void lang_cb(lv_obj_t *obj, lv_event_t event) {
-  if (event != LV_EVENT_RELEASED) return;
-  if (obj->mks_obj_id == ARQ_XID_BACK) { arq_language_clear(); lv_draw_set(); return; }
-  const int i = grid_lang.action(obj);
-  if (i < 0 || i > 1) return;
-  gCfgItems.language = lang_code[i];
-  update_spi_flash();
-  disp_language_init();
-  lang_mark();
-}
-
-void arq_language_draw() {
-  grid_lang.begin();
-  grid_lang.add(0, &arq_icon_gear, "Espa\xC3\xB1ol");
-  grid_lang.add(1, &arq_icon_gear, "Ingl\xC3\xA9s");
-  grid_lang.show(LANGUAGE_UI, "Idioma", lang_cb);
-  lang_mark();
-}
-void arq_language_clear() { grid_lang.clear(); }
+// ==== IDIOMA: ARQUIS UI 2.0 (F3-07) solo en espanol; sin selector de idioma ==========================================================
 
 #endif // HAS_TFT_LVGL_UI && ARQUIS_UI
