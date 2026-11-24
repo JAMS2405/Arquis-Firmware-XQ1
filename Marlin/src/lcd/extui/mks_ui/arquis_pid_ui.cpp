@@ -37,7 +37,7 @@ extern lv_group_t *g;
 
 static lv_obj_t  *scr;
 static lv_task_t *task;
-static char       msg[100], dlg_msg[140];
+static char       msg[100], dlg_msg[192];   // 192: el texto de inicio (121-123 B) cabe con margen para todo el rango de int
 static uint8_t    msg_kind;
 static bool       msg_pending;          // hay un aviso (fallo / aplicado) que el usuario debe aceptar
 
@@ -123,7 +123,8 @@ static void pid_cb(lv_obj_t *obj, lv_event_t event) {
     case ARQ_PV_START: {
       const uint8_t e = arq_pid_ctl_can_start();
       if (e) { error_dialog(e); break; }
-      snprintf(dlg_msg, sizeof(dlg_msg), "Se calentar\xC3\xA1 %s a %d\xC2\xB0" "C durante %d ciclos y se apagar\xC3\xA1n los dem\xC3\xA1s calentadores. Tarda varios minutos. No se aplica nada hasta que lo aceptes.",
+      // Texto de 3 renglones (verificado con LVGL): M303 apaga todos los calentadores y solo alimenta el que se ajusta (hotend + cama = "el otro")
+      snprintf(dlg_msg, sizeof(dlg_msg), "Calentar\xC3\xA1 %s a %d\xC2\xB0" "C, %d ciclos. Tarda varios minutos y apaga el otro calentador. No se aplica nada sin confirmar.",
                in.heater == ARQ_PID_BED ? "la cama" : "el hotend", (int)in.target, (int)in.cycles);
       arq_dialog_open("Iniciar autoajuste", dlg_msg, "Iniciar", "Volver", false, pid_cb, DLG_START_OK, DLG_START_NO);
     } break;

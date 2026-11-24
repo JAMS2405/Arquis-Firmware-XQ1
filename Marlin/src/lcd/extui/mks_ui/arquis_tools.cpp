@@ -97,6 +97,7 @@ struct Grid {
 // ==== HERRAMIENTAS (draw_tool.cpp) ===============================================================================================
 static Grid grid_tools;
 enum { T_TEMP, T_EXTRUDE, T_MOVE, T_HOME, T_LEVEL_AUTO, T_LEVEL_MANUAL, T_FILAMENT, T_FLOW, T_MORE };
+#if !ARQ_HAS_MESH   // solo se usa en T_LEVEL_AUTO sin malla manual (impresoras con sonda); con Malla 5x5 no existe
 enum { DLG_LVL_OK = 501, DLG_LVL_NO };
 
 static void tools_dialog_cb(lv_obj_t *obj, lv_event_t event) {
@@ -113,6 +114,7 @@ static void tools_dialog_cb(lv_obj_t *obj, lv_event_t event) {
     (void)id;
   #endif
 }
+#endif
 
 static void tools_cb(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
