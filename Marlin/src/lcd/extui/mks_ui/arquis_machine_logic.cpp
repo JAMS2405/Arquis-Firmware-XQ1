@@ -209,3 +209,39 @@ int8_t arq_mc_rec_pick(const uint8_t *a, const uint8_t *b) {
 int8_t arq_mc_rec_target(const uint8_t *a, const uint8_t *b) { return arq_mc_rec_pick(a, b) == 0 ? 1 : 0; }
 
 uint8_t arq_mc_shaft_mask(uint8_t dir_inv, uint8_t compiled_dir) { return (uint8_t)((dir_inv ^ compiled_dir) & 0x0F); }
+
+// ---- Eleccion del modelo -----------------------------------------------------------------------------------------
+uint8_t arq_mc_keep_check(uint8_t pick, bool marlin_ok, uint8_t rec_profile, uint8_t detected) {
+  if (!arq_mc_profile(pick)) return ARQ_KEEP_NO_MODEL;
+  if (!marlin_ok) return ARQ_KEEP_NO_EEPROM;
+  if (detected != ARQ_MC_NONE) return detected == pick ? ARQ_KEEP_OK : ARQ_KEEP_OTHER_MODEL;   // pasos de fabrica de un modelo
+  if (!arq_mc_profile(rec_profile)) return ARQ_KEEP_UNCONFIRMED;                              // calibrados y sin registro
+  return rec_profile == pick ? ARQ_KEEP_OK : ARQ_KEEP_OTHER_MODEL;                            // calibrados: decide el registro
+}
+
+bool arq_mc_choose(uint8_t pick, uint8_t keep_status, bool want_keep, const arq_mc_cfg_t *saved, arq_mc_cfg_t *out) {
+  if (!out || !arq_mc_profile(pick)) return false;
+  const bool keep = want_keep && keep_status == ARQ_KEEP_OK && saved;
+  if (keep) {
+    *out = *saved;
+    if (saved->profile != pick) arq_mc_take_geometry(pick, out);   // sin registro de este modelo: geometria de fabrica
+    out->profile = pick;
+  }
+  else {
+    arq_mc_factory(pick, out);
+    if (keep_status == ARQ_KEEP_OK && saved)                       // M206 del usuario: solo si los datos son de este modelo
+      for (uint8_t p = ARQ_MP_OFS_X; p <= ARQ_MP_OFS_Z; ++p)
+        if (arq_mc_value_ok(pick, p, saved->v[p], 1)) out->v[p] = saved->v[p];
+  }
+  if (keep) for (uint8_t p = ARQ_MP_OFS_X; p <= ARQ_MP_OFS_Z; ++p)
+    if (!arq_mc_value_ok(pick, p, out->v[p], 1)) out->v[p] = 0;
+  out->flags = 0;
+  return keep;
+}
+
+// ---- Verificacion del TMC2209 ------------------------------------------------------------------------------------
+uint8_t arq_mc_tmc_classify(uint32_t g, bool no_valid_reply, bool want_shaft) {
+  if (no_valid_reply) return ARQ_TMC_R_NOREPLY;
+  if (!(g & ARQ_GCONF_PDN_DISABLE) || !(g & ARQ_GCONF_MSTEP_REG)) return ARQ_TMC_R_RESET;   // valores de reinicio (UART/micropasos)
+  return (bool(g & ARQ_GCONF_SHAFT) != want_shaft) ? ARQ_TMC_R_SHAFT : ARQ_TMC_R_OK;
+}

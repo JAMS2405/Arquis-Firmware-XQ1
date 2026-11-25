@@ -102,3 +102,30 @@ uint16_t arq_mc_rec_seq(const uint8_t *raw);
 int8_t   arq_mc_rec_target(const uint8_t *a, const uint8_t *b);         // copia a escribir: la que NO es la vigente (0 = A, 1 = B)
 
 uint8_t  arq_mc_shaft_mask(uint8_t dir_inv, uint8_t compiled_dir);    // bits que el driver TMC debe invertir (bit shaft)
+
+// ---- Eleccion del modelo (paso 1 del asistente) -----------------------------------------------------------------
+// Los valores mecanicos que tiene Marlin (pasos/mm, velocidades, aceleraciones, corrientes, Input Shaping, JD) y los
+// offsets M206 solo se pueden CONSERVAR si se confirma que son del modelo elegido:
+//  - la EEPROM de Marlin es valida, y
+//  - los pasos Z/E coinciden exactamente con los de fabrica del modelo elegido (deteccion), o
+//    no coinciden con ningun modelo (calibrados) pero el registro ARQUIS confirma que se guardaron con ESE modelo.
+// Si los pasos coinciden con los de fabrica del OTRO modelo, nunca se conservan (aunque el registro diga lo contrario).
+enum { ARQ_KEEP_OK = 0, ARQ_KEEP_NO_EEPROM, ARQ_KEEP_OTHER_MODEL, ARQ_KEEP_UNCONFIRMED, ARQ_KEEP_NO_MODEL };
+uint8_t  arq_mc_keep_check(uint8_t pick, bool marlin_ok, uint8_t rec_profile, uint8_t detected);
+// Copia de trabajo para el modelo elegido. 'saved' = lo que hay ahora (geometria del registro, mecanica de Marlin).
+//  - keep (solo si keep_status == ARQ_KEEP_OK): mecanica de 'saved'; medidas, finales y sentidos de 'saved' si el registro ya
+//    era de ese modelo (saved->profile == pick) y, si no, los de fabrica del modelo.
+//  - si no: TODO de fabrica del modelo elegido.
+//  - M206: los de 'saved' solo si keep_status == ARQ_KEEP_OK y estan dentro de rango; si no, 0.
+// flags = 0 (hay que repetir las comprobaciones). Devuelve true si se conservo la mecanica.
+bool     arq_mc_choose(uint8_t pick, uint8_t keep_status, bool want_keep, const arq_mc_cfg_t *saved, arq_mc_cfg_t *out);
+
+// ---- Verificacion del TMC2209 (GCONF) ---------------------------------------------------------------------------
+// TMCStepper 0.8.10 (TMC2208Stepper::read): si no llega una respuesta valida (sin respuesta, sincronismo o cuerpo fuera de
+// plazo de 8 ms, CRC distinto o CRC = 0) tras 2 intentos, pone CRCerror = true y devuelve 0. CRCerror NO significa por
+// fuerza "driver desconectado": tambien ruido o una respuesta corrupta. Por eso se llama "sin respuesta valida".
+#define ARQ_GCONF_SHAFT        (1UL << 3)
+#define ARQ_GCONF_PDN_DISABLE  (1UL << 6)
+#define ARQ_GCONF_MSTEP_REG    (1UL << 7)
+enum { ARQ_TMC_R_OK = 0, ARQ_TMC_R_NOREPLY, ARQ_TMC_R_RESET, ARQ_TMC_R_SHAFT };
+uint8_t  arq_mc_tmc_classify(uint32_t gconf, bool no_valid_reply, bool want_shaft);

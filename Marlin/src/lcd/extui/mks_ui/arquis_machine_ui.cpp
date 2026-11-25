@@ -36,7 +36,7 @@ enum { T_NONE, T_MOVE, T_HOME };
 static lv_obj_t    *scr, *chip;
 static uint8_t      mode, page, sub, menu_sub, ret_page, ret_sub;
 static bool         wiz_cancelable, rebuild, keep_saved, marlin_ok, heated_e;
-static uint8_t      pick, detected;
+static uint8_t      pick, detected, rec_prof;
 static arq_mc_cfg_t work, base;
 static uint8_t      es_stage[3];             // 0 nada, 1 abierto, 2 activado, 3 comprobado (abierto -> activado -> abierto)
 static millis_t     es_open_ms[3], es_hit_ms[3];
@@ -44,7 +44,7 @@ static uint8_t      dir_ok, home_ok;         // comprobado en esta sesion (bits 
 static uint8_t      test_kind, test_axis;
 static millis_t     test_t0, live_ms;
 static uint8_t      edit_p;
-static char         edit_buf[16], title_txt[40], chip_txt[96], dlg_txt[160], rname[4][28], notice_txt[160];
+static char         edit_buf[16], title_txt[40], chip_txt[96], dlg_txt[256], lead_txt[128], rname[4][28], notice_txt[160];
 
 enum {
   ID_BACK = 1, ID_NEXT, ID_KEEP, ID_OFS,
@@ -55,7 +55,7 @@ enum {
   ID_M_RMECH, ID_M_RALL, ID_M_WIZ, ID_M_OTHER, ID_M_SAVE,
   DLG_INFO = 500, DLG_MOVE_GO, DLG_ANS_YES, DLG_ANS_NO, DLG_HOME_GO, DLG_HOME_YES, DLG_HOME_NO, DLG_HEAT_GO,
   DLG_SAVE_GO, DLG_DONE, DLG_EXIT_SAVE, DLG_EXIT_DISCARD, DLG_MODEL_GO, DLG_RMECH_GO, DLG_RALL_GO, DLG_ESKIP_GO,
-  DLG_NOTICE, DLG_CANCEL, DLG_WIZ_QUIT
+  DLG_NOTICE, DLG_CANCEL, DLG_WIZ_QUIT, DLG_MSAVE_GO, DLG_OTHER_SAVE, DLG_OTHER_DISCARD
 };
 
 static const char AX[] = "XYZE";
@@ -94,6 +94,25 @@ static bool all_dir()               { return dir_verified(0) && dir_verified(1) 
 static void info(const char *title, const char *msg) { arq_dialog_open(title, msg, "Aceptar", nullptr, false, ui_cb, DLG_INFO, 0); }
 static void ask(const char *title, const char *msg, const char *ok, uint16_t ok_id, bool danger = false, const char *no = "Cancelar", uint16_t no_id = DLG_CANCEL) {
   arq_dialog_open(title, msg, ok, no, danger, ui_cb, ok_id, no_id);
+}
+
+// P1: los valores mecanicos guardados solo se conservan si se confirma que son del modelo elegido (arq_mc_keep_check)
+static uint8_t keep_status(uint8_t p) { return arq_mc_keep_check(p, marlin_ok, rec_prof, detected); }
+static const char *keep_reason(uint8_t st) {
+  switch (st) {
+    case ARQ_KEEP_NO_EEPROM:   return "La EEPROM de Marlin no tiene datos v\xC3\xA1lidos: se cargan los valores de f\xC3\xA1" "brica del modelo.";
+    case ARQ_KEEP_OTHER_MODEL: return "Los ajustes guardados son de la otra m\xC3\xA1quina: se cargan los valores de f\xC3\xA1" "brica del modelo elegido.";
+    case ARQ_KEEP_UNCONFIRMED: return "No se puede confirmar que los ajustes guardados sean de este modelo: se cargan los de f\xC3\xA1" "brica.";
+    default:                   return "Elige primero tu impresora.";
+  }
+}
+
+// P2: aviso antes de borrar una malla que era de otras medidas de cama
+static const char MESH_WARN[] = " Se borrar\xC3\xA1 la malla 5x5 guardada: era de otras medidas de cama.";
+static const char *mesh_warn(const arq_mc_cfg_t *c) { return arq_mc_mesh_will_erase(c) ? MESH_WARN : ""; }
+static void ask_with_mesh(const char *title, const char *lead, const char *ok, uint16_t ok_id, const char *no, uint16_t no_id) {
+  snprintf(dlg_txt, sizeof(dlg_txt), "%s%s", lead, mesh_warn(&work));
+  arq_dialog_open(title, dlg_txt, ok, no, false, ui_cb, ok_id, no_id);
 }
 
 static uint8_t last_live;
@@ -185,12 +204,16 @@ static void build_model() {
     row(i - 1, rname[i - 1], ARQ_PL_EDIT1, pick == i ? "Elegida" : "Elegir", ID_PICK + i);
   }
   uint8_t n = ARQ_MC_NPROF;
-  if (marlin_ok) row(n++, "Ajustes guardados", ARQ_PL_EDIT1, keep_saved ? "Conservar" : "De f\xC3\xA1" "brica", ID_KEEP);
+  const uint8_t st = keep_status(pick);
+  if (st != ARQ_KEEP_OK) keep_saved = false;                // nunca se conserva lo que no esta confirmado
+  if (marlin_ok) row(n++, "Ajustes mec\xC3\xA1nicos", ARQ_PL_EDIT1, keep_saved ? "Conservar" : "De f\xC3\xA1" "brica", ID_KEEP);
   if (detected) row_info(n++, "Detectada en la EEPROM", arq_mc_profile(detected)->name);
-  if (keep_saved && detected && pick && detected != pick)
-    set_chip("La EEPROM parece de otra m\xC3\xA1quina: De f\xC3\xA1" "brica.", ARQ_TINT_WARN);
-  else set_chip(keep_saved ? "Se conservan pasos, PID, malla y ajuste Z."
-                           : "Se cargan los valores de f\xC3\xA1" "brica.", ARQ_TINT_AUTO);
+  if (!pick) set_chip("Elige tu impresora.", ARQ_TINT_AUTO);
+  else if (st == ARQ_KEEP_OTHER_MODEL) set_chip("Ajustes guardados de otra m\xC3\xA1quina: de f\xC3\xA1" "brica.", ARQ_TINT_WARN);
+  else if (st == ARQ_KEEP_UNCONFIRMED) set_chip("Ajustes sin confirmar para este modelo: de f\xC3\xA1" "brica.", ARQ_TINT_WARN);
+  else if (st == ARQ_KEEP_NO_EEPROM) set_chip("EEPROM sin datos v\xC3\xA1lidos: de f\xC3\xA1" "brica.", ARQ_TINT_AUTO);
+  else set_chip(keep_saved ? "Se conservan los ajustes guardados de este modelo."
+                           : "Mec\xC3\xA1nica de f\xC3\xA1" "brica; se conservan los offsets M206.", ARQ_TINT_AUTO);
 }
 
 static void build_dims() {
@@ -242,7 +265,7 @@ static void build_home() {
 
 static void build_ofs() {
   row_param(0, ARQ_MP_OFS_X); row_param(1, ARQ_MP_OFS_Y); row_param(2, ARQ_MP_OFS_Z);
-  set_chip("El ajuste fino de Z se sigue haciendo en Ajuste Z.", ARQ_TINT_AUTO);
+  set_chip("Ajuste fino en vivo: Babystep (no se guarda).", ARQ_TINT_AUTO);
 }
 
 static const char * const mech_titles[MECH_SUBS] = {
@@ -352,17 +375,25 @@ void arq_machine_ui_clear() {
   arq_pl_forget(); arq_numpad_forget();
   if (scr) lv_obj_del(scr);
   scr = chip = nullptr;
+  // P3: al salir de la pantalla (por cualquier camino) no queda nada de las pruebas aplicado en RAM
+  arq_mc_test_mode(false); test_kind = T_NONE;
+  if (!arq_mc_printing() && !queue.has_commands_queued()) arq_mc_revert_ram();
 }
 
-void arq_machine_ui_draw() { open_screen(); }
+// Vuelta desde otra pantalla (Otros parametros MKS): se relee lo que hay ahora, porque esas pantallas cambian Marlin
+void arq_machine_ui_draw() {
+  if (mode == M_MENU) { arq_mc_read_saved(&base); work = base; reset_session(); page = PG_MENU; sub = menu_sub; }
+  open_screen();
+}
 
 static void start_wizard(const bool cancelable, const uint8_t preselect) {
   mode = M_WIZ; wiz_cancelable = cancelable;
   marlin_ok = settings.validate();                         // la EEPROM de Marlin tiene datos validos (se pueden conservar)
   detected = marlin_ok ? arq_mc_detect(planner.settings.axis_steps_per_mm[Z_AXIS], planner.settings.axis_steps_per_mm[E_AXIS]) : 0;
+  rec_prof = arq_mc_profile_id();                          // modelo con el que se guardaron los datos (0 = sin registro)
   pick = preselect ? preselect : detected;
-  keep_saved = marlin_ok;
-  arq_mc_read_current(&base);
+  arq_mc_read_saved(&base);                                // lo guardado, no lo que unas pruebas hayan dejado en RAM
+  keep_saved = keep_status(pick) == ARQ_KEEP_OK;
   work = base; work.flags = 0;
   reset_session();
   page = PG_MODEL; sub = 0;
@@ -379,8 +410,9 @@ void arq_machine_wizard_draw() {
 void arq_machine_menu_draw() {
   if (arq_mc_printing()) { arq_mc_notice("Ajustes > M\xC3\xA1quina no est\xC3\xA1 disponible durante una impresi\xC3\xB3n."); lv_draw_set(); return; }
   if (arq_mc_needs_wizard()) { arq_machine_wizard_draw(); return; }
+  arq_mc_revert_ram();                                     // P3: se entra siempre con lo guardado
   mode = M_MENU; page = PG_MENU; sub = menu_sub = 0;
-  arq_mc_read_current(&base); work = base;
+  arq_mc_read_saved(&base); work = base;
   reset_session();
   scr = nullptr;
   open_screen();
@@ -389,26 +421,27 @@ void arq_machine_menu_draw() {
 static void leave_menu() { heater_off(); arq_machine_ui_clear(); lv_draw_set(); }
 static void finish_wizard() { heater_off(); arq_mc_test_mode(false); arq_machine_ui_clear(); lv_draw_ready_print(); }
 
-static void discard_and_leave() {                          // vuelve a lo guardado (M501): deshace pruebas y cambios en RAM
+static void discard_and_leave() {                          // deshace las pruebas aplicadas en RAM (sin M501: no toca nada mas de Marlin)
   arq_mc_test_mode(false);
-  (void)settings.load();
+  arq_mc_revert_ram();
   leave_menu();
+}
+
+static void go_other() {                                   // P3: a Otros parametros (MKS) sin nada pendiente en RAM
+  heater_off();
+  arq_mc_test_mode(false);
+  arq_mc_revert_ram();
+  arq_machine_ui_clear();
+  lv_draw_machine_para();
 }
 
 // Construye la copia de trabajo al salir del paso 1
 static void model_chosen() {
-  arq_mc_cfg_t c;
-  if (keep_saved) {
-    arq_mc_read_current(&c);
-    if (arq_mc_profile_id() != pick) arq_mc_take_geometry(pick, &c); else c.profile = pick;
-  }
-  else {
-    arq_mc_factory(pick, &c);
-    arq_mc_cfg_t now; arq_mc_read_current(&now);           // los offsets de origen son del usuario: se conservan
-    c.v[ARQ_MP_OFS_X] = now.v[ARQ_MP_OFS_X]; c.v[ARQ_MP_OFS_Y] = now.v[ARQ_MP_OFS_Y]; c.v[ARQ_MP_OFS_Z] = now.v[ARQ_MP_OFS_Z];
-  }
-  c.flags = 0;
-  work = c;
+  const uint8_t st = keep_status(pick);
+  if (st != ARQ_KEEP_OK) keep_saved = false;
+  arq_mc_choose(pick, st, keep_saved, &base, &work);       // P1: nunca mezcla la mecanica de otro modelo
+  // Primer arranque (sin registro): la malla guardada es de esta maquina solo si sus datos son de este modelo
+  arq_mc_mesh_ref(st == ARQ_KEEP_OK ? &arq_mc_profile(pick)->v[ARQ_MP_BED_X] : nullptr);
   reset_session();
 }
 
@@ -471,7 +504,7 @@ static void set_tramming() {                               // posiciones de los 
   update_spi_flash();
 }
 
-static void do_save() {
+static bool do_save(const bool quiet = false) {
   if (mode == M_WIZ) work.flags = ARQ_MCF_DONE | ARQ_MCF_ES_OK | ARQ_MCF_DIR_OK | (dir_verified(3) ? ARQ_MCF_E_OK : 0);
   else {
     uint8_t f = ARQ_MCF_DONE;
@@ -489,8 +522,8 @@ static void do_save() {
     base = work;
     if (mode == M_WIZ)
       arq_dialog_open("Configuraci\xC3\xB3n guardada", "Se guard\xC3\xB3 en la EEPROM. Antes de imprimir se har\xC3\xA1 home (G28).", "Aceptar", nullptr, false, ui_cb, DLG_DONE, 0);
-    else { info("Guardado", "Cambios guardados en la EEPROM."); rebuild = true; }
-    return;
+    else { if (!quiet) info("Guardado", "Cambios guardados en la EEPROM."); rebuild = true; }
+    return true;
   }
   if (r == ARQ_MCS_E_INVALID && bad >= 0 && bad < ARQ_MP_COUNT) {
     arq_mc_range_t rg; arq_mc_range(work.profile, bad, arq_mc_shaping_min(), &rg);
@@ -502,6 +535,7 @@ static void do_save() {
     r == ARQ_MCS_E_MARLIN   ? "Error al guardar la EEPROM de Marlin (M500). El registro ARQUIS no se cambi\xC3\xB3." :
     r == ARQ_MCS_E_RECORD   ? "Error al escribir el registro ARQUIS. Repite Guardar." : "Configuraci\xC3\xB3n no v\xC3\xA1lida.");
   info("No se guard\xC3\xB3", dlg_txt);
+  return false;
 }
 
 // ---- Navegacion --------------------------------------------------------------------------------------------------
@@ -524,8 +558,8 @@ static void wiz_next() {
     case PG_MECH: if (sub + 1 < MECH_SUBS) go(PG_MECH, sub + 1); else go(PG_REVIEW, 0); return;
     case PG_REVIEW:
       if (sub + 1 < REVIEW_SUBS) { go(PG_REVIEW, sub + 1); return; }
-      snprintf(dlg_txt, sizeof(dlg_txt), "Se guardar\xC3\xA1 la configuraci\xC3\xB3n de %s en la EEPROM.", arq_mc_profile(work.profile)->name);
-      ask("Guardar", dlg_txt, "Guardar", DLG_SAVE_GO, false, "Volver", DLG_CANCEL);
+      snprintf(lead_txt, sizeof(lead_txt), "Se guardar\xC3\xA1 la configuraci\xC3\xB3n de %s en la EEPROM.", arq_mc_profile(work.profile)->name);
+      ask_with_mesh("Guardar", lead_txt, "Guardar", DLG_SAVE_GO, "Volver", DLG_CANCEL);
       return;
     default: return;
   }
@@ -551,7 +585,7 @@ static void menu_back() {
   if (page == PG_OFS) { go(PG_HOME, 0); return; }
   if (page != PG_MENU) { heater_off(); go(PG_MENU, menu_sub); return; }
   if (memcmp(&work, &base, sizeof(work)))
-    ask("Cambios sin guardar", "\xC2\xBF" "Guardar los cambios en la EEPROM?", "Guardar", DLG_EXIT_SAVE, false, "Descartar", DLG_EXIT_DISCARD);
+    ask_with_mesh("Cambios sin guardar", "\xC2\xBF" "Guardar los cambios en la EEPROM?", "Guardar", DLG_EXIT_SAVE, "Descartar", DLG_EXIT_DISCARD);
   else if (arq_mc_flags() != base.flags || dir_ok || home_ok || es_stage[0] || es_stage[1] || es_stage[2]) discard_and_leave();
   else leave_menu();
 }
@@ -560,6 +594,15 @@ static void open_edit(const uint8_t p) {
   edit_p = p; fmtp(edit_buf, sizeof(edit_buf), p, work.v[p]);
   ret_page = page; ret_sub = sub;
   go(PG_NUM, 0);
+}
+
+// Restaurar mecanica: todo de fabrica del modelo activo, con los offsets M206 del usuario (mismo modelo, confirmado)
+static void rmech_cfg(arq_mc_cfg_t *now, arq_mc_cfg_t *c) {
+  arq_mc_read_saved(now);
+  arq_mc_choose(arq_mc_profile_id(), ARQ_KEEP_OK, false, now, c);
+  c->flags = arq_mc_flags();
+  if (c->es_inv != now->es_inv) c->flags &= ~ARQ_MCF_ES_OK;
+  if (c->dir_inv != now->dir_inv) c->flags &= ~(ARQ_MCF_DIR_OK | ARQ_MCF_E_OK);
 }
 
 // ---- Eventos -----------------------------------------------------------------------------------------------------
@@ -579,29 +622,31 @@ static void on_dialog(const int id) {
     case DLG_HOME_NO:  info("Home incorrecto", "Revisa la l\xC3\xB3gica del final y la direcci\xC3\xB3n del motor de ese eje y repite la prueba."); break;
     case DLG_SAVE_GO:  do_save(); break;
     case DLG_DONE:     finish_wizard(); break;
-    case DLG_EXIT_SAVE: do_save(); if (!memcmp(&work, &base, sizeof(work))) leave_menu(); break;
+    case DLG_EXIT_SAVE: if (do_save(true)) leave_menu(); break;
+    case DLG_MSAVE_GO:  do_save(); break;
+    case DLG_OTHER_SAVE: if (do_save(true)) go_other(); break;
+    case DLG_OTHER_DISCARD: work = base; go_other(); break;
     case DLG_EXIT_DISCARD: discard_and_leave(); break;
     case DLG_MODEL_GO: start_wizard(true, 0); go(PG_MODEL, 0); break;
     case DLG_RMECH_GO: {
-      arq_mc_cfg_t c, now; arq_mc_read_current(&now);
-      arq_mc_factory(arq_mc_profile_id(), &c);
-      c.v[ARQ_MP_OFS_X] = now.v[ARQ_MP_OFS_X]; c.v[ARQ_MP_OFS_Y] = now.v[ARQ_MP_OFS_Y]; c.v[ARQ_MP_OFS_Z] = now.v[ARQ_MP_OFS_Z];
-      c.flags = arq_mc_flags();
-      if (c.es_inv != now.es_inv) c.flags &= ~ARQ_MCF_ES_OK;
-      if (c.dir_inv != now.dir_inv) c.flags &= ~(ARQ_MCF_DIR_OK | ARQ_MCF_E_OK);
+      arq_mc_cfg_t c, now; rmech_cfg(&now, &c);
+      const bool erase = arq_mc_mesh_will_erase(&c);
       int bad; const uint8_t r = arq_mc_commit(&c, &bad);
-      arq_mc_read_current(&base); work = base; reset_session();
-      info(r == ARQ_MCS_OK ? "Restaurado" : "No se restaur\xC3\xB3", r == ARQ_MCS_OK ? "Valores mec\xC3\xA1nicos de f\xC3\xA1" "brica guardados. PID, malla y ajuste Z se conservan." : "No se pudo guardar la EEPROM.");
+      arq_mc_read_saved(&base); work = base; reset_session();
+      info(r == ARQ_MCS_OK ? "Restaurado" : "No se restaur\xC3\xB3",
+           r != ARQ_MCS_OK ? "No se pudo guardar la EEPROM." :
+           erase ? "Valores mec\xC3\xA1nicos de f\xC3\xA1" "brica guardados. Se conservan PID y offsets M206; la malla se borr\xC3\xB3 (otras medidas)."
+                 : "Valores mec\xC3\xA1nicos de f\xC3\xA1" "brica guardados. Se conservan PID, malla y offsets M206.");
       rebuild = true;
     } break;
     case DLG_RALL_GO: {
       const uint8_t r = arq_mc_restore_all();
-      arq_mc_read_current(&base); work = base; reset_session();
+      arq_mc_read_saved(&base); work = base; reset_session();
       info(r == ARQ_MCS_OK ? "Restaurado" : "No se restaur\xC3\xB3", r == ARQ_MCS_OK ? "Todos los ajustes vuelven a los de f\xC3\xA1" "brica del modelo." : "No se pudo guardar la EEPROM.");
       rebuild = true;
     } break;
     case DLG_ESKIP_GO: heater_off(); go(PG_HOME, 0); break;
-    case DLG_WIZ_QUIT: arq_mc_test_mode(false); (void)settings.load(); heater_off(); mode = M_MENU; arq_mc_read_current(&base); work = base; reset_session(); go(PG_MENU, 0); break;
+    case DLG_WIZ_QUIT: arq_mc_test_mode(false); arq_mc_revert_ram(); heater_off(); mode = M_MENU; arq_mc_read_saved(&base); work = base; reset_session(); go(PG_MENU, 0); break;
     default: break;                                          // DLG_INFO, DLG_CANCEL, DLG_NOTICE
   }
 }
@@ -610,7 +655,7 @@ static void on_row(const int id) {
   if (id >= ID_EDIT && id < ID_EDIT + ARQ_MP_COUNT) { open_edit(id - ID_EDIT); return; }
   if (id > ID_PICK && id <= ID_PICK + ARQ_MC_NPROF) {
     pick = id - ID_PICK;
-    keep_saved = marlin_ok && (!detected || detected == pick);
+    keep_saved = keep_status(pick) == ARQ_KEEP_OK;
     rebuild = true; return;
   }
   if (id >= ID_ESINV && id < ID_ESINV + 3) {
@@ -645,9 +690,14 @@ static void on_row(const int id) {
     return;
   }
   switch (id) {
-    case ID_KEEP:   keep_saved = !keep_saved; rebuild = true; break;
+    case ID_KEEP: {
+      const uint8_t st = keep_status(pick);
+      if (st != ARQ_KEEP_OK) { keep_saved = false; info("No se puede conservar", keep_reason(st)); }
+      else keep_saved = !keep_saved;
+      rebuild = true;
+    } break;
     case ID_OFS:    go(PG_OFS, 0); break;
-    case ID_M_MODEL: ask("Cambiar de modelo", "Se cargar\xC3\xA1n los valores de f\xC3\xA1" "brica y habr\xC3\xA1 que repetir las pruebas.", "Cambiar", DLG_MODEL_GO); break;
+    case ID_M_MODEL: ask("Cambiar de modelo", "Si eliges otro modelo se cargan sus valores mec\xC3\xA1nicos de f\xC3\xA1" "brica (no se mezclan con los actuales). Habr\xC3\xA1 que repetir las pruebas.", "Cambiar", DLG_MODEL_GO); break;
     case ID_M_DIMS:  menu_sub = sub; go(PG_DIMS, 0); break;
     case ID_M_ES:    menu_sub = sub; go(PG_ES, 0); break;
     case ID_M_DIRS:  menu_sub = sub; go(PG_DIRS, 0); break;
@@ -656,11 +706,24 @@ static void on_row(const int id) {
     case ID_M_FEED:  menu_sub = sub; go(PG_MECH, 1); break;
     case ID_M_CUR:   menu_sub = sub; go(PG_MECH, 4); break;
     case ID_M_IS:    menu_sub = sub; go(PG_MECH, 5); break;
-    case ID_M_RMECH: ask("Restaurar mec\xC3\xA1nica", "Medidas, finales, motores, pasos, velocidades, corrientes y Shaping de f\xC3\xA1" "brica. Se conservan PID, malla y ajuste Z.", "Restaurar", DLG_RMECH_GO, true); break;
-    case ID_M_RALL:  ask("Restaurar todo", "Se pierden malla, PID, ajuste Z, offsets, Linear Advance y Rendimiento. Se conserva el modelo.", "Restaurar", DLG_RALL_GO, true); break;
+    case ID_M_RMECH: {
+      arq_mc_cfg_t c, now; rmech_cfg(&now, &c);
+      snprintf(dlg_txt, sizeof(dlg_txt), "Medidas, finales, motores, pasos, velocidades, corrientes y Shaping de f\xC3\xA1" "brica. Se conservan PID y offsets M206.%s",
+               arq_mc_mesh_will_erase(&c) ? MESH_WARN : (arq_mc_mesh_valid() ? " Se conserva la malla." : ""));
+      ask("Restaurar mec\xC3\xA1nica", dlg_txt, "Restaurar", DLG_RMECH_GO, true);
+    } break;
+    case ID_M_RALL:  ask("Restaurar todo", "Se pierden malla, PID, offsets M206, Linear Advance y Rendimiento. Se conserva el modelo.", "Restaurar", DLG_RALL_GO, true); break;
     case ID_M_WIZ:   start_wizard(true, arq_mc_profile_id()); go(PG_MODEL, 0); break;
-    case ID_M_OTHER: heater_off(); arq_machine_ui_clear(); lv_draw_machine_para(); break;
-    case ID_M_SAVE:  do_save(); break;
+    case ID_M_OTHER:
+      if (memcmp(&work, &base, sizeof(work)))
+        ask_with_mesh("Cambios sin guardar", "Guarda o descarta los cambios de M\xC3\xA1quina antes de abrir Otros par\xC3\xA1metros (MKS).",
+                      "Guardar", DLG_OTHER_SAVE, "Descartar", DLG_OTHER_DISCARD);
+      else go_other();
+      break;
+    case ID_M_SAVE:
+      if (arq_mc_mesh_will_erase(&work)) ask_with_mesh("Guardar", "\xC2\xBF" "Guardar los cambios en la EEPROM?", "Guardar", DLG_MSAVE_GO, "Cancelar", DLG_CANCEL);
+      else do_save();
+      break;
     default: break;
   }
 }

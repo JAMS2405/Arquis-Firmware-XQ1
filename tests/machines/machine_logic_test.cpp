@@ -118,6 +118,103 @@ int main() {
   CHECK(!strcmp(arq_mc_param_unit(ARQ_MP_CUR_X), "mA") && !strcmp(arq_mc_param_name(ARQ_MP_STEPS_E), "Pasos E"), "nombres y unidades");
   CHECK(fabsf(arq_mc_round(ARQ_MP_STEPS_Z, 803.4149f) - 803.41f) < 1e-3 && arq_mc_round(ARQ_MP_CUR_X, 650.4f) == 650, "redondeo");
 
+  // 9) P1: cambio de modelo sin mezclar la mecanica. 'saved' = lo que hay: registro + mecanica de Marlin.
+  {
+    const uint8_t X = ARQ_MC_XQ1, Q = ARQ_MC_AQUILA_D1, N = ARQ_MC_NONE;
+    auto mech_is = [](const arq_mc_cfg_t &c, uint8_t prof) {      // TODA la mecanica (pasos..Shaping) es la de 'prof'
+      const arq_mc_profile_t *p = arq_mc_profile(prof);
+      for (uint8_t i = ARQ_MP_STEPS_X; i <= ARQ_MP_SHP_FY; ++i) if (fabsf(c.v[i] - p->v[i]) > 1e-4f) return false;
+      return true;
+    };
+    auto geo_is = [](const arq_mc_cfg_t &c, uint8_t prof) {
+      const arq_mc_profile_t *p = arq_mc_profile(prof);
+      return c.v[ARQ_MP_BED_X] == p->v[ARQ_MP_BED_X] && c.v[ARQ_MP_BED_Y] == p->v[ARQ_MP_BED_Y] && c.v[ARQ_MP_Z_MAX] == p->v[ARQ_MP_Z_MAX]
+          && c.es_inv == p->es_inv && c.dir_inv == p->dir_inv && c.profile == prof;
+    };
+    arq_mc_cfg_t xs, qs, out;                                        // datos guardados de cada maquina (con M206 del usuario)
+    arq_mc_factory(X, &xs); xs.flags = 0x0F; xs.v[ARQ_MP_OFS_Z] = -1.25f;
+    arq_mc_factory(Q, &qs); qs.flags = 0x0F; qs.v[ARQ_MP_OFS_X] = 2;
+    auto det = [](const arq_mc_cfg_t &c) { return arq_mc_detect(c.v[ARQ_MP_STEPS_Z], c.v[ARQ_MP_STEPS_E]); };
+
+    // keep_check: tabla de decision
+    CHECK(arq_mc_keep_check(Q, true, X, X) == ARQ_KEEP_OTHER_MODEL, "XQ1 -> Aquila con pasos de fabrica del XQ1: no se conserva");
+    CHECK(arq_mc_keep_check(X, true, Q, Q) == ARQ_KEEP_OTHER_MODEL, "Aquila -> XQ1 con pasos del Aquila: no se conserva");
+    CHECK(arq_mc_keep_check(Q, true, X, N) == ARQ_KEEP_OTHER_MODEL, "XQ1 -> Aquila con pasos calibrados (no detectado): no se conserva");
+    CHECK(arq_mc_keep_check(X, true, Q, N) == ARQ_KEEP_OTHER_MODEL, "Aquila -> XQ1 con pasos calibrados: no se conserva");
+    CHECK(arq_mc_keep_check(Q, true, N, N) == ARQ_KEEP_UNCONFIRMED, "sin registro y no detectado: no se puede confirmar");
+    CHECK(arq_mc_keep_check(Q, true, N, Q) == ARQ_KEEP_OK, "sin registro y detectado = elegido: se puede conservar");
+    CHECK(arq_mc_keep_check(Q, true, N, X) == ARQ_KEEP_OTHER_MODEL, "sin registro y detectado el otro: no");
+    CHECK(arq_mc_keep_check(X, true, X, N) == ARQ_KEEP_OK, "mismo modelo con pasos calibrados (registro de ese modelo): si");
+    CHECK(arq_mc_keep_check(X, true, X, Q) == ARQ_KEEP_OTHER_MODEL, "registro XQ1 pero pasos de fabrica del Aquila: contradiccion -> no");
+    CHECK(arq_mc_keep_check(X, false, X, X) == ARQ_KEEP_NO_EEPROM, "EEPROM de Marlin no valida: no");
+    CHECK(arq_mc_keep_check(N, true, X, X) == ARQ_KEEP_NO_MODEL, "sin modelo elegido: no");
+
+    // XQ1 -> Aquila: el usuario intenta Conservar en todos los casos
+    for (int variant = 0; variant < 3; ++variant) {
+      arq_mc_cfg_t s = xs;
+      if (variant == 1) s.v[ARQ_MP_STEPS_E] = 760.5f;                // pasos E calibrados a mano
+      if (variant == 2) s.v[ARQ_MP_STEPS_Z] = 795;                   // pasos Z modificados
+      const uint8_t st = arq_mc_keep_check(Q, true, X, det(s));
+      const bool kept = arq_mc_choose(Q, st, true, &s, &out);
+      CHECK(!kept && mech_is(out, Q) && geo_is(out, Q), "XQ1 -> Aquila (fabrica / E calibrado / Z modificado): mecanica y geometria del Aquila");
+      CHECK(out.v[ARQ_MP_OFS_Z] == 0 && out.v[ARQ_MP_OFS_X] == 0 && out.flags == 0, "XQ1 -> Aquila: M206 del XQ1 NO se conserva; hay que repetir pruebas");
+    }
+    // Aquila -> XQ1
+    for (int variant = 0; variant < 3; ++variant) {
+      arq_mc_cfg_t s = qs;
+      if (variant == 1) s.v[ARQ_MP_STEPS_E] = 795.2f;
+      if (variant == 2) s.v[ARQ_MP_STEPS_Z] = 810;
+      const uint8_t st = arq_mc_keep_check(X, true, Q, det(s));
+      const bool kept = arq_mc_choose(X, st, true, &s, &out);
+      CHECK(!kept && mech_is(out, X) && geo_is(out, X) && out.v[ARQ_MP_OFS_X] == 0, "Aquila -> XQ1 (fabrica / E calibrado / Z modificado): todo del XQ1, sin M206 del Aquila");
+    }
+    // Sin registro (primera instalacion) y pasos calibrados: no se puede confirmar -> fabrica aunque pida Conservar
+    { arq_mc_cfg_t s = qs; s.profile = N; s.v[ARQ_MP_STEPS_E] = 777;
+      const uint8_t st = arq_mc_keep_check(Q, true, N, det(s));
+      CHECK(!arq_mc_choose(Q, st, true, &s, &out) && mech_is(out, Q) && out.v[ARQ_MP_OFS_X] == 0, "primera instalacion sin confirmar: fabrica y sin M206"); }
+    // Perfil detectado correctamente (primera instalacion): se conserva
+    { arq_mc_cfg_t s = qs; s.profile = N; s.v[ARQ_MP_ACC_Y] = 3000;   // el usuario habia bajado la aceleracion Y
+      const uint8_t st = arq_mc_keep_check(Q, true, N, det(s));
+      CHECK(arq_mc_choose(Q, st, true, &s, &out) && out.v[ARQ_MP_ACC_Y] == 3000 && geo_is(out, Q) && out.v[ARQ_MP_OFS_X] == 2,
+            "detectado = elegido: se conservan su mecanica y su M206; geometria de fabrica (sin registro)"); }
+    // Mismo modelo con registro y E calibrado: Conservar mantiene todo, incluida la geometria guardada
+    { arq_mc_cfg_t s = xs; s.v[ARQ_MP_STEPS_E] = 752; s.v[ARQ_MP_Z_MAX] = 440;
+      const uint8_t st = arq_mc_keep_check(X, true, X, det(s));
+      CHECK(arq_mc_choose(X, st, true, &s, &out) && out.v[ARQ_MP_STEPS_E] == 752 && out.v[ARQ_MP_Z_MAX] == 440 && out.v[ARQ_MP_OFS_Z] == -1.25f,
+            "mismo modelo confirmado: Conservar mantiene pasos, medidas y M206"); }
+    // Mismo modelo confirmado, eligiendo De fabrica: mecanica de fabrica, M206 del usuario
+    { const uint8_t st = arq_mc_keep_check(X, true, X, det(xs));
+      CHECK(!arq_mc_choose(X, st, false, &xs, &out) && mech_is(out, X) && out.v[ARQ_MP_OFS_Z] == -1.25f, "De fabrica en el mismo modelo: conserva M206"); }
+    // M206 fuera de rango nunca se arrastra
+    { arq_mc_cfg_t s = xs; s.v[ARQ_MP_OFS_Z] = 35;
+      arq_mc_choose(X, ARQ_KEEP_OK, false, &s, &out); CHECK(out.v[ARQ_MP_OFS_Z] == 0, "M206 fuera de rango: 0");
+      arq_mc_choose(X, ARQ_KEEP_OK, true, &s, &out);  CHECK(out.v[ARQ_MP_OFS_Z] == 0, "M206 fuera de rango (Conservar): 0"); }
+    // Barrido: ningun escenario de cambio de modelo deja un valor mecanico del modelo anterior
+    int mixed = 0;
+    for (uint8_t from = 1; from <= 2; ++from) for (uint8_t to = 1; to <= 2; ++to) if (from != to)
+      for (int rec = 0; rec < 2; ++rec) for (int cal = 0; cal < 4; ++cal) for (int want = 0; want < 2; ++want) {
+        arq_mc_cfg_t s; arq_mc_factory(from, &s); s.profile = rec ? from : N;
+        if (cal & 1) s.v[ARQ_MP_STEPS_E] += 7.3f;
+        if (cal & 2) s.v[ARQ_MP_STEPS_Z] += 4.1f;
+        const uint8_t st = arq_mc_keep_check(to, true, s.profile, det(s));
+        arq_mc_choose(to, st, want, &s, &out);
+        if (!mech_is(out, to) || !geo_is(out, to)) ++mixed;
+      }
+    CHECK(mixed == 0, "barrido de 32 combinaciones de cambio de modelo: 0 con mecanica o geometria del modelo anterior");
+  }
+
+  // 10) P5: clasificacion de GCONF leido por UART (TMCStepper 0.8.10: sin respuesta valida -> CRCerror y 0)
+  {
+    const uint32_t CONF = ARQ_GCONF_PDN_DISABLE | ARQ_GCONF_MSTEP_REG;
+    CHECK(arq_mc_tmc_classify(CONF, false, false) == ARQ_TMC_R_OK, "GCONF configurado, shaft 0 esperado: correcto");
+    CHECK(arq_mc_tmc_classify(CONF | ARQ_GCONF_SHAFT, false, true) == ARQ_TMC_R_OK, "shaft 1 esperado: correcto");
+    CHECK(arq_mc_tmc_classify(CONF, false, true) == ARQ_TMC_R_SHAFT, "shaft distinto");
+    CHECK(arq_mc_tmc_classify(0x101, false, true) == ARQ_TMC_R_RESET, "valores de reinicio del TMC2209 (0x101): reiniciado");
+    CHECK(arq_mc_tmc_classify(0, true, false) == ARQ_TMC_R_NOREPLY, "CRCerror (sin respuesta valida): no se interpreta el valor");
+    CHECK(arq_mc_tmc_classify(CONF | ARQ_GCONF_SHAFT, true, true) == ARQ_TMC_R_NOREPLY, "CRCerror manda aunque el valor parezca bueno");
+    CHECK(arq_mc_tmc_classify(0, false, false) == ARQ_TMC_R_RESET, "GCONF = 0 con CRC valido: no configurado (no se toma por correcto)");
+  }
+
   printf("[machine] %d comprobaciones, %d fallos\n", checks, fails);
   return fails ? 1 : 0;
 }

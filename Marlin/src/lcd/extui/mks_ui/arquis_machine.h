@@ -34,7 +34,9 @@
 enum { ARQ_TMC_UNKNOWN = 0, ARQ_TMC_OK, ARQ_TMC_NOCOMM, ARQ_TMC_BAD };
 
 // Motivo por el que no se permite mover (0 = se permite)
-enum { ARQ_BLK_NONE = 0, ARQ_BLK_NOPROFILE, ARQ_BLK_WIZARD, ARQ_BLK_UNVERIFIED, ARQ_BLK_TMC_COMM, ARQ_BLK_TMC_BAD };
+enum { ARQ_BLK_NONE = 0, ARQ_BLK_NOPROFILE, ARQ_BLK_WIZARD, ARQ_BLK_UNVERIFIED, ARQ_BLK_TMC_COMM, ARQ_BLK_TMC_BAD,
+       ARQ_BLK_UNSAVED,          // medidas, finales o sentidos aplicados en RAM (pruebas) distintos de lo guardado
+       ARQ_BLK_TMC_RESTORED };   // el driver no se pudo confirmar antes de mover: se restauro y se comprobo; repetir
 
 #ifdef __cplusplus
 
@@ -61,11 +63,18 @@ void    arq_mc_idle();                           // tarea periodica (verificacio
 uint8_t arq_mc_tmc_verify(const bool repair);    // lee GCONF de X, Y, Z y E0 ahora; devuelve ARQ_TMC_*
 void    arq_mc_tmc_apply_shaft();                // escribe el bit shaft del modelo activo en los 4 drivers
 
-void    arq_mc_read_current(arq_mc_cfg_t *c);    // configuracion en uso (Marlin + registro)
+void    arq_mc_read_current(arq_mc_cfg_t *c);    // configuracion en uso (Marlin + geometria en RAM)
+void    arq_mc_read_saved(arq_mc_cfg_t *c);      // mecanica de Marlin + geometria, finales, sentidos y flags del REGISTRO guardado
 float   arq_mc_shaping_min();
 // Aplica en RAM (no guarda): medidas, finales, direcciones y, si 'mech', los valores mecanicos. Si algo de la geometria,
-// finales o direcciones cambia, los ejes pasan a "sin origen" (hay que hacer G28) y, si cambian las medidas, se borra la malla.
+// finales o direcciones cambia, los ejes pasan a "sin origen" (hay que hacer G28). NO borra la malla: si cambian las
+// medidas, la nivelacion se suspende en RAM hasta guardar (arq_mc_commit decide si la malla se borra) o descartar.
 void    arq_mc_apply(const arq_mc_cfg_t *c, const bool mech);
+bool    arq_mc_ram_unsaved();                    // medidas, finales o sentidos en RAM distintos de los del registro
+void    arq_mc_revert_ram();                     // vuelve a lo del registro (sin tocar la EEPROM ni los valores de Marlin)
+bool    arq_mc_mesh_valid();                     // hay una malla de nivelacion valida en RAM
+bool    arq_mc_mesh_will_erase(const arq_mc_cfg_t *c);   // guardar 'c' borraria la malla (medidas distintas de las de la malla)
+void    arq_mc_mesh_ref(const float *dims);      // primer arranque: medidas para las que se hizo la malla (nullptr = desconocidas)
 // Valida, aplica, guarda la EEPROM de Marlin (M500) y, al final, el registro ARQUIS. Devuelve ARQ_MCS_*.
 enum { ARQ_MCS_OK = 0, ARQ_MCS_E_INVALID, ARQ_MCS_E_PRINTING, ARQ_MCS_E_MARLIN, ARQ_MCS_E_RECORD };
 uint8_t arq_mc_commit(const arq_mc_cfg_t *c, int *bad_param);
