@@ -8,7 +8,7 @@ Es **el mismo archivo para las dos impresoras**: `firmware_pruebas/fase4/Robin_n
 1. Conecta la impresora al PC por USB (puerto COM) y envía `M503`. Guarda la respuesta en un archivo de texto: son tus pasos, PID, *offsets* y aceleraciones.
 2. Ten a mano el BIN que usas ahora, por si quieres volver atrás.
 
-Esta versión **no cambia la estructura de la EEPROM de Marlin**: la malla, el PID, el ajuste Z y los pasos se conservan. El paso 0 es solo una precaución.
+Esta versión **no cambia la estructura de la EEPROM de Marlin**: la malla, el PID, los offsets M206 y los pasos siguen en la EEPROM. El paso 0 es solo una precaución.
 
 ## 1. Instalar (igual en las dos impresoras)
 1. Con la impresora **apagada**, saca la microSD y ponla en el PC con un lector de tarjetas. Por el cable USB ya no aparece como disco.
@@ -20,7 +20,7 @@ Si la impresora no tiene todavía un perfil ARQUIS, en lugar de la pantalla de i
 
 | Paso | Qué haces |
 |---|---|
-| 1 · Modelo | Elige **Arquis XQ1** o **Aquila D1**. Si la EEPROM ya tiene los pasos de una de ellas, aparece como «Detectada». En «Ajustes guardados», **Conservar** mantiene tus pasos, PID, malla y ajuste Z; **De fábrica** carga los del modelo |
+| 1 · Modelo | Elige **Arquis XQ1** o **Aquila D1**. Si la EEPROM ya tiene los pasos de una de ellas, aparece como «Detectada». En «Ajustes mecánicos», **Conservar** mantiene tus pasos, velocidades, corrientes y offsets M206, **solo si se confirma que son de ese modelo** (pasos de fábrica detectados, o registro ARQUIS del mismo modelo); si no, se cargan los de fábrica y se explica por qué. PID y malla no se tocan |
 | 2 · Dimensiones | Revisa ancho, fondo y altura. El máximo permitido es el de fábrica + 10 mm |
 | 3 · Finales | Aleja los ejes de los finales con la mano. Pulsa y suelta cada final: debe pasar de **Abierto** a **Activado** y volver a **Abierto**. Si sin pulsar pone «Activado», cambia su lógica (Normal / Invertida) |
 | 4 · Motores | Para cada motor pulsa **Probar**: se mueve 10 mm despacio (Z, 5 mm). Responde si se **alejó de su final**; si respondes «No», se invierte el sentido y repites la prueba. El extrusor es opcional: calienta a 200 °C y extruye 10 mm (con filamento cargado) |
@@ -37,7 +37,7 @@ Si la impresora no tiene todavía un perfil ARQUIS, en lugar de la pantalla de i
   - ver el modelo;
   - cambiar dimensiones, finales, motores, home y *offsets*, pasos, velocidades, corrientes e Input Shaping;
   - **cambiar de modelo**;
-  - **restaurar la mecánica de fábrica** (conserva PID, malla y ajuste Z);
+  - **restaurar la mecánica de fábrica** (conserva PID y offsets M206; la malla, si las medidas no cambian; si cambian, avisa antes);
   - **restaurar todo** (avisa de lo que se pierde);
   - repetir el asistente.
 

@@ -4,6 +4,8 @@ Rama: `feature/arquis-firmware-unico-perfiles`. Base: `a98dd6a` (= `main`, sin c
 
 **Estado:** compilado y probado por software. **No está validado físicamente**: ver [`PRUEBAS_FISICAS_ARQUIS.md`](PRUEBAS_FISICAS_ARQUIS.md).
 
+> **Fase 5:** varias partes de este documento se corrigieron tras la auditoría: elección de modelo, «Conservar», textos de la malla y de «ajuste Z», descartar sin `M501`, verificación de los TMC antes de mover, pruebas y herramientas. Ver [`FASE5_CORRECCIONES_AUDITORIA.md`](FASE5_CORRECCIONES_AUDITORIA.md).
+
 ## 1. Arquitectura
 | Capa | Contenido | Dónde |
 |---|---|---|

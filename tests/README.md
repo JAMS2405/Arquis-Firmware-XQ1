@@ -20,9 +20,10 @@ Las pruebas propias del módulo de Cura están en `cura/tests/`; las del firmwar
   - la tabla de perfiles de fábrica coincide con la configuración real de cada máquina (`Configuration*.h` + `Marlin/machine/xq1.h` / `aquila_d1.h`);
   - la configuración común no cambia salvo lo previsto;
   - restricciones: `stepper.cpp`, el planificador, `endstops.cpp`, Input Shaping, la malla, el PID, el Wi-Fi y `temperature.cpp` siguen iguales que en `a98dd6a`; un solo entorno; USB solo CDC.
-- **`machine_logic_test.cpp`** (lógica REAL de `arquis_machine_logic.cpp`, con ASan+UBSan): rangos, detección del modelo, registro EEPROM (CRC, dos copias, contador de secuencia, cortes de luz a mitad de escritura, migración) y máscara `shaft`.
+- **`machine_logic_test.cpp`** (lógica REAL de `arquis_machine_logic.cpp`, con ASan+UBSan): rangos, detección del modelo, registro EEPROM (CRC, dos copias, contador de secuencia, cortes de luz a mitad de escritura, migración), máscara `shaft`, elección de modelo sin mezclar la mecánica (P1) y clasificación de `GCONF` (P5).
+- **`glue_test.cpp`** (pegamento REAL `arquis_machine.cpp`, con ASan+UBSan) sobre la máquina simulada `herramientas/arquis_ui/stub_machine/arq_fake_hw.*`: EEPROM, TMC2209 con fallos inyectados (sin respuesta válida, reiniciado, `shaft` distinto, fallo puntual, 24 V), verificación antes de mover, impresión, cambios en RAM sin guardar, malla, `M502` y `M9050 R`. Es una simulación: no sustituye a las pruebas físicas.
 
-La pantalla (asistente y Ajustes → Máquina) se prueba con `herramientas/arquis_ui/sim/build_machine_sim.sh` (LVGL real, toques simulados y capturas). Documentación: `docs/arquis/MAQUINAS.md`.
+La pantalla (asistente y Ajustes → Máquina) se prueba con `herramientas/arquis_ui/sim/build_machine_sim.sh`: LVGL real, pantalla y pegamento reales sobre la misma máquina simulada, toques simulados, texto dibujado y capturas. `herramientas/arquis_ui/sim/check_marlin_api.sh` (necesita `arm-none-eabi-g++` y LVGL; falla si faltan) comprueba 32 archivos. Nota: `build_sim.sh` (ARM) y los simuladores nativos comparten `sim/build/`; bórrala entre unos y otros. Documentación: `docs/arquis/MAQUINAS.md` y `docs/arquis/FASE5_CORRECCIONES_AUDITORIA.md`.
 
 ## tests/perf (pantalla Rendimiento)
 `run.sh`: comprobaciones estáticas (los límites de la pantalla frente al código de Marlin, lo que guarda M500, integración) y la lógica pura REAL (`arquis_perf_logic.cpp`, ASan/UBSan). La pantalla: `herramientas/arquis_ui/sim/build_perf_sim.sh`. Documentación: `docs/arquis/RENDIMIENTO.md`.

@@ -1,6 +1,6 @@
 # Pruebas físicas del firmware único ARQUIS
 
-**BIN:** `firmware_pruebas/fase4/Robin_nano_v3.bin` (SHA-256 en `SHA256SUMS.txt`). **Nada de esta lista se ha probado todavía en una impresora:** solo hay compilación, pruebas de software y simulador.
+**BIN:** `firmware_pruebas/fase5/Robin_nano_v3.bin` (con las correcciones P1–P5; SHA-256 en `SHA256SUMS.txt`). La versión anterior está en `firmware_pruebas/fase4`. **Nada de esta lista se ha probado todavía en una impresora:** solo hay compilación, pruebas de software y simulador.
 
 **Estado de cada prueba:** `Pendiente` · `Aprobada` · `Fallida` · `No aplicable`. Anota la fecha y lo que veas en «Notas».
 
@@ -15,7 +15,7 @@
 | 1 | Instalar el BIN | Copiar a la raíz de la microSD y encender | Se actualiza; el archivo pasa a `.CUR` | Pendiente | |
 | 2 | Asistente | Encender tras instalar | Aparece el asistente, no la pantalla de inicio. Sin terminarlo, `G28` por USB responde «ARQUIS: movimiento bloqueado» | Pendiente | |
 | 3 | Elegir XQ1 | Paso 1 | Se puede elegir; si la EEPROM tenía los pasos del XQ1, sale «Detectada» | Pendiente | |
-| 4 | Dimensiones y perfil | Pasos 2 y 7 | 300 × 300 × 450; pasos Z/E 791,74 / 748,72 (o los tuyos si elegiste Conservar) | Pendiente | |
+| 4 | Dimensiones y perfil | Pasos 2 y 7 | 300 × 300 × 450; pasos Z/E 791,74 / 748,72. Solo se pueden conservar los tuyos si se confirma que son de este modelo (si no, «No se puede conservar») | Pendiente | |
 | 5 | Persistencia | Guardar, apagar, encender (3 veces) | Va directo a Inicio; Sistema muestra «Arquis XQ1»; `M115` dice `MACHINE_TYPE:Arquis XQ1` | Pendiente | |
 | 6 | Finales | Paso 3 del asistente y `M119` con cada final pulsado y suelto | En reposo «Abierto» / `open`; pulsado «Activado» / `TRIGGERED` | Pendiente | |
 | 7 | Direcciones | Paso 4: Probar X, Y, Z, E | Cada eje se aleja de su final 10 mm (Z 5 mm) despacio; E extruye | Pendiente | |
@@ -29,7 +29,7 @@
 | 15 | Input Shaping | Ajustes → Rendimiento; `M593` | 35 / 25 Hz; se pueden cambiar y guardar | Pendiente | |
 | 16 | Velocidad real | Durante una impresión | La fila «Veloc.» muestra la velocidad real y la máxima | Pendiente | |
 | 17 | M221 | Herramientas → Flujo (o `M221 S95`) | Cambia el caudal | Pendiente | |
-| 18 | Ajuste Z del XQ1 (provisional) | Imprimir con Z a 5 mm/s | Z sube bien al imprimir; si no, anotarlo (valor pendiente desde antes) | Pendiente | |
+| 18 | Velocidad de Z del XQ1 (provisional) | Imprimir con Z a 5 mm/s | Z sube bien al imprimir; si no, anotarlo (valor pendiente desde antes) | Pendiente | |
 
 ## Aquila D1 (repetir con su impresora)
 | # | Prueba | Resultado esperado | Estado | Notas |
@@ -43,8 +43,16 @@
 | # | Prueba | Resultado esperado | Estado | Notas |
 |---|---|---|---|---|
 | 23 | Cambiar de modelo y volver (solo en un banco de pruebas, **sin imprimir**) | Ajustes → Máquina → Modelo: tras cambiar, las medidas, pasos, finales y sentidos son los del modelo nuevo y no queda nada del anterior (revisión del asistente y `M503`). La malla del modelo anterior aparece como «Sin malla» | Pendiente | |
-| 24 | Restaurar la mecánica de fábrica | Vuelven pasos, velocidades y corrientes de fábrica; se conservan PID, malla y ajuste Z | Pendiente | |
+| 24 | Restaurar la mecánica de fábrica | Vuelven pasos, velocidades y corrientes de fábrica; se conservan PID y offsets M206. La malla se conserva si las medidas no cambian; si cambian, el diálogo lo avisa antes | Pendiente | |
 | 25 | Cambiar la lógica de un final en el menú sin probarlo | `G28` queda bloqueado hasta repetir la prueba de finales | Pendiente | |
 | 26 | Reinicios | Apagar y encender 5 veces | El asistente no reaparece | Pendiente | |
 | 27 | Actualizar el BIN | Instalar otra vez el mismo BIN | El asistente no reaparece; se conservan perfil y ajustes | Pendiente | |
 | 28 | Recuperación | `M9050 R` por USB, luego volver a Inicio | Aparece el asistente con el modelo preseleccionado | Pendiente | |
+
+## Correcciones de la Fase 5 (P1–P5)
+| # | Prueba | Resultado esperado | Estado | Notas |
+|---|---|---|---|---|
+| 29 | **Aquila, sin imprimir, motores parados:** con USB conectado, apagar solo los 24 V y volver a encenderlos; después pulsar Mover X | En ≤ 4 s aparece «Un driver de motor se había reiniciado…», los ejes quedan sin origen y `M9050` vuelve a `tmc=1`. Si se mueve antes del aviso, el primer movimiento se **rechaza** («…se restauró su configuración… repite el movimiento») y **no gira al revés**. Con la mano en el interruptor | Pendiente | |
+| 30 | **Aquila, impresión en vacío** (sin filamento, Z alta): apagar los 24 V un instante | Parada de seguridad (`kill`: «Driver TMC: direccion no fiable») en ≤ 3 s. Un fallo puntual de lectura no debe parar la impresión | Pendiente | |
+| 31 | Ajustes → Máquina → Dimensiones: cambiar el ancho con una malla guardada y salir | El diálogo de salida avisa «Se borrará la malla 5x5 guardada…». Con «Descartar», la malla y el ancho siguen | Pendiente | |
+| 32 | Ajustes → Máquina: cambiar un valor sin guardar → Otros parámetros (MKS) | Pide Guardar o Descartar. Cambiar un valor en MKS, volver y guardar otra cosa en Máquina: el valor de MKS se mantiene (`M503`) | Pendiente | |

@@ -220,3 +220,23 @@ Se elimina el entorno `aquila_d1`.
 - Detalle técnico: `docs/arquis/FASE4_IMPLEMENTACION_FINAL.md`.
 
 Los valores de Z del XQ1 (5 mm/s y 100 mm/s²) siguen **pendientes de validación física**.
+
+## Fase 5: correcciones P1–P5 de la auditoría (versión de pruebas)
+Rama `claude/pensive-cray-ib96kb`, sobre `fdff0cd`. Código en `0bae5fc`; solo cambian los 5 archivos `arquis_machine*`.
+- **P1:** al cambiar de modelo se carga siempre la mecánica de fábrica del nuevo. «Conservar» solo se permite si se confirma que los datos son de ese modelo; si no, se rechaza explicando por qué. El M206 solo se conserva en ese caso.
+- **P2:** «Ajuste Z» pasa a «Babystep» / «offsets M206». Las pruebas ya no borran la malla. Antes de borrar una malla de otras medidas, la pantalla avisa.
+- **P3:** «Otros parámetros (MKS)» pide Guardar o Descartar. Descartar deshace las pruebas sin `M501`. Al volver se relee. No se mueve con cambios de Máquina sin guardar.
+- **P4:** simulador con el pegamento real y sin archivos externos. `check_marlin_api.sh` falla si no se ejecuta y cubre 32 archivos. Nueva prueba del pegamento (`tests/machines/glue_test.cpp`).
+- **P5:** antes de un movimiento manual se lee `GCONF` de los drivers invertidos que mueve la orden. Si no se confirma, no se mueve, se recupera la configuración, se verifica y se pide repetir. La primera orden de cada trabajo se verifica entera. Durante la impresión se vigilan los drivers invertidos.
+
+**Medido:** Flash 423 828 B (89,2 %), RAM 78 108 B (59,6 %), +2 624 B y +356 B respecto a la Fase 4.
+
+**Pruebas:**
+- `tests/machines`: 51 + 90 + 69;
+- simulador de máquina: 82;
+- `check_marlin_api`: 32/32;
+- el resto, sin cambios y sin fallos.
+
+**Verificación:** la recompilación de `fdff0cd` coincide byte a byte con el BIN de la Fase 4, salvo las rutas y la fecha.
+
+**BIN de pruebas:** `firmware_pruebas/fase5`. **Estado: NO probado en la impresora.** Detalle: `docs/arquis/FASE5_CORRECCIONES_AUDITORIA.md`.
