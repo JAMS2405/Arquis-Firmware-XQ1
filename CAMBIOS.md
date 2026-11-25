@@ -182,3 +182,41 @@ Nuevo botón **Flujo** en Herramientas con su pantalla (`FLOW_UI`, `arq_flow_*` 
 ## XQ1: Z a 5 mm/s y aceleración 100 (prueba)
 `Marlin/machine/xq1.h` fija `DEFAULT_MAX_FEEDRATE` Z = 5 y `DEFAULT_MAX_ACCELERATION` Z = 100 (antes 45 y 150 desde `c5b5cfd`) por una Z que no subía al imprimir. `tests/machines/test_profiles.py` admite ahora los valores que declara `xq1.h`.
 **Estado (2026-11-24): PENDIENTE DE VALIDACIÓN FÍSICA.** El propietario todavía no ha confirmado que, con estos valores, Z suba correctamente al imprimir. No se considera configuración estable. Cualquier etiqueta de recuperación que contenga este commit (por ejemplo, una sobre `a98dd6a`) lo incluye necesariamente, así que deberá indicar en su descripción que este ajuste de Z está pendiente de validación.
+
+## Fase 3: optimización de memoria (F3-01 a F3-08)
+Commits independientes en la rama `feature/arquis-firmware-unico-perfiles`:
+- buffer de la velocidad máxima;
+- texto del PID;
+- fuentes `num36` (2 bpp) y `text16` (español);
+- iconos a 2 bpp;
+- sin Nube MKS ni QRCode;
+- solo español;
+- **USB solo CDC** (sin MSC ni host, en las dos máquinas).
+
+Medido: de 441 764 a 400 472 B de Flash y de 89 120 a 76 668 B de RAM. Se conservan USB CDC/COM, Wi-Fi y microSD.
+
+## Fase 4: firmware único para Arquis XQ1 y Aquila D1 (versión de pruebas)
+**Un solo `Robin_nano_v3.bin` para las dos impresoras.** El modelo se elige en un **asistente del primer arranque** y después en **Ajustes → Máquina**. Se guarda en un registro ARQUIS de la EEPROM: 2 copias con CRC, aparte de los datos de Marlin, cuya estructura no cambia.
+
+**Qué cubre el perfil:** medidas, lógica de finales, sentido de los motores (bit `GCONF.shaft` del TMC2209, verificado por UART; `stepper.cpp` no se toca), pasos, velocidades, aceleraciones, corrientes e Input Shaping.
+
+**Seguridad:**
+- Sin un perfil válido y comprobado (finales y motores probados) no se acepta ningún movimiento.
+- `M502` restaura los valores del modelo elegido.
+- `M9050 R` vuelve al asistente.
+
+Se elimina el entorno `aquila_d1`.
+
+**Medido:** Flash 421 204 B (88,6 %), RAM 77 752 B (59,3 %).
+
+**Pruebas:**
+- `tests/machines`: 51 + 56;
+- simulador del asistente: 23;
+- malla, PID, rendimiento, torres y lógica: sin fallos.
+
+**Estado: NO probado en la impresora.**
+- Lista de pruebas: `docs/arquis/PRUEBAS_FISICAS_ARQUIS.md`.
+- Instalación: `docs/arquis/INSTALACION_FIRMWARE_UNICO.md`.
+- Detalle técnico: `docs/arquis/FASE4_IMPLEMENTACION_FINAL.md`.
+
+Los valores de Z del XQ1 (5 mm/s y 100 mm/s²) siguen **pendientes de validación física**.
