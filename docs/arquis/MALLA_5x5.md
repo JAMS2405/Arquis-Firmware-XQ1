@@ -1,6 +1,6 @@
 # ARQUIS XQ1 — Nivelación manual de cama 5×5 (sin sonda)
 
-Estado: **implementado y probado en PC (lógica, interpolación real de Marlin, vistas LVGL). NO compilado con PlatformIO completo ni probado en la impresora** (ver §11 y §12).
+Estado: **implementado, probado en PC (lógica, interpolación real de Marlin, vistas LVGL) y compilado por el propietario.** **Probado en la impresora por el propietario (2026-11-22);** los resultados detallados de esas pruebas no se han trasladado a este repositorio. Los apartados §11 y §12 conservan la lista de qué se verificó en cada entorno.
 
 ## 1. Qué hace
 Mide 25 puntos con el método de la hoja de papel desde la TS35 (menú **Herramientas → Malla 5x5**), genera una malla bilineal en Marlin, la guarda en la EEPROM y Marlin compensa Z en todos los movimientos XY (también al imprimir) sin tocar el G-code ni el slicer. No hay BLTouch, sonda ni sensor. No se usa nivelación con motores Dual Z.

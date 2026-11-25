@@ -849,13 +849,14 @@ int main(int argc, char **argv) {
     confirm_screen("soporte_motor_nema17_v3_final.gcode", "fil_5_confirmar", true);
     confirm_screen("tapa_caja.gcode", "fil_6_confirmar_sin_miniatura", false);
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[8] = { { &arq_icon_temp, "Temperatura", nullptr, 1 }, { &arq_icon_down, "Extruir", nullptr, 1 }, { &arq_icon_move, "Mover", nullptr, 1 }, { &arq_icon_home, "Home", nullptr, 1 },
-        { &arq_icon_level, "Nivel. auto", nullptr, 1 }, { &arq_icon_level, "Nivelar cama", nullptr, 1 }, { &arq_icon_filament, "Filamento", nullptr, 1 }, { &arq_icon_tools, "M\xC3\xA1s", nullptr, 1 } };
+        { &arq_icon_level, "Malla 5x5", nullptr, 1 }, { &arq_icon_level, "Nivelar cama", nullptr, 1 }, { &arq_icon_filament, "Filamento", nullptr, 1 }, { &arq_icon_tools, "M\xC3\xA1s", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Herramientas", it, 8); dump("st5_5_herramientas"); }
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[9] = { { &arq_icon_temp, "Temperatura", nullptr, 1 }, { &arq_icon_down, "Extruir", nullptr, 1 }, { &arq_icon_move, "Mover", nullptr, 1 }, { &arq_icon_home, "Home", nullptr, 1 },
         { &arq_icon_level, "Malla 5x5", nullptr, 1 }, { &arq_icon_level, "Nivelar cama", nullptr, 1 }, { &arq_icon_filament, "Filamento", nullptr, 1 }, { &arq_icon_sliders, "Flujo", nullptr, 1 }, { &arq_icon_tools, "M\xC3\xA1s", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Herramientas", it, 9); dump("st5_10_herramientas_flujo"); }
-    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[5] = { { &arq_icon_gear, "Par\xC3\xA1metros", nullptr, 1 }, { &arq_icon_file, "Memoria", nullptr, 1 }, { &arq_icon_fan, "Ventiladores", nullptr, 1 }, { &arq_icon_tools, "Sistema", nullptr, 1 }, { &arq_icon_power, "Apagar", nullptr, 1 } };
-      arq_opts_build(sc, ccb, "Ajustes", it, 5); dump("st5_6_ajustes"); }
+    { lv_obj_t *sc = new_screen(); arq_opt_item_t it[8] = { { &arq_icon_gear, "Par\xC3\xA1metros", nullptr, 1 }, { &arq_icon_file, "Memoria", nullptr, 1 }, { &arq_icon_fan, "Ventiladores", nullptr, 1 }, { &arq_icon_tools, "Sistema", nullptr, 1 },
+        { &arq_icon_temp, "PID", nullptr, 1 }, { &arq_icon_speed, "Rendimiento", nullptr, 1 }, { &arq_icon_wifi, "Wi-Fi", nullptr, 1 }, { &arq_icon_power, "Apagar", nullptr, 1 } };
+      arq_opts_build(sc, ccb, "Ajustes", it, 8); dump("st5_6_ajustes"); }
     { lv_obj_t *sc = new_screen(); arq_opt_item_t it[6] = { { &arq_icon_home, "Home todo", nullptr, 1 }, { &arq_icon_right, "Home X", nullptr, 1 }, { &arq_icon_up, "Home Y", nullptr, 1 }, { &arq_icon_down, "Home Z", nullptr, 1 }, { &arq_icon_power, "Motores off", nullptr, 1 }, { &arq_icon_power, "Motores XY", nullptr, 1 } };
       arq_opts_build(sc, ccb, "Home", it, 6); dump("st5_7_home"); }
     speed_screen(100, 85, 0, 5, "st5_1_velocidad"); flow_screen(100, 5, "st5_8_flujo"); flow_screen(92, 1, "st5_9_flujo_92"); level_screen("st5_2_nivelar"); info_screen("st5_3_sistema"); baby_screen(-1250, 0, "st5_4_babystep");

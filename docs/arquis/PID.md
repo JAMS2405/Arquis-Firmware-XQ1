@@ -1,6 +1,6 @@
 # ARQUIS XQ1 — Autoajuste PID de hotend y cama desde la TS35
 
-Estado: **implementado y probado en PC (lógica, pantalla LVGL simulada, firmas contra Marlin). Sin compilar con PlatformIO completo ni probado en la impresora.**
+Estado: **implementado, probado en PC (lógica, pantalla LVGL simulada, firmas contra Marlin) y compilado por el propietario.** **Probado en la impresora por el propietario (2026-11-22);** los resultados detallados de esas pruebas no se han trasladado a este repositorio.
 
 ## Uso
 **Ajustes → PID.**

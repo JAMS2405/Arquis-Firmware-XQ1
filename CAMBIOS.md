@@ -162,7 +162,7 @@ Los valores de cada impresora (medidas, pasos/mm, sentidos, finales de carrera, 
 
 
 ## Rendimiento: pantalla de ajustes de movimiento y torres de prueba
-**Ajustes → Rendimiento** (TS35): aceleraciones (M204/M201), Linear Advance K (M900), Junction Deviation (M205 J) e Input Shaping X/Y (M593) con límites, paso fino/grueso, Guardar (M500) y Restaurar. Solo con la impresora quieta. En `herramientas/torres/` hay un generador de torres de prueba (ringing por frecuencia y por aceleración, K, caudal máximo) que cambian un valor por tramo, verifican su G-code antes de escribirlo y terminan con `M501`; archivos listos para el XQ1 (PLA) en `herramientas/torres/listos/`. Ver `docs/arquis/RENDIMIENTO.md`. **Sin probar en la impresora.** Flash estimada +4,7 KB: mira el uso real con `pio run`.
+**Ajustes → Rendimiento** (TS35): aceleraciones (M204/M201), Linear Advance K (M900), Junction Deviation (M205 J) e Input Shaping X/Y (M593) con límites, paso fino/grueso, Guardar (M500) y Restaurar. Solo con la impresora quieta. En `herramientas/torres/` hay un generador de torres de prueba (ringing por frecuencia y por aceleración, K, caudal máximo) que cambian un valor por tramo, verifican su G-code antes de escribirlo y terminan con `M501`; archivos listos para el XQ1 (PLA) en `herramientas/torres/listos/`. Ver `docs/arquis/RENDIMIENTO.md`. Probado por el propietario en la impresora (2026-11-22). Flash estimada +4,7 KB: comprueba el uso real con `pio run`.
 
 ## Velocidad real en la pantalla de impresión
 Nueva fila **Veloc.** en la supervisión: velocidad real del cabezal en XY (mm/s) y la máxima alcanzada en esa impresión. Se calcula derivando la posición real de X e Y (`planner.get_axis_position_mm`, pasos ya ejecutados) en ventanas de 0,15 s, con suavizado; los saltos de posición (G92, home) se ignoran y el máximo se reinicia con cada impresión. La lista de la supervisión pasa a 5 filas compactas (18 px). Lógica pura y probada en `herramientas/arquis_ui/sim/logic_test.cpp`.
@@ -240,3 +240,6 @@ Rama `claude/pensive-cray-ib96kb`, sobre `fdff0cd`. Código en `0bae5fc`; solo c
 **Verificación:** la recompilación de `fdff0cd` coincide byte a byte con el BIN de la Fase 4, salvo las rutas y la fecha.
 
 **BIN de pruebas:** `firmware_pruebas/fase5`. **Estado: NO probado en la impresora.** Detalle: `docs/arquis/FASE5_CORRECCIONES_AUDITORIA.md`.
+
+## Manual de uso completo
+`docs/arquis/MANUAL_DE_USO.md`: árbol de todas las pantallas, qué hace cada una, valores de fábrica, dónde se ajusta cada cosa (y si se guarda con M500), puesta a punto en orden y problemas frecuentes. Incluye Malla 5×5, PID, Rendimiento y perfiles. Se genera también en PDF con capturas de la interfaz: `docs/arquis/Manual_de_uso_ARQUIS_XQ1.pdf` (`herramientas/manual/generar_pdf.sh`; requiere pandoc, Node con Playwright/Chromium y las fuentes Inter y DejaVu).
