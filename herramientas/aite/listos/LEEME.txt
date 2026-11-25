@@ -1,0 +1,13 @@
+AITE - ARBOL DE PRUEBA CON RAMAS EN VOLADIZO DE 90 GRADOS (Arquis XQ1)   *** NO PROBADO EN LA MAQUINA ***
+
+Material: PETG, boquilla 0.6, ancho de linea 0.66, cama 70 C, boquilla 230 C (220 C en las ramas), ventilador al maximo en las ramas.
+Copialos a la raiz de la tarjeta SD (NO a la carpeta "assets"). Guia completa: docs/slicer_suite/11_aite_arbol_prueba.md
+
+  PETG/probeta_rama90_PETG_xq1.gcode       PRUEBALA PRIMERO. Una rama sobre un tronco de 15,5 mm (35 min aprox.)
+  PETG/arbol_voladizo90_PETG_xq1.gcode     El arbol de 5 cm de alto y 5 cm de ancho, dos ramas (79 min aprox.)
+  PETG/probeta_rama90_PETG_xq1_SECO.gcode  La probeta sin extruir, sin calentar y 10 mm mas arriba (solo para ver el movimiento)
+
+Vigila las primeras capas inclinadas de la rama con la mano en el boton de parada.
+Si tu material, boquilla o temperaturas son otros, NO uses estos archivos tal cual: regeneralos (desde la carpeta cura/):
+  python3 -m aite arbol --probeta --material PETG --temp-boquilla 230 --temp-voladizo 220 --temp-cama 70 --boquilla 0.6 --ancho 0.66 --salida ../herramientas/aite/listos/PETG/
+Si no pasa la verificacion del texto del G-code, el programa no escribe el archivo.
