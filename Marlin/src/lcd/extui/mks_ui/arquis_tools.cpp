@@ -40,6 +40,7 @@
 #include "../../../module/motion.h"
 #include "../../../module/planner.h"
 #include "../../../module/printcounter.h"
+#include "../../../feature/babystep.h"
 #include "../../../gcode/queue.h"
 #include "../../../gcode/gcode.h"
 #include "../../../sd/cardreader.h"
@@ -51,6 +52,7 @@
 #endif
 
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 
 extern lv_group_t *g;
@@ -361,15 +363,70 @@ static lv_obj_t *b_scr;
 static float     babystep_dist = 0.01f;
 static uint8_t   has_adjust_z;
 
+// ---- Offset Z PERMANENTE --------------------------------------------------------------------------------------------------
+// La nivelacion 5x5 es relativa al centro y no hay sonda (no existe M851): el desfase global de Z es el home offset (M206 Z),
+// que Marlin ya guarda en la EEPROM. Al salir de esta pantalla, el babystep acumulado se convierte en M206 Z (y M500), asi se
+// aplica en todas las impresiones sin repetirlo. Convencion: babystep + = boquilla sube = home_offset.z baja; el offset que se
+// muestra es -home_offset.z (negativo = mas cerca de la cama, como el "Z-offset" de otras impresoras).
+static constexpr float ARQ_ZOFF_MAX = 5.0f;       // |offset Z| maximo aceptado (mm)
+static int16_t   baby_base;                       // babystep total (desde G28) al entrar en la pantalla
+static bool      zoff_pending;                    // guardado en EEPROM pero aun NO aplicado en vivo (impresion en curso)
+static float     zoff_pending_val;                // home_offset.z pendiente
+
+static bool zoff_busy() { return printJobOngoing() || printingIsPaused() || planner.has_blocks_queued(); }
+
+static float zoff_current() { return zoff_pending ? zoff_pending_val : home_offset.z; }
+
+static int16_t baby_total_z() { return babystep.axis_total[BS_TOTAL_IND(Z_AXIS)]; }
+
+// Guarda en la EEPROM el valor pendiente (si lo hay) sin tocar el offset en vivo.
+static void zoff_save() {
+  #if ENABLED(EEPROM_SETTINGS)
+    const float live = home_offset.z;
+    if (zoff_pending) set_home_offset(Z_AXIS, zoff_pending_val);
+    (void)settings.save();
+    if (zoff_pending) set_home_offset(Z_AXIS, live);
+  #endif
+}
+
+// Aplica el offset en vivo: el babystep ya hecho se deshace (queda dentro del home offset) para no sumarlo dos veces.
+static void zoff_apply_live(const float v) {
+  const int16_t tot = baby_total_z();
+  set_home_offset(Z_AXIS, v);
+  if (tot) babystep.add_steps(Z_AXIS, -tot);
+  zoff_pending = false;
+}
+
+// Convierte el babystep Z de esta sesion en offset permanente. Devuelve true si cambio el offset.
+static bool zoff_commit() {
+  const int16_t steps = baby_total_z() - baby_base;
+  if (!steps) return false;
+  float nv = zoff_current() - steps * planner.mm_per_step[Z_AXIS];
+  nv = nv > ARQ_ZOFF_MAX ? ARQ_ZOFF_MAX : nv < -ARQ_ZOFF_MAX ? -ARQ_ZOFF_MAX : nv;
+  nv = roundf(nv * 1000.0f) / 1000.0f;
+  if (zoff_busy()) { zoff_pending = true; zoff_pending_val = nv; }   // en impresion: el babystep sigue activo; se aplica al terminar
+  else zoff_apply_live(nv);
+  zoff_save();
+  baby_base = baby_total_z();
+  return true;
+}
+
+// Fin de impresion: aplica el offset pendiente (la EEPROM ya lo tiene). Se llama desde GUI_RefreshPage.
+void arq_baby_poll() {
+  if (!zoff_pending || zoff_busy()) return;
+  zoff_apply_live(zoff_pending_val);
+  zoff_save();
+}
+
 void arq_baby_refresh() {
   if (!b_scr) return;
   arq_move_model_t m;
   memset(&m, 0, sizeof(m));
   const int d = (int)(100 * babystep_dist);
   m.step = d == 1 ? 0 : d == 5 ? 1 : 2;
-  #if HAS_BED_PROBE
-    m.z_off_um = (int32_t)(probe.offset.z * 1000.0f + (probe.offset.z >= 0 ? 0.5f : -0.5f));
-  #endif
+  // offset Z total = el guardado + el babystep de esta sesion (aun sin guardar)
+  const float shown = -zoff_current() + (baby_total_z() - baby_base) * planner.mm_per_step[Z_AXIS];
+  m.z_off_um = (int32_t)(shown * 1000.0f + (shown >= 0 ? 0.5f : -0.5f));
   arq_move_update(&m);
 }
 
@@ -377,7 +434,10 @@ static void baby_cb(lv_obj_t *obj, lv_event_t event) {
   if (event != LV_EVENT_RELEASED) return;
   const int id = obj->mks_obj_id;
   if (id == ARQ_MID_BACK) {
-    if (has_adjust_z == 1) { TERN_(EEPROM_SETTINGS, (void)settings.save()); has_adjust_z = 0; }     // como ID_BABYSTEP_RETURN
+    if (has_adjust_z == 1) {
+      if (!zoff_commit()) zoff_save();      // sin cambio en Z: guarda igual (X/Y), conservando un offset pendiente
+      has_adjust_z = 0;
+    }
     goto_previous_ui();
     return;
   }
@@ -402,6 +462,7 @@ static void baby_cb(lv_obj_t *obj, lv_event_t event) {
 
 void arq_baby_draw() {
   b_scr = lv_screen_create(BABYSTEP_UI, "");
+  baby_base = baby_total_z();
   arq_screen_apply(b_scr);
   arq_move_build(b_scr, baby_cb, true);
   arq_baby_refresh();

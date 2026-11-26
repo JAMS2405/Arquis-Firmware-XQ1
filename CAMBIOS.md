@@ -157,6 +157,14 @@ Arranque, aspecto real de la pantalla, tactil, y comportamiento durante una impr
 Malla bilineal 5×5 medida con papel desde la TS35 (Herramientas → Malla 5x5), guardada con M500 y activada tras cada G28 (`ENABLE_LEVELING_AFTER_G28`). Ver `docs/arquis/MALLA_5x5.md`. **Aviso:** cambiar la malla de 3×3 a 5×5 cambia el tamaño de la EEPROM: la primera vez tras flashear Marlin la descarta y vuelve a los valores de fábrica (guarda `M503` antes).
 
 
+## Offset Z permanente (babystep que se queda guardado)
+Con la malla 5×5 la boquilla quedaba algo alta y había que bajarla con babystep en cada impresión. Ahora, al **salir de la pantalla Babystep** (◄), el ajuste de Z de esa sesión se convierte en **`M206 Z`** (home offset) y se guarda con `M500`: se aplica siempre, sin repetirlo. No hay sonda (no existe `M851`), por eso se usa el home offset, que Marlin ya guardaba; **el tamaño de la EEPROM no cambia**.
+- La pantalla muestra el offset total (guardado + babystep sin guardar) como **−0,180 mm** = boquilla más cerca de la cama (equivale a `M206 Z+0.18`).
+- En reposo se aplica al instante (el babystep se deshace al pasarlo al home offset, sin sumarlo dos veces). **Durante una impresión** el babystep sigue activo, la EEPROM se actualiza al salir de la pantalla y el home offset en vivo se aplica al terminar la impresión (`arq_baby_poll`), antes del siguiente `G28`.
+- Límite ±5 mm. `BABYSTEP_DISPLAY_TOTAL` activado en `Configuration_adv.h`. Código en `arquis_tools.cpp` (`zoff_*`).
+- Como la malla es relativa al centro, el offset es global: **ajústalo con la boquilla en el centro de la cama**. Si ya tienes un `M206 Z` guardado, se suma a él.
+**Estado: NO compilado ni probado en la impresora** (sin compilador ARM aquí). Prueba: imprime, baja con babystep hasta que pegue, sal con ◄, apaga/enciende y comprueba con `M503` que `M206 Z` quedó (p. ej. `Z0.18`).
+
 ## Perfiles de máquina (varias impresoras, un solo firmware)
 Los valores de cada impresora (medidas, pasos/mm, sentidos, finales de carrera, PID…) viven en `Marlin/machine/<nombre>.h` y se eligen con el entorno de PlatformIO (`pio run -e aquila_d1`). El XQ1 no cambia. Ver `docs/arquis/MAQUINAS.md`. **EEPROM:** las versiones de la nivelación 5×5 y del PID de cama cambian su tamaño: guarda `M503` antes de flashear.
 

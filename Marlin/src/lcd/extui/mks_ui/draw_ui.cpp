@@ -760,6 +760,7 @@ void print_time_run() {
 void GUI_RefreshPage() {
   #if ENABLED(ARQUIS_UI)
     arq_print_poll();   // fin de impresion desde cualquier pantalla (ver arquis_print.cpp)
+    arq_baby_poll();    // offset Z permanente: aplica el pendiente al acabar la impresion (ver arquis_tools.cpp)
     #if ARQ_HAS_PID
       arq_pid_poll();   // autoajuste PID: tambien se llama durante M303 (arq_pid_idle)
     #endif

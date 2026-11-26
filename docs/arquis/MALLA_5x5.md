@@ -36,7 +36,7 @@ Cama 300×300. `PROBING_MARGIN 15` → área de la malla X,Y = 15…285 mm, paso
 | **Desviación relativa** (lo que se muestra con la malla completa) | Igual que la corrección. |
 | **Referencia de la interpolación** | El plano Z=0 de la máquina; la corrección se desvanece linealmente hasta 0 a la altura de *fade* (10 mm). |
 | Marlin aplica | `Z_física = Z_ordenada + fade(Z) × corrección(x,y)` |
-Positivo = en ese punto la cama está **más alta** que en el centro (la boquilla sube). Negativo = **más baja** (baja). Se aceptan ambos signos. **Por qué relativa al centro:** el Z-offset global (home offset, babystep) sigue siendo independiente y el *fade* no estira la pieza por un offset global. Consecuencia: **ajusta el Z-offset en el centro de la cama** como siempre.
+Positivo = en ese punto la cama está **más alta** que en el centro (la boquilla sube). Negativo = **más baja** (baja). Se aceptan ambos signos. **Por qué relativa al centro:** el Z-offset global (home offset, babystep) sigue siendo independiente y el *fade* no estira la pieza por un offset global. Consecuencia: **ajusta el Z-offset en el centro de la cama** como siempre. Desde Babystep ese ajuste ahora se guarda solo como `M206 Z` al salir de la pantalla (ver `CAMBIOS.md`, «Offset Z permanente»).
 
 ## 5. Procedimiento
 1. Ajusta los 4 tornillos (Herramientas → Nivelar cama) y limpia la boquilla; retira objetos de la cama.
